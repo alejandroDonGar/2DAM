@@ -1,10 +1,13 @@
 ---
 // Bloque de código con su procedencia: archivo y ejercicio, enlazado al repo de la asignatura.
+// `depurar` (opcional): pasos del depurador animado. l = línea del bloque (desde 1),
+// v = variables que cambian en ese paso (null = desaparece), t = qué pasa.
 import { REPO_AD } from '../data/asignaturas';
-interface Props { archivo: string; ejercicio: string; ruta: string }
-const { archivo, ejercicio, ruta } = Astro.props;
+interface Paso { l: number; v?: Record<string, string | null>; t: string }
+interface Props { archivo: string; ejercicio: string; ruta: string; depurar?: Paso[] }
+const { archivo, ejercicio, ruta, depurar } = Astro.props;
 ---
-<figure class="codigo">
+<figure class="codigo" data-depurar={depurar && JSON.stringify(depurar)}>
   <figcaption><span>{archivo}</span><a href={`${REPO_AD}blob/main/${ruta}`}>{ejercicio}</a></figcaption>
   <slot />
 </figure>

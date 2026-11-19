@@ -401,7 +401,19 @@ public abstract class AbstractFileRepository<T extends Identifiable<ID>, ID>
 
 Lo que queda de CSV: traducir filas a productos y productos a filas. Los errores de E/S se envuelven en `UncheckedIOException` porque el contrato no declara `throws`.
 
-<Fragmento archivo="CsvProductoRepository.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/repository/file/csv/CsvProductoRepository.java">
+<Fragmento archivo="CsvProductoRepository.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/repository/file/csv/CsvProductoRepository.java" depurar={[
+  { l: 5, v: { 'getPath()': '"productos.csv"  (id,nombre,precio · 1,Teclado,24.9 · 2,Ratón,12.5)' }, t: 'La clase madre llama a readAll() la primera vez que se necesita la lista. El fichero tiene una cabecera y dos productos.' },
+  { l: 6, v: { productos: '[]' }, t: 'Se crea la lista vacía donde irán los productos leídos.' },
+  { l: 7, v: { reader: 'BufferedReader → productos.csv (UTF-8)' }, t: 'Se abre el fichero indicando UTF-8. Si no existiera, saltaría una IOException.' },
+  { l: 8, v: { parser: 'CSVParser · cabecera = [id, nombre, precio]' }, t: 'El formato toma la primera fila como cabecera, así que luego se piden las columnas por nombre y no por posición.' },
+  { l: 9, v: { row: '{id: "1", nombre: "Teclado", precio: "24.9"}' }, t: 'Primera fila de datos. Fíjate en que todos los valores llegan como texto.' },
+  { l: 10, v: { productos: '[Producto{1, Teclado, 24.9}]' }, t: 'parseLong y parseDouble convierten el texto a número, y el producto se añade a la lista.' },
+  { l: 9, v: { row: '{id: "2", nombre: "Ratón", precio: "12.5"}' }, t: 'Segunda vuelta del bucle con la siguiente fila.' },
+  { l: 10, v: { productos: '[Producto{1, Teclado, 24.9}, Producto{2, Ratón, 12.5}]' }, t: 'Se añade el segundo producto.' },
+  { l: 9, v: { row: null }, t: 'No quedan filas, así que el bucle termina.' },
+  { l: 13, v: { parser: null, reader: null }, t: 'Al salir del try se cierran solos el parser y el reader, en orden inverso a como se abrieron. No ha habido error, así que el catch no se ejecuta.' },
+  { l: 16, t: 'Se devuelven los dos productos. La clase madre los guarda en memoria y ya no vuelve a leer el fichero.' },
+]}>
 
 ```java
 public class CsvProductoRepository

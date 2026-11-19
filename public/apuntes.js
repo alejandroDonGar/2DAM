@@ -80,3 +80,85 @@ if (secciones.length) {
   addEventListener('scroll', espiar, { passive: true });
   espiar();
 }
+
+// Depurador animado: recorre a mano los pasos que trae el fragmento (data-depurar).
+document.querySelectorAll('figure[data-depurar]').forEach(fig => {
+  const pasos = JSON.parse(fig.dataset.depurar);
+  const lineas = fig.querySelectorAll('.line');
+  // Estado acumulado de las variables en cada paso.
+  const estados = [];
+  pasos.reduce((acc, p) => {
+    const sig = { ...acc };
+    for (const [k, v] of Object.entries(p.v || {})) v === null ? delete sig[k] : sig[k] = v;
+    estados.push(sig);
+    return sig;
+  }, {});
+
+  const abrir = document.createElement('button');
+  abrir.type = 'button';
+  abrir.className = 'dep-abrir';
+  abrir.textContent = 'Depurar';
+  abrir.setAttribute('aria-expanded', 'false');
+  fig.querySelector('figcaption').append(abrir);
+
+  const panel = document.createElement('div');
+  panel.className = 'depurador';
+  panel.hidden = true;
+  panel.innerHTML = `<div class="dep-controles">
+      <button type="button" data-d="reiniciar">Reiniciar</button>
+      <button type="button" data-d="atras">Atrás</button>
+      <button type="button" data-d="play">Reproducir</button>
+      <button type="button" data-d="paso">Paso</button>
+      <span class="dep-cuenta"></span></div>
+    <p class="dep-nota" aria-live="polite"></p>
+    <dl class="dep-vars" aria-label="Variables"></dl>`;
+  fig.append(panel);
+  const [cuenta, nota, vars, play] = ['.dep-cuenta', '.dep-nota', '.dep-vars', '[data-d=play]'].map(s => panel.querySelector(s));
+
+  let i = 0, reloj = null;
+  const parar = () => { clearInterval(reloj); reloj = null; play.textContent = 'Reproducir'; };
+  const pintar = () => {
+    lineas.forEach(l => l.classList.remove('dep-actual'));
+    lineas[pasos[i].l - 1]?.classList.add('dep-actual');
+    cuenta.textContent = `Paso ${i + 1} de ${pasos.length}`;
+    nota.textContent = pasos[i].t;
+    const antes = estados[i - 1] || {};
+    vars.replaceChildren(...Object.entries(estados[i]).map(([k, v]) => {
+      const fila = document.createElement('div');
+      if (antes[k] !== v) fila.className = 'cambia';
+      fila.append(Object.assign(document.createElement('dt'), { textContent: k }),
+                  Object.assign(document.createElement('dd'), { textContent: v }));
+      return fila;
+    }));
+  };
+  const ir = n => { i = Math.max(0, Math.min(pasos.length - 1, n)); pintar(); if (i === pasos.length - 1) parar(); };
+
+  panel.addEventListener('click', e => {
+    const d = e.target.dataset?.d;
+    if (!d) return;
+    if (d !== 'play') parar();
+    if (d === 'paso') ir(i + 1);
+    if (d === 'atras') ir(i - 1);
+    if (d === 'reiniciar') ir(0);
+    if (d === 'play') {
+      if (reloj) return parar();
+      if (i === pasos.length - 1) ir(0);
+      play.textContent = 'Pausa';
+      reloj = setInterval(() => ir(i + 1), 1600);
+    }
+  });
+  panel.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') { parar(); ir(i + 1); }
+    if (e.key === 'ArrowLeft') { parar(); ir(i - 1); }
+  });
+  abrir.addEventListener('click', () => {
+    const si = panel.hidden;
+    panel.hidden = !si;
+    fig.classList.toggle('depurando', si);
+    abrir.setAttribute('aria-expanded', si);
+    abrir.textContent = si ? 'Cerrar depurador' : 'Depurar';
+    parar();
+    if (si) { ir(0); panel.querySelector('[data-d=paso]').focus(); }
+    else lineas.forEach(l => l.classList.remove('dep-actual'));
+  });
+});
