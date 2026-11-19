@@ -1,0 +1,23 @@
+---
+import Esquema from '../Esquema.astro';
+const ramas = [
+  { x: 20, t: 'Propias', d: 'no se devuelven', l: ['Aportaciones de los socios', 'Autofinanciación', 'Pago único del paro'] },
+  { x: 250, t: 'Ajenas', d: 'se devuelven, con intereses', l: ['Préstamo', 'Línea de crédito', 'Leasing y renting', 'Confirming y factoring', 'Capital riesgo y business angels'] },
+  { x: 480, t: 'Ayudas y nuevas formas', d: 'según cada caso', l: ['Subvenciones', 'Préstamos ICO', 'Crowdfunding', 'Crowdlending', 'Aceleradoras'] },
+];
+---
+<Esquema titulo="Las fuentes de financiación" alto={330}
+  descripcion="Un árbol. Arriba, la pregunta de dónde sale el dinero. Tres ramas: fuentes propias, que no se devuelven (aportaciones de los socios, autofinanciación y pago único del paro); fuentes ajenas, que se devuelven con intereses (préstamo, línea de crédito, leasing y renting, confirming y factoring, capital riesgo y business angels); y ayudas y nuevas formas (subvenciones, préstamos ICO, crowdfunding, crowdlending y aceleradoras)."
+  pie="La primera pregunta ante cualquier fuente es si hay que devolver el dinero y con qué coste.">
+  <rect x="240" y="14" width="240" height="44" rx="8" class="caja-acento" />
+  <text x="360" y="42" text-anchor="middle" class="t-titulo t-acento">¿De dónde sale el dinero?</text>
+  {ramas.map((r) => (
+    <g>
+      <path d={`M360 58 L${r.x + 110} 104`} class="trazo" />
+      <rect x={r.x} y="106" width="220" height="56" rx="8" class="caja" />
+      <text x={r.x + 110} y="130" text-anchor="middle" class="t-titulo">{r.t}</text>
+      <text x={r.x + 110} y="150" text-anchor="middle" class="t-suave">{r.d}</text>
+      {r.l.map((l, i) => <text x={r.x + 16} y={192 + i * 26}>{l}</text>)}
+    </g>
+  ))}
+</Esquema>

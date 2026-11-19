@@ -1,0 +1,394 @@
+---
+titulo: Viabilidad y financiación
+etiqueta: UT4
+orden: 4
+entrada: Cuánto dinero hace falta para arrancar, de dónde puede salir y si el negocio se sostiene después. Plan de inversiones, fuentes de financiación, previsión de resultados y tesorería, y el umbral de rentabilidad.
+cuando: noviembre
+ejercicios: tarea del Campus «Nuestro plan de inversiones inicial» y plan económico del proyecto del grupo
+---
+import Secuencia from '../../../components/esquemas/Secuencia.astro';
+import BalanceInversion from '../../../components/esquemas/BalanceInversion.astro';
+import FuentesFinanciacion from '../../../components/esquemas/FuentesFinanciacion.astro';
+import ResultadoCaja from '../../../components/esquemas/ResultadoCaja.astro';
+import UmbralGrafico from '../../../components/esquemas/UmbralGrafico.astro';
+
+## El plan de inversiones
+
+### Qué se ve
+
+Antes de abrir hay que comprar cosas: equipos, mobiliario, quizá un local o un vehículo. Este tema explica cómo se hace la lista de todo lo necesario, qué cuenta como inversión y qué como gasto, y dónde aparece cada cosa en el balance.
+
+### Conceptos
+
+El <mark>plan de inversiones</mark> recoge todo lo que la empresa necesita para empezar a funcionar. Lo habitual es un local, vehículos, mobiliario, equipos informáticos y software, herramientas o maquinaria y, a veces, patentes. Se reparte en tres grupos:
+
+| Grupo | Ejemplos |
+|---|---|
+| Bienes tangibles | Ordenadores, mobiliario, un vehículo |
+| Bienes intangibles | Software, una patente, una marca registrada |
+| Gastos iniciales | Constitución de la sociedad y puesta en marcha |
+
+Hay que distinguir <mark>inversión</mark> de <mark>gasto</mark>. Una inversión es algo que se usa durante varios años y que ayudará a generar ingresos en el futuro, como un ordenador. Un gasto se consume en el periodo y permite trabajar, pero no deja nada duradero: el alquiler del mes, la luz o el material de oficina. Por eso un local comprado es inversión y un local alquilado es gasto. El coste de una inversión se reparte entre los años que dura mediante la <mark>amortización</mark>.
+
+Una <mark>patente</mark> da a quien inventa un producto o una tecnología nueva el derecho exclusivo a explotarla durante un tiempo limitado, a cambio de hacer pública la invención. Forma parte de la propiedad industrial.
+
+En el <mark>balance</mark>, las inversiones aparecen en el activo, que muestra en qué ha usado la empresa su dinero. Al otro lado está de dónde ha salido ese dinero:
+
+<BalanceInversion />
+
+La tarea del Campus no pide un plan de inversiones exhaustivo, sino una tabla sencilla en tres pasos:
+
+<Secuencia titulo="La tabla de inversiones y financiación"
+  descripcion="Tres pasos en orden: listar todo lo necesario para abrir, buscar proveedores y precios de cada elemento y sumarlos, y decidir cómo se financia cada uno."
+  pie="Primero qué hace falta, después cuánto cuesta y al final cómo se paga."
+  pasos={[['Listar', 'todo lo necesario'], ['Presupuestar', 'proveedor y precio'], ['Financiar', 'cómo se paga']]} />
+
+### Casos y ejemplos
+
+Un estudio de desarrollo que empieza con dos personas (precios inventados):
+
+| Elemento | Tipo | Importe | Cómo se financia |
+|---|---|---|---|
+| Dos portátiles | Tangible | 2.400 € | Aportaciones de los socios |
+| Pantallas, sillas y mesas | Tangible | 900 € | Aportaciones de los socios |
+| Licencias de software para un año | Intangible | 600 € | Aportaciones de los socios |
+| Constitución de la SL | Gasto inicial | 700 € | Préstamo |
+| Reserva de tesorería para tres meses | Dinero en caja | 3.000 € | Préstamo |
+| **Total** | | **7.600 €** | |
+
+El alquiler de la oficina compartida no aparece: es un gasto mensual y va en la previsión de resultados, no en la inversión inicial.
+
+### Errores típicos
+
+- **Meter el alquiler en la inversión.** Si no se compra, es un gasto de cada mes.
+- **Olvidar la reserva de tesorería.** Los primeros meses se paga antes de cobrar. Sin un colchón, la empresa se queda sin dinero aunque tenga clientes.
+- **Poner precios sin buscar proveedores.** La tarea pide marca, modelo y precio reales de cada elemento.
+- **Imputar todo el coste de un equipo al primer mes.** Se paga de golpe, pero su coste se reparte con la amortización.
+
+### Prácticas de clase
+
+- **Tarea del Campus «Nuestro plan de inversiones inicial».** En equipos de proyecto, durante dos sesiones: lista de lo necesario para abrir, proveedores y precios, y la forma de financiar cada elemento.
+- **Proyecto de empresa.** El apartado de necesidades iniciales del plan económico.
+
+### Repaso rápido
+
+<details>
+<summary>Comprar un local, ¿es inversión o gasto? ¿Y alquilarlo?</summary>
+
+Comprarlo es inversión, porque se usa durante años. Alquilarlo es un gasto de cada mes.
+
+</details>
+<details>
+<summary>¿En qué parte del balance aparecen las inversiones?</summary>
+
+En el activo, que muestra en qué ha usado la empresa su dinero.
+
+</details>
+<details>
+<summary>¿Qué es la amortización?</summary>
+
+El reparto del coste de una inversión entre los años que se usa.
+
+</details>
+
+### Fuentes
+
+1. [CEDEC, Proyecto EDIA: Desafío 7 «¿Cuánto dinero necesitamos?» (recurso abierto que usa el Campus)](http://descargas.educalab.es/cedec/proyectoedia/FP/EIE/contenidos/eie_desafio7/index.html)
+2. [Real Decreto 1514/2007, Plan General de Contabilidad (BOE)](https://www.boe.es/buscar/act.php?id=BOE-A-2007-19884)
+
+## Fuentes de financiación propias y ajenas
+
+### Qué se ve
+
+Casi nadie tiene ahorrado todo lo que cuesta arrancar. Este tema ordena las formas de conseguir el dinero, desde lo que ponen los propios socios hasta los préstamos y los productos que ofrecen los bancos, y enseña a comparar lo que cuestan.
+
+### Conceptos
+
+El <mark>plan de financiación</mark> dice cómo y de dónde saldrá el dinero para pagar las inversiones. Las fuentes se clasifican así:
+
+<FuentesFinanciacion />
+
+Las <mark>fuentes propias</mark> no se devuelven. Son las aportaciones de los socios (el capital inicial o las ampliaciones posteriores), la <mark>autofinanciación</mark> (los beneficios que no se reparten y se reinvierten) y la capitalización de la prestación por desempleo: quien cobra el paro contributivo puede pedir el importe de una vez para hacerse autónomo o aportarlo como socio.
+
+Las <mark>fuentes ajenas</mark> son deuda: hay que devolverlas, normalmente con intereses.
+
+| Fuente | Cómo funciona |
+|---|---|
+| Préstamo | El banco entrega una cantidad que se devuelve en cuotas con intereses. El interés puede ser fijo o variable (por ejemplo, euríbor más un diferencial). Un préstamo hipotecario tiene un inmueble como garantía; uno personal suele pedir un aval |
+| Línea de crédito | El banco deja disponible una cantidad y solo se pagan intereses por lo que se usa. Sirve para pagar el día a día mientras se cobra a los clientes |
+| Descubierto | Gastar más de lo que hay en la cuenta. El banco puede aceptarlo, pero cobra intereses altos |
+| <mark>Leasing</mark> | Alquiler de un bien con opción de compra al final por su valor residual |
+| <mark>Renting</mark> | Alquiler sin opción de compra, con el mantenimiento incluido. Habitual para vehículos y ordenadores que se quedan obsoletos |
+| Confirming | El banco paga por adelantado las facturas que la empresa debe a sus proveedores |
+| Factoring | La empresa cede a otra entidad el cobro de las facturas de sus clientes y recibe el dinero antes |
+| Sociedad de garantía recíproca | Avala a una pyme para que el banco le conceda un préstamo que de otra forma le negaría |
+| Capital riesgo y business angels | Invierten en la empresa a cambio de una parte de la propiedad. Los business angels son particulares con experiencia que, además del dinero, aportan consejo |
+
+Para comparar préstamos hay que fijarse en dos cifras. El <mark>TIN</mark> (tipo de interés nominal) es el interés que se anuncia. La <mark>TAE</mark> (tasa anual equivalente) incluye además las comisiones y la frecuencia de los pagos, y da una idea más real de lo que cuesta. Por eso la TAE casi siempre es mayor que el TIN; solo coinciden si no hay comisiones y los intereses se pagan una vez al año.
+
+### Casos y ejemplos
+
+Una furgoneta para un servicio técnico que hace reparaciones a domicilio. Con <mark>leasing</mark>, se paga una cuota mensual y al final se puede comprar pagando el valor que quede. Con <mark>renting</mark>, la cuota incluye seguro y mantenimiento, no hay opción de compra y a los cuatro o cinco años se cambia por otra nueva. Si la empresa quiere quedarse con la furgoneta, le conviene el leasing; si prefiere no preocuparse por averías y renovarla, el renting.
+
+Dos préstamos con el mismo TIN del 6 % pueden costar distinto. Si uno cobra una comisión de apertura del 2 % y el otro no, el primero tendrá una TAE más alta. Comparar solo el TIN lleva a elegir mal.
+
+El material del Campus advierte también de los créditos rápidos: se conceden en minutos y sin garantías, pero con intereses muy altos. Para financiar un negocio son una mala idea.
+
+### Errores típicos
+
+- **Confundir leasing y renting.** Los dos son alquileres; solo el leasing tiene opción de compra.
+- **Comparar préstamos por el TIN.** La TAE incluye comisiones y es la que permite comparar.
+- **Pensar que las aportaciones de los socios son gratis.** No se devuelven, pero los socios esperan una rentabilidad y asumen el riesgo.
+- **Financiar a largo plazo con una línea de crédito.** Es para el día a día. Una inversión de varios años va con un préstamo o un leasing.
+
+### Prácticas de clase
+
+- **Tarea del Campus.** La columna de financiación de la tabla: qué fuente se usa para cada inversión.
+- **Actividad del material: ¿cómo funciona mi tarjeta de crédito?** Buscar el TIN y la TAE de tarjetas y préstamos de varios bancos y explicar por qué difieren.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué diferencia hay entre leasing y renting?</summary>
+
+El leasing tiene opción de compra al final. El renting no, y suele incluir el mantenimiento.
+
+</details>
+<details>
+<summary>¿Por qué la TAE suele ser mayor que el TIN?</summary>
+
+Porque incluye las comisiones y la frecuencia con que se pagan los intereses.
+
+</details>
+<details>
+<summary>¿Qué es la autofinanciación?</summary>
+
+Reinvertir en la empresa los beneficios que no se reparten a los socios.
+
+</details>
+
+### Fuentes
+
+1. [CEDEC, Desafío 7: fuentes de financiación propias y ajenas](http://descargas.educalab.es/cedec/proyectoedia/FP/EIE/contenidos/eie_desafio7/fuentes_de_financiacin_ajenas.html)
+2. [Banco de España, Portal del Cliente Bancario: TIN y TAE](https://clientebancario.bde.es/)
+3. [Ley 5/2015, de fomento de la financiación empresarial (BOE)](https://www.boe.es/buscar/act.php?id=BOE-A-2015-4607)
+4. [SEPE: capitalización de la prestación por desempleo](https://www.sepe.es/)
+
+## Ayudas y nuevas formas de financiación
+
+### Qué se ve
+
+Además de los bancos, hay dinero público y plataformas en internet que financian proyectos. Este tema repasa las ayudas, la financiación colectiva y las aceleradoras, y explica por qué una ayuda que todavía no ha llegado no puede contarse como dinero.
+
+### Conceptos
+
+Las administraciones públicas conceden <mark>subvenciones</mark> a fondo perdido, que no se devuelven, y otras ayudas que sí se devuelven, pero con intereses por debajo de los del mercado. El <mark>ICO</mark> (Instituto de Crédito Oficial) funciona como un banco público que facilita préstamos a empresas. El portal del Ministerio de Industria reúne las ayudas para emprendedores y pymes.
+
+En los últimos años han aparecido formas de financiación pensadas para proyectos nuevos:
+
+| Fórmula | Cómo funciona |
+|---|---|
+| <mark>Crowdfunding</mark> | Se presenta el proyecto en una plataforma y muchas personas aportan pequeñas cantidades, a menudo a cambio de una recompensa o de una preventa |
+| <mark>Crowdlending</mark> | Particulares prestan dinero a una empresa a través de una plataforma y lo recuperan con intereses. Es como un préstamo, pero sin banco |
+| Playfunding | El proyecto gana dinero con anuncios de patrocinadores en su web; cuantas más visitas, más ingresos |
+| Aceleradoras | Dan a una startup financiación inicial, formación, mentores y espacio de trabajo para que crezca deprisa |
+
+Con las ayudas hay una regla de prudencia: no se cuentan como dinero disponible hasta que están concedidas y cobradas. Las convocatorias cambian, tienen plazos y muchas se pagan después de justificar el gasto. El escenario base del plan tiene que funcionar sin ellas.
+
+### Casos y ejemplos
+
+Un proyecto necesita 10.000 euros: 3.000 en equipos, 2.000 en el lanzamiento y 5.000 de reserva de tesorería. Los socios aportan 4.000 y esperan una ayuda de 3.000 que todavía no está concedida y que se cobraría después de justificar los gastos. ¿Cuánto falta? Antes de recibir la ayuda, 6.000 euros. Si la ayuda llega, la necesidad neta baja a 3.000, pero los gastos hay que pagarlos antes. Las salidas posibles: reducir la inversión, aplazar lo que no sea imprescindible o pedir un préstamo que se pueda devolver con las ventas previstas.
+
+### Errores típicos
+
+- **Contar una ayuda como cobrada porque se ha encontrado la convocatoria.** Hasta que no está concedida y en la cuenta, no es dinero.
+- **Confundir crowdfunding y crowdlending.** En el primero se aporta a cambio de una recompensa o una preventa; en el segundo se presta y se devuelve con intereses.
+- **Olvidar que muchas ayudas se pagan después.** Primero hay que pagar el gasto y justificarlo.
+
+### Prácticas de clase
+
+- **Píldora formativa del Campus.** Reflexión sobre qué fuentes tienen menor coste, cómo financiarse sin endeudarse y para qué empresas encajan las nuevas formas de financiación.
+- **Proyecto de empresa.** El modelo del plan pide comparar una financiación socialmente responsable con otra alternativa y no contar ayudas sin confirmar.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué es una subvención a fondo perdido?</summary>
+
+Una ayuda pública que no hay que devolver.
+
+</details>
+<details>
+<summary>¿Se puede contar en el plan con una ayuda que todavía no está concedida?</summary>
+
+No como dinero disponible. El escenario base tiene que funcionar sin ella.
+
+</details>
+<details>
+<summary>¿En qué se parece el crowdlending a un préstamo bancario?</summary>
+
+En que el dinero se devuelve con intereses. La diferencia es que lo prestan particulares a través de una plataforma.
+
+</details>
+
+### Fuentes
+
+1. [CEDEC, Desafío 7: ayudas, subvenciones y nuevas formas de financiación](http://descargas.educalab.es/cedec/proyectoedia/FP/EIE/contenidos/eie_desafio7/nuevas_formas_de_financiacin.html)
+2. [Instituto de Crédito Oficial (ICO)](https://www.ico.es/)
+3. [Portal PYME del Ministerio de Industria: ayudas e incentivos](https://plataformapyme.es/)
+
+## Previsión de resultados y tesorería
+
+### Qué se ve
+
+Una empresa puede ganar dinero sobre el papel y no tener con qué pagar la nómina. Este tema separa los dos planes que pide el modelo del proyecto: la previsión de resultados, que dice si hay beneficio, y la tesorería, que dice si hay dinero en cada momento.
+
+### Conceptos
+
+La diferencia está en cuatro palabras que se suelen mezclar:
+
+| Concepto | Qué es | Ejemplo |
+|---|---|---|
+| <mark>Ingreso</mark> | El valor de lo que se vende en el periodo | Un servicio facturado |
+| <mark>Cobro</mark> | El dinero que entra de verdad | El cliente paga la factura |
+| <mark>Gasto</mark> | Lo que se consume en el periodo | El alquiler o la amortización de un equipo |
+| <mark>Pago</mark> | El dinero que sale de verdad | La transferencia al proveedor |
+
+Una factura que se cobrará en marzo es ingreso en enero, pero no cobro. Comprar un ordenador es un pago de golpe, pero su gasto se reparte con la amortización. Recibir un préstamo trae dinero y una deuda, no una venta. Devolver la parte principal del préstamo reduce la caja, pero no es un gasto; los intereses sí lo son.
+
+La <mark>previsión de resultados</mark> sigue este esquema del modelo del plan:
+
+| Concepto |
+|---|
+| Ventas netas |
+| − costes variables de las ventas |
+| = margen de contribución |
+| − costes fijos (sin amortización) |
+| − amortización |
+| = resultado de explotación |
+| − gastos financieros (intereses) |
+| = resultado antes de impuestos |
+
+La <mark>tesorería</mark> se calcula mes a mes con una regla sencilla: saldo final = saldo inicial + cobros + entradas de financiación − todos los pagos. El saldo final de un mes es el inicial del siguiente. El dato que más importa es el mes con menos dinero, porque ahí se ve si hará falta financiación. El IGIC que se cobra a los clientes no es un ingreso propio: se ingresa luego en Hacienda.
+
+### Casos y ejemplos
+
+El supuesto del material de la UT2, con los números de enero:
+
+<ResultadoCaja />
+
+La empresa gana 1.400 euros en enero, pero solo tiene 300 en el banco. Los 4.000 euros facturados se cobrarán en marzo, el préstamo es dinero que habrá que devolver y el equipo se pagó entero aunque en enero solo cuenten 100 euros de amortización. Si en febrero hay que pagar otra vez 2.500 euros de gastos, faltará dinero aunque el negocio sea rentable.
+
+### Errores típicos
+
+- **Pensar que beneficio y dinero en el banco son lo mismo.** Se puede tener beneficio y quedarse sin caja.
+- **Contar el préstamo como ingreso.** Es financiación y deuda.
+- **Meter la devolución del principal como gasto.** Es un pago, pero no un gasto. Solo los intereses van a resultados.
+- **Tratar el IGIC cobrado como dinero propio.** Hay que ingresarlo en Hacienda.
+- **Olvidar el sueldo de los socios.** El modelo pide incluir la remuneración del trabajo; si alguien no cobra, hay que decirlo.
+
+### Prácticas de clase
+
+- **Proyecto de empresa: plan económico.** Previsión de resultados del primer año y tesorería mensual, con el mes de menor liquidez y la solución prevista.
+- **Presentación de los temas 3 y 4.** Parte del grupo explicó la inversión, la financiación y la cuenta de resultados prevista.
+
+### Repaso rápido
+
+<details>
+<summary>Facturas 2.000 euros en abril y te pagan en junio. ¿Cuándo hay ingreso y cuándo cobro?</summary>
+
+El ingreso es en abril, cuando se presta el servicio. El cobro, en junio.
+
+</details>
+<details>
+<summary>¿Es un gasto devolver 500 euros del principal de un préstamo?</summary>
+
+No. Es un pago que reduce la caja, pero no afecta al resultado. Solo los intereses son gasto.
+
+</details>
+<details>
+<summary>¿Cómo se calcula el saldo final de tesorería de un mes?</summary>
+
+Saldo inicial más cobros y entradas de financiación, menos todos los pagos.
+
+</details>
+
+### Fuentes
+
+1. Material de la UT2, apartado 9 y supuesto 4 (Campus del centro).
+2. Modelo de plan de empresa del módulo, apartados 11.3 y 11.4 (Campus del centro).
+
+## El umbral de rentabilidad y los escenarios
+
+### Qué se ve
+
+La pregunta más directa de todo el plan: cuántos clientes hacen falta para no perder dinero. Este tema calcula el umbral de rentabilidad, lo dibuja y comprueba qué pasa con el resultado si las cosas salen peor de lo previsto.
+
+### Conceptos
+
+Los <mark>costes fijos</mark> no cambian con las ventas dentro de un rango (el alquiler, los sueldos fijos, las licencias). Los <mark>costes variables</mark> crecen con cada cliente o unidad vendida (el consumo de servidor de cada cuenta, una comisión por venta). La diferencia entre el precio y el coste variable de cada unidad es el <mark>margen unitario</mark>, lo que deja cada venta para pagar los costes fijos.
+
+El <mark>umbral de rentabilidad</mark> es el número de ventas con el que los ingresos cubren justo todos los costes:
+
+> margen unitario = precio − coste variable unitario
+>
+> umbral = costes fijos ÷ margen unitario
+
+Por debajo del umbral hay pérdidas y por encima, beneficio. Si el resultado sale con decimales y se venden unidades completas, se redondea hacia arriba. Si el margen es cero o negativo, no hay umbral posible: cada venta empeora las cosas.
+
+<UmbralGrafico />
+
+Un plan serio no se queda en un solo cálculo. El modelo pide tres <mark>escenarios</mark> (prudente, base y favorable) y, para Canarias, una prueba concreta: qué pasa si sube el transporte o se retrasa un suministro.
+
+### Casos y ejemplos
+
+El ejemplo del gráfico: precio de 50 euros al mes, coste variable de 10 y costes fijos de 1.600. El margen es 50 − 10 = 40 euros y el umbral, 1.600 ÷ 40 = 40 clientes. Con 50 clientes, los ingresos son 2.500, los costes variables 500 y el resultado 2.500 − 500 − 1.600 = 400 euros.
+
+Escenarios sobre esa base:
+
+| Escenario | Supuesto | Resultado |
+|---|---|---|
+| Base | 50 clientes | 400 € |
+| Prudente | 20 % menos de clientes (40) | 0 € |
+| Prudente y con costes más altos | 40 clientes y costes fijos de 1.800 € | −200 € |
+
+Otro supuesto del material: una plataforma cobra 60 euros por cliente al mes, con un coste variable de 12 y costes fijos de 2.400. El margen es 48 y el umbral, 2.400 ÷ 48 = 50 clientes. Con 65 clientes gana 65 × 48 − 2.400 = 720 euros. Si baja el precio a 52, el margen queda en 40 y necesita 60 clientes: diez más para cubrir los mismos costes.
+
+### Errores típicos
+
+- **Olvidar el sueldo de los socios en los costes fijos.** Si no se incluye, el umbral sale demasiado bajo.
+- **Calcular solo el escenario optimista.** Hay que comprobar qué pasa con menos ventas y más costes.
+- **No comprobar si se puede llegar al umbral.** El modelo pide evidencias de que es posible vender esa cantidad.
+- **Bajar el precio sin recalcular.** Un precio menor reduce el margen y sube el número de clientes necesarios.
+- **Redondear hacia abajo.** 40,5 clientes son 41, no 40.
+
+### Prácticas de clase
+
+- **Proyecto de empresa.** Umbral de rentabilidad del proyecto, tres escenarios y la prueba de transporte o suministro para Canarias.
+- **Actividad del material de la UT2.** Recalcular el resultado con un 20 % menos de clientes y con costes fijos más altos.
+
+### Repaso rápido
+
+<details>
+<summary>Precio 30 euros, coste variable 10 y costes fijos 1.000. ¿Cuál es el umbral?</summary>
+
+El margen es 20 euros, así que el umbral es 1.000 ÷ 20 = 50 unidades.
+
+</details>
+<details>
+<summary>¿Qué pasa con el umbral si sube el coste variable?</summary>
+
+Baja el margen unitario y hacen falta más ventas para cubrir los costes fijos.
+
+</details>
+<details>
+<summary>¿Para qué sirven los escenarios prudente y favorable?</summary>
+
+Para comprobar si el negocio aguanta con menos ventas o más costes, y cuánto mejora si todo sale bien.
+
+</details>
+
+### Fuentes
+
+1. Material de la UT2, apartado 9 y supuesto 3 (Campus del centro).
+2. Modelo de plan de empresa del módulo, apartados 11.5 y 11.6 (Campus del centro).

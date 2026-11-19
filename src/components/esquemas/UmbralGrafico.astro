@@ -1,0 +1,29 @@
+---
+import Esquema from '../Esquema.astro';
+// Ejemplo del material: precio 50 €/mes, coste variable 10 €, costes fijos 1.600 €/mes.
+// Escala: x = 70 + clientes × 10 (0 a 60); y = 260 − euros × 0,08 (0 a 3.000).
+const ticksX = [0, 20, 40, 60];
+const ticksY = [1000, 2000, 3000];
+---
+<Esquema titulo="El umbral de rentabilidad" alto={300} ancho={760}
+  descripcion="Un gráfico con los clientes en horizontal, de 0 a 60, y los euros en vertical, de 0 a 3.000. Los costes fijos son una línea plana en 1.600 euros. Los costes totales parten de 1.600 y suben 10 euros por cliente. Los ingresos parten de cero y suben 50 euros por cliente. Se cruzan en 40 clientes y 2.000 euros: por debajo hay pérdidas y por encima, beneficio."
+  pie="Con 50 € de precio, 10 € de coste variable y 1.600 € de costes fijos, hacen falta 40 clientes al mes para no perder dinero.">
+  <path d="M70 20 V260 H690" class="trazo" />
+  {ticksX.map((t) => <text x={70 + t * 10} y="280" text-anchor="middle" class="t-suave">{t}</text>)}
+  {ticksY.map((t) => <text x="62" y={264 - t * 0.08} text-anchor="end" class="t-suave">{t.toLocaleString('es-ES')}</text>)}
+  <text x="690" y="250" text-anchor="end" class="t-suave">clientes al mes</text>
+  <text x="78" y="28" class="t-suave">euros</text>
+
+  <path d="M70 132 H670" class="trazo discontinuo" />
+  <text x="676" y="136" class="t-suave">fijos</text>
+  <path d="M70 132 L670 84" class="trazo" />
+  <text x="676" y="88">costes</text>
+  <path d="M70 260 L670 20" class="trazo-acento" />
+  <text x="676" y="24" class="t-acento">ingresos</text>
+
+  <path d="M470 100 V260" class="trazo discontinuo" />
+  <circle cx="470" cy="100" r="6" class="relleno-acento" />
+  <text x="482" y="118" class="t-acento">umbral: 40 clientes</text>
+  <text x="250" y="168" text-anchor="middle" class="t-suave">pérdidas</text>
+  <text x="600" y="72" text-anchor="middle" class="t-suave">beneficio</text>
+</Esquema>

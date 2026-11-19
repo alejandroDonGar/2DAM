@@ -1,0 +1,25 @@
+---
+import Esquema from '../Esquema.astro';
+const activo = ['Local, si se compra', 'Mobiliario y vehículos', 'Equipos informáticos', 'Software y patentes', 'Dinero en caja y en el banco'];
+const financiacion: [string, string][] = [['Aportaciones de los socios', 'patrimonio neto: no se devuelve'], ['Préstamos y otras deudas', 'pasivo: se devuelve']];
+---
+<Esquema titulo="Inversión y financiación en el balance" alto={260}
+  descripcion="Dos columnas. A la izquierda, el activo: en qué se ha invertido el dinero, como el local, el mobiliario, los equipos, el software o el dinero en caja. A la derecha, de dónde ha salido: las aportaciones de los socios, que son patrimonio neto, y los préstamos, que son pasivo. Abajo, la igualdad activo igual a patrimonio neto más pasivo."
+  pie="Cada euro invertido a la izquierda tiene que haber salido de algún sitio de la derecha.">
+  <rect x="20" y="16" width="330" height="190" rx="10" class="caja" />
+  <text x="40" y="44" class="t-titulo">Activo</text>
+  <text x="104" y="44" class="t-suave">en qué se invierte</text>
+  {activo.map((a, i) => <text x="40" y={78 + i * 25}>{a}</text>)}
+
+  <rect x="370" y="16" width="330" height="190" rx="10" class="caja" />
+  <text x="390" y="44" class="t-titulo">Patrimonio neto y pasivo</text>
+  <text x="390" y="64" class="t-suave">de dónde sale el dinero</text>
+  {financiacion.map(([f, d], i) => (
+    <g>
+      <text x="390" y={104 + i * 52}>{f}</text>
+      <text x="390" y={124 + i * 52} class="t-suave">{d}</text>
+    </g>
+  ))}
+
+  <text x="360" y="240" text-anchor="middle" class="t-acento">Activo = Patrimonio neto + Pasivo</text>
+</Esquema>

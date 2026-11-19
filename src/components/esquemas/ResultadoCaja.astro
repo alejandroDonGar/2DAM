@@ -1,0 +1,32 @@
+---
+import Esquema from '../Esquema.astro';
+const resultado: [string, string][] = [['+ 4.000', 'servicios facturados'], ['− 2.500', 'gastos del mes'], ['− 100', 'amortización del equipo']];
+const caja: [string, string][] = [['1.000', 'saldo inicial'], ['+ 3.000', 'préstamo recibido'], ['− 2.500', 'gastos pagados'], ['− 1.200', 'equipo pagado']];
+---
+<Esquema titulo="Beneficio y caja en el mismo mes" alto={280}
+  descripcion="Dos cuentas del mes de enero. El resultado: 4.000 euros facturados menos 2.500 de gastos y 100 de amortización dan 1.400 de beneficio. La caja: 1.000 de saldo inicial más 3.000 del préstamo, menos 2.500 de gastos y 1.200 del equipo, dejan 300 euros en el banco."
+  pie="La factura se cobra en marzo y el préstamo no es una venta: hay beneficio, pero en el banco quedan 300 euros.">
+  <text x="30" y="36" class="t-titulo">Resultado de enero</text>
+  {resultado.map(([n, d], i) => (
+    <g>
+      <text x="120" y={72 + i * 30} text-anchor="end">{n}</text>
+      <text x="134" y={72 + i * 30} class="t-suave">{d}</text>
+    </g>
+  ))}
+  <path d="M30 192 H330" class="trazo" />
+  <text x="120" y="222" text-anchor="end" class="t-acento">= 1.400</text>
+  <text x="134" y="222" class="t-acento">de beneficio</text>
+
+  <path d="M360 20 V240" class="trazo discontinuo" />
+
+  <text x="390" y="36" class="t-titulo">Caja de enero</text>
+  {caja.map(([n, d], i) => (
+    <g>
+      <text x="480" y={72 + i * 30} text-anchor="end">{n}</text>
+      <text x="494" y={72 + i * 30} class="t-suave">{d}</text>
+    </g>
+  ))}
+  <path d="M390 192 H690" class="trazo" />
+  <text x="480" y="222" text-anchor="end" class="t-acento">= 300</text>
+  <text x="494" y="222" class="t-acento">en el banco</text>
+</Esquema>
