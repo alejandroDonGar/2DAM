@@ -1,28 +1,24 @@
 /* Apuntes 2DAM: «archivador con fosforitos». Oscuro por defecto, claro opcional. */
 :root {
-  --fondo: #1A2030; --capa: #222A3C; --codigo: #151B28;
-  --texto: #E3E6ED; --suave: #9AA3B5; --linea: #313A50;
-  --tinta-sobre-resaltador: #1F2A44;
-  --resaltador: #FFE14A;            /* lo cambia cada asignatura */
+  /* Misma paleta que el CV (Niebla / Pizarra) para que todo parezca una sola web. */
+  --fondo: #E5E8E3; --texto: #2A3A32; --acento: #2E6488; --codigo: #F5F7F4;  /* claro: los comentarios de Shiki necesitan este fondo para 4,5:1 */
+  --suave: color-mix(in srgb, var(--texto) 78%, var(--fondo));
+  --linea: color-mix(in srgb, var(--texto) 16%, var(--fondo));
+  --capa: color-mix(in srgb, var(--texto) 4%, var(--fondo));
+  --resaltador: var(--acento);                 /* botones, marcas y líneas activas */
+  --tinta-sobre-resaltador: var(--fondo);
+  --marca: color-mix(in srgb, var(--acento) 22%, transparent);
   --serif: "Source Serif 4", Georgia, serif;
-  --sans: "Schibsted Grotesk", system-ui, sans-serif;
+  --sans: "Mona Sans", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --rapido: 180ms ease;
-  color-scheme: dark;
-}
-[data-tema="claro"] {
-  --fondo: #F2F3F5; --capa: #FFFFFF; --codigo: #E8EAEE;
-  --texto: #1F2A44; --suave: #5A6275; --linea: #D7DBE2; --foco: #1F2A44;
   color-scheme: light;
 }
-.ad   { --resaltador: #FFE14A; }
-.psp  { --resaltador: #8BF0A8; }
-.di   { --resaltador: #7FE3F2; }
-.daw  { --resaltador: #FFB46B; }
-.pmdm { --resaltador: #FF9ACB; }
-.sge  { --resaltador: #C3B1FF; }
-.ipe  { --resaltador: #D4F27A; }
-[data-tema="claro"] a { text-decoration-color: color-mix(in srgb, var(--resaltador) 55%, var(--texto)); }
+[data-paleta="pizarra"] {
+  --fondo: #222831; --texto: #DDE2E8; --acento: #7DB4DC; --codigo: #1A1F27;
+  --marca: color-mix(in srgb, var(--acento) 26%, transparent);
+  color-scheme: dark;
+}
 
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--fondo); color: var(--texto); font: 400 1.0625rem/1.7 var(--serif); }
@@ -36,7 +32,7 @@ code, pre { font-family: var(--mono); font-size: .875rem; font-variant-ligatures
 
 /* El fosforito: solo para conceptos definidos */
 mark, .resaltado {
-  color: var(--tinta-sobre-resaltador); background: linear-gradient(var(--resaltador), var(--resaltador)) no-repeat 0 60% / 100% 75%;
+  color: inherit; background: linear-gradient(var(--marca), var(--marca)) no-repeat 0 60% / 100% 75%;
   padding: 0 .15em; border-radius: 2px;
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -205,8 +201,8 @@ figure.codigo pre { margin: 0; padding: 14px 16px; overflow-x: auto; line-height
 
 /* Código resaltado por Shiki con dos temas */
 .prosa pre.astro-code { margin: 1.2rem 0; padding: 14px 16px; border: 1px solid var(--linea); border-radius: 8px; background: var(--codigo) !important; overflow-x: auto; line-height: 1.55; }
-.astro-code span { color: var(--shiki-dark); }
-[data-tema="claro"] .astro-code span { color: var(--shiki-light); }
+.astro-code span { color: var(--shiki-light); }
+[data-paleta="pizarra"] .astro-code span { color: var(--shiki-dark); }
 figure.codigo pre.astro-code { margin: 0; border: 0; border-radius: 0; }
 
 /* Paso a paso */

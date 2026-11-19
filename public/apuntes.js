@@ -1,12 +1,13 @@
-// Tema: oscuro por defecto; si se elige claro, se recuerda (el <head> lo aplica antes de pintar).
+// Tema: el mismo que el CV (niebla = claro, pizarra = oscuro) y la misma clave en localStorage,
+// así al pasar del CV a los apuntes se mantiene. El <head> lo aplica antes de pintar.
 const raiz = document.documentElement;
 const btn = document.querySelector('.tema-btn');
-const pintar = () => { btn.textContent = raiz.dataset.tema === 'claro' ? 'Tema oscuro' : 'Tema claro'; };
+const pintar = () => { btn.textContent = raiz.dataset.paleta === 'pizarra' ? 'Tema claro' : 'Tema oscuro'; };
 if (btn) {
   pintar();
   btn.addEventListener('click', () => {
-    if (raiz.dataset.tema === 'claro') { delete raiz.dataset.tema; localStorage.removeItem('tema'); }
-    else { raiz.dataset.tema = 'claro'; localStorage.setItem('tema', 'claro'); }
+    raiz.dataset.paleta = raiz.dataset.paleta === 'pizarra' ? 'niebla' : 'pizarra';
+    localStorage.setItem('tema', raiz.dataset.paleta);
     pintar();
   });
 }

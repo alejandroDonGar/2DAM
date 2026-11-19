@@ -7,6 +7,6 @@ export default defineConfig({
   integrations: [mdx()],
   markdown: {
     // Mismos colores de código en los dos temas; los cambia la variable CSS
-    shikiConfig: { themes: { light: 'github-light', dark: 'github-dark-dimmed' }, defaultColor: false },
+    shikiConfig: { themes: { light: 'github-light-high-contrast', dark: 'github-dark-default' }, defaultColor: false },
   },
 });
