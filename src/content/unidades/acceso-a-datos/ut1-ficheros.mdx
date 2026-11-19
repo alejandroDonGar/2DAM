@@ -1,0 +1,934 @@
+---
+titulo: Ficheros y formatos
+etiqueta: UT1
+orden: 1
+entrada: Guardar productos en un fichero y leerlos después, primero en CSV y luego en JSON y XML, hasta que cambiar de formato sea cambiar una línea de configuración.
+cuando: 22 sept. a 9 oct.
+ejercicios: catalogo-productos-repositorios, file-lab y examen RA1
+ruta: { texto: Ficheros en CodeLearn, url: "https://codelearnacademy.github.io/ficheros/" }
+crud: 1
+---
+import Fragmento from '../../../components/Fragmento.astro';
+import Pasos from '../../../components/Pasos.astro';
+import Paso from '../../../components/Paso.astro';
+
+## Path, Files y texto
+
+### Qué se ve
+
+Antes de hablar de CSV o JSON hay que saber abrir un fichero, leerlo y cerrarlo bien. Este tema separa dos preguntas que al principio parecen la misma: dónde está el fichero y cómo lo abro, y cómo interpreto lo que hay dentro. La primera la resuelve Java con `Path` y `Files`. La segunda la resolverán las librerías de los temas siguientes.
+
+### Conceptos
+
+Un <mark>Path</mark> es la descripción de una ruta. Crearlo no abre ni comprueba nada: `Path.of("data", "productos.csv")` es válido aunque la carpeta `data` no exista. Por eso se construye con varias partes y no pegando cadenas con `"/"` o `"\\"`; Java pone el separador que toque en cada sistema operativo.
+
+Las rutas pueden ser absolutas (`C:\...` o `/home/...`) o relativas (`data/productos.csv`). Una ruta relativa se resuelve desde el <mark>directorio de trabajo</mark>, que es la carpeta desde la que se lanzó el programa, no la carpeta del `.java`. Ese detalle explica el error más repetido del tema: el programa funciona desde el IDE y falla desde la terminal, o al revés, porque cada uno arranca en una carpeta distinta. Imprimir `path.toAbsolutePath()` dice exactamente qué fichero está intentando abrir Java.
+
+`Path` también sabe trabajar con rutas sin tocar el disco:
+
+| Método | Qué hace |
+|---|---|
+| `resolve("x.csv")` | Añade un trozo a la ruta |
+| `getParent()` / `getFileName()` | Carpeta que la contiene y nombre del fichero |
+| `normalize()` | Quita los `.` y `..` sobrantes |
+| `relativize(otra)` | Calcula cómo llegar de una ruta a otra |
+| `toAbsolutePath()` | La ruta completa desde la raíz |
+
+La clase `Files` es la que actúa sobre el sistema de ficheros: comprueba (`exists`, `isRegularFile`), crea (`createFile`, `createDirectory`, `createDirectories`), copia, mueve, borra y lee o escribe. La diferencia entre `createDirectory` y `createDirectories` importa: la primera falla si falta la carpeta padre, la segunda crea todo el camino y no protesta si ya existe.
+
+Para texto hay tres formas de leer, según el tamaño del fichero:
+
+- `Files.readString(path)` carga todo en un `String`. Cómodo para ficheros pequeños.
+- `Files.readAllLines(path)` devuelve una `List<String>`, también con todo en memoria.
+- `Files.lines(path)` devuelve un `Stream<String>` que va leyendo según se pide. Sirve para ficheros grandes, pero deja el fichero abierto hasta que se cierra el stream.
+
+En todas conviene pasar `StandardCharsets.UTF_8`. Hasta Java 17 el juego de caracteres por defecto dependía del sistema (en Windows solía ser `windows-1252`), así que un fichero con tildes escrito en un equipo salía con símbolos raros en otro. Java 18 cambió el valor por defecto a UTF-8, pero escribirlo de forma explícita deja claro qué se espera y funciona igual en cualquier versión.
+
+Leer o escribir puede fallar por muchas razones ajenas al programa: el fichero no existe, no hay permisos, el disco está lleno. Java las agrupa en <mark>IOException</mark>, una excepción comprobada: el compilador obliga a capturarla o a declararla con `throws`. Capturarla solo tiene sentido si se puede hacer algo útil, como dar un mensaje con la ruta o devolver un valor por defecto. Un `catch` vacío esconde el error y deja el programa en un estado que nadie entiende.
+
+Lo que se abre hay que cerrarlo, también si algo falla a mitad. Para eso está el <mark>try-with-resources</mark>: los recursos declarados entre los paréntesis del `try` se cierran solos al salir del bloque, en orden inverso al de apertura, haya excepción o no. Funciona con cualquier clase que implemente `AutoCloseable`, que incluye lectores, escritores, streams y los parsers de CSV que vienen después.
+
+El último concepto del bloque es Maven. Java trae `Path`, `Files` y `Properties`, pero no un lector de CSV completo ni Jackson para JSON y XML. Esas librerías se declaran como <mark>dependencias</mark> en el `pom.xml` y Maven las descarga y las pone en el classpath. Un `import` no descarga nada: solo dice qué clase se usa, y si la dependencia no está en el `pom.xml` el `import` no compila.
+
+### Código paso a paso
+
+En `file-lab` cada operación con rutas está envuelta en un método pequeño. Calcular la extensión, por ejemplo, combina `getFileName()` con un poco de manejo de cadenas:
+
+<Fragmento archivo="PathService.java" ejercicio="file-lab-alumnado" ruta="file-lab-alumnado/src/main/java/es/codelearnacademy/filelab/io/PathService.java">
+
+```java
+public String extension(Path path) {
+    String archivo = nombre(path);           // getFileName() de la ruta
+    int punto = archivo.lastIndexOf('.');
+    if (punto == -1) {
+        return "";                           // «README» no tiene extensión
+    }
+    return archivo.substring(punto + 1);
+}
+```
+
+</Fragmento>
+
+Para añadir texto al final de un fichero sin borrar lo anterior se pasa una opción de apertura. Sin `APPEND`, `writeString` sustituye el contenido entero:
+
+<Fragmento archivo="TextFileService.java" ejercicio="file-lab-alumnado" ruta="file-lab-alumnado/src/main/java/es/codelearnacademy/filelab/io/TextFileService.java">
+
+```java
+public boolean anexar(Path path, String contenido) {
+    try {
+        Files.writeString(path, contenido, StandardCharsets.UTF_8, StandardOpenOption.APPEND);
+        return true;
+    } catch (IOException e) {
+        return false;   // el que llama decide qué hacer si no se pudo escribir
+    }
+}
+```
+
+</Fragmento>
+
+Y así queda una lectura con try-with-resources. El `BufferedReader` se cierra al salir del bloque aunque `readLine()` lance una excepción:
+
+```java
+Path fichero = Path.of("data", "entrada.txt");
+try (BufferedReader reader = Files.newBufferedReader(fichero, StandardCharsets.UTF_8)) {
+    System.out.println(reader.readLine());
+} catch (IOException e) {
+    System.out.println("No se pudo leer " + fichero.toAbsolutePath() + ": " + e.getMessage());
+}
+```
+
+### Errores típicos
+
+- **Pegar rutas con `"/"`.** Funciona en Linux y falla en Windows, o al revés. `Path.of("data", "productos.csv")` o `carpeta.resolve("productos.csv")` lo evitan.
+- **No encontrar un fichero que sí existe.** Casi siempre es el directorio de trabajo. Imprime `toAbsolutePath()` y compara con dónde está de verdad.
+- **Tildes rotas al leer.** El fichero se escribió con un juego de caracteres y se leyó con otro. Pasa `StandardCharsets.UTF_8` al leer y al escribir.
+- **Usar `Files.lines` fuera de un try-with-resources.** El fichero queda abierto. En Windows eso impide después borrarlo o moverlo.
+- **`createDirectory` con carpetas anidadas.** Lanza `NoSuchFileException` si falta el padre. Usa `createDirectories`.
+
+### Prácticas de clase
+
+- **file-lab-alumnado**, paquete `io`. Cuatro servicios (`PathService`, `FilesService`, `TextFileService` y `FileService`, este último con la clase antigua `File`) que había que completar hasta pasar los tests. Elegí que los métodos de escritura devuelvan `boolean` y los de lectura un valor vacío (`""`, `List.of()`, `Optional.empty()`) en lugar de propagar la `IOException`, porque así lo pedían los tests del ejercicio. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/file-lab-alumnado)
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué pasa si haces `Path.of("no-existe.txt")`?</summary>
+
+Nada. `Path` solo describe la ruta; el error aparece cuando `Files` intenta leer o escribir ese fichero.
+
+</details>
+<details>
+<summary>¿Cuándo usarías `Files.lines` en vez de `Files.readAllLines`?</summary>
+
+Con ficheros grandes, porque `lines` va leyendo poco a poco y `readAllLines` carga todo en memoria. A cambio, `lines` tiene que ir dentro de un try-with-resources.
+
+</details>
+<details>
+<summary>¿Qué diferencia hay entre añadir una dependencia en el `pom.xml` y escribir un `import`?</summary>
+
+La dependencia hace que la librería exista en el proyecto (Maven la descarga y la añade al classpath). El `import` solo indica qué clase de esa librería usa el archivo.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, ruta de ficheros, lecciones 1 a 5](https://codelearnacademy.github.io/ficheros/leccion01/)
+2. [Javadoc de `java.nio.file.Files` (Java 21)](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/nio/file/Files.html)
+3. [Javadoc de `java.nio.file.Path` (Java 21)](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/nio/file/Path.html)
+4. [Tutorial de Oracle sobre try-with-resources](https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html)
+5. [JEP 400: UTF-8 por defecto desde Java 18](https://openjdk.org/jeps/400)
+
+## CSV y el primer CRUD
+
+### Qué se ve
+
+Con un modelo `Producto` y la librería Apache Commons CSV se monta el primer CRUD completo: listar, buscar, crear, modificar y borrar productos guardados en `productos.csv`. Todo va en una sola clase, `CsvCrudDemo`, a propósito: el tema 3 parte de ella para ver qué hay que separar.
+
+### Conceptos
+
+El <mark>modelo</mark> es la clase que representa los datos de la aplicación, sin saber nada de ficheros. En la ruta del profesor es un `record`:
+
+```java
+public record Producto(Long id, String nombre, Double precio) {}
+```
+
+Un `record` genera solo el constructor, los métodos de acceso (`id()`, `nombre()`, `precio()`), `equals`, `hashCode` y `toString`. Sus campos no se pueden cambiar después de crearlo, así que modificar un producto significa crear otro con los valores nuevos y sustituirlo en la lista. El mismo `Producto` se usará con CSV, JSON y XML, y eso permite ver qué cambia de verdad al cambiar de formato.
+
+Un fichero <mark>CSV</mark> guarda una tabla en texto: una línea por registro y los campos separados por comas, normalmente con una primera línea de cabecera.
+
+```text
+id,nombre,precio
+1,Teclado,49.99
+2,"Monitor, 27 pulgadas",219.90
+```
+
+La segunda fila parece tener cuatro campos, pero la coma de `"Monitor, 27 pulgadas"` va entre comillas y forma parte del texto. Esas reglas de comillas y escapes están recogidas en la RFC 4180, y son la razón de no leer un CSV real con `linea.split(",")`: en cuanto un nombre lleva una coma, el `split` parte el campo en dos y los precios acaban en la columna equivocada.
+
+Apache Commons CSV ya conoce esas reglas. Se usa con cuatro piezas:
+
+| Clase | Para qué sirve |
+|---|---|
+| `CSVFormat` | Describe el dialecto: separador, si hay cabecera, qué columnas escribir |
+| `CSVParser` | Recorre el fichero y entrega los registros ya interpretados |
+| `CSVRecord` | Una fila; sus campos se leen por nombre de columna con `get("precio")` |
+| `CSVPrinter` | Escribe filas poniendo comillas y escapes cuando hacen falta |
+
+Leer por nombre de columna en lugar de por posición tiene una ventaja: si alguien reordena las columnas del fichero, el código sigue funcionando. Para eso el formato de lectura se configura con `setHeader()` (la primera fila son los nombres) y `setSkipHeaderRecord(true)` (no devolverla como dato).
+
+El parser solo convierte texto en campos. Pasar `"49.99"` a `Double`, decidir qué hacer con una fila vacía o rechazar un precio negativo es trabajo de la aplicación, y conviene distinguir los <mark>errores de formato</mark> (el fichero está mal escrito) de los <mark>errores de negocio</mark> (el fichero es correcto pero el dato no vale).
+
+Con lectura y escritura resueltas, el CRUD sigue siempre el mismo esquema: cargar toda la colección, cambiar lo que toque en memoria y reescribir el fichero si hubo cambios. Para un catálogo de clase es suficiente; con millones de filas no lo sería, porque cada operación lee y escribe el fichero entero.
+
+### Código paso a paso
+
+<Pasos nombre="Construcción de CsvCrudDemo">
+<Paso titulo="1. Leer">
+
+`findAll` abre el fichero con try-with-resources (el lector y el parser se cierran solos) y convierte cada `CSVRecord` en un `Producto`. Si el fichero aún no existe, el catálogo está vacío.
+
+<Fragmento archivo="CsvCrudDemo.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/CsvCrudDemo.java">
+
+```java
+public List<Producto> findAll() throws IOException {
+    if (Files.notExists(path)) return new ArrayList<>();
+    List<Producto> result = new ArrayList<>();
+    try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8);
+         CSVParser parser = inputFormat.parse(reader)) {
+        for (CSVRecord row : parser) {
+            result.add(new Producto(
+                    Long.parseLong(row.get("id")),
+                    row.get("nombre"),
+                    Double.parseDouble(row.get("precio"))));
+        }
+    }
+    return result;
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="2. Escribir">
+
+`saveAll` reescribe el fichero completo. `CSVPrinter` pone la cabecera y las comillas cuando un nombre lleva comas.
+
+<Fragmento archivo="CsvCrudDemo.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/CsvCrudDemo.java">
+
+```java
+private void saveAll(List<Producto> items) throws IOException {
+    Path parent = path.getParent();
+    if (parent != null) Files.createDirectories(parent);
+    try (Writer writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8);
+         CSVPrinter printer = new CSVPrinter(writer, outputFormat)) {
+        for (Producto p : items) printer.printRecord(p.id(), p.nombre(), p.precio());
+    }
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="3. El CRUD">
+
+Crear, modificar y borrar repiten la misma idea: leer todo, cambiar la lista y guardar. Así queda `update`:
+
+<Fragmento archivo="CsvCrudDemo.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/CsvCrudDemo.java">
+
+```java
+public boolean update(Producto producto) throws IOException {
+    List<Producto> items = findAll();                 // lee el fichero entero
+    for (int i = 0; i < items.size(); i++) {
+        if (items.get(i).id() == producto.id()) {
+            items.set(i, producto);                   // el record no se modifica: se sustituye
+            saveAll(items);
+            return true;
+        }
+    }
+    return false;
+}
+```
+
+</Fragmento>
+
+</Paso>
+</Pasos>
+
+### Errores típicos
+
+- **Leer con `split(",")`.** Rompe cualquier campo que lleve comas o comillas. Usa `CSVParser`.
+- **Construir líneas con `+ ","`.** Es el mismo problema al escribir; `CSVPrinter` pone las comillas por ti.
+- **Recibir la cabecera como si fuera un producto.** `Long.parseLong("id")` lanza `NumberFormatException`. Falta `setSkipHeaderRecord(true)`.
+- **Precios con coma decimal.** `Double.parseDouble("49,99")` falla. En el fichero los decimales van con punto.
+
+### Prácticas de clase
+
+- **catalogo-productos-repositorios.** `CsvCrudDemo` es la primera versión del CRUD, sin interfaces ni genéricos, y la dejé en el proyecto para poder comparar con lo que vino después. Lee el fichero entero en cada operación y lanza una excepción si se intenta crear un id repetido. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/catalogo-productos-repositorios)
+- **file-lab-alumnado**, paquete `csv`. Repositorios CSV de `Producto` y `Vehiculo` con el mismo esquema de lectura y escritura. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/file-lab-alumnado)
+
+### Repaso rápido
+
+<details>
+<summary>¿Por qué `2,"Monitor, 27 pulgadas",219.90` rompe un `split(",")`?</summary>
+
+Porque el `split` no sabe que la coma entre comillas es parte del nombre. Devuelve cuatro trozos y el precio queda en la posición equivocada.
+
+</details>
+<details>
+<summary>¿Qué ventaja tiene leer los campos por nombre de columna?</summary>
+
+Que el código sigue funcionando aunque se cambie el orden de las columnas en el fichero.
+
+</details>
+<details>
+<summary>¿Cómo se "modifica" un `record`?</summary>
+
+No se modifica: se crea uno nuevo con los valores cambiados y se pone en el lugar del antiguo dentro de la lista.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, ruta de ficheros, lecciones 6 a 11](https://codelearnacademy.github.io/ficheros/leccion06/)
+2. [Guía de usuario de Apache Commons CSV](https://commons.apache.org/proper/commons-csv/user-guide.html)
+3. [RFC 4180: formato CSV](https://www.rfc-editor.org/rfc/rfc4180)
+4. [Records en Java (JEP 395)](https://openjdk.org/jeps/395)
+
+## Del CRUD al repositorio
+
+### Qué se ve
+
+`CsvCrudDemo` funciona, pero mezcla cuatro trabajos en una clase: dónde está el fichero, cómo se lee CSV, cómo se convierte una fila en `Producto` y la lógica del CRUD. Este tema la reparte en piezas sin cambiar lo que hace. Al final, la parte de CSV queda reducida a dos métodos.
+
+### Conceptos
+
+Un <mark>repositorio</mark> es la clase que esconde dónde y cómo se guardan los datos. El resto del programa le pide "dame todos" o "guarda este" y no sabe si detrás hay un CSV, un JSON o una base de datos. Es la idea que se repite en toda la asignatura: en la UT2 el repositorio usará JDBC y en la UT3 JPA, y el código que lo llama casi no cambiará.
+
+La refactorización sale de mirar qué se repite en las cinco operaciones de `CsvCrudDemo`. Todas siguen el mismo patrón: leer la colección, buscar, añadir, sustituir o quitar, y escribir si hubo cambios. Solo dos momentos dependen del formato: convertir el fichero en una lista y convertir la lista en fichero. De ahí salen las piezas:
+
+1. Un <mark>contrato</mark>, la interfaz `IRepository<T, ID>`, con las cinco operaciones y sin mencionar ficheros. No declara `throws IOException`, porque quien usa el repositorio no tiene por qué saber que hay ficheros; si algo falla al leer, la implementación lo convierte en una excepción no comprobada.
+2. Una interfaz de dominio, `IProductoRepository extends IRepository<Producto, Long>`, que fija los tipos para productos y es la que usa el resto del programa.
+3. Una clase abstracta, `AbstractFileRepository<T, ID>`, con todo el CRUD hecho sobre una lista en memoria. Deja dos métodos sin implementar, `readAll()` y `writeAll()`.
+4. Las clases concretas, como `CsvProductoRepository`, que solo rellenan esos dos métodos.
+
+A este reparto se le llama <mark>patrón plantilla</mark> (template method): la clase madre fija los pasos del algoritmo y las hijas aportan los que cambian. El beneficio se ve en el tema siguiente, cuando JSON y XML se añaden escribiendo solo `readAll` y `writeAll`.
+
+Hay otro cambio de comportamiento. `CsvCrudDemo` relee el fichero en cada búsqueda; el repositorio lo lee una vez, guarda la lista en memoria y solo escribe cuando algo cambia. Es más rápido, con una contrapartida que conviene tener presente: si otro programa modifica el fichero mientras el repositorio está abierto, el repositorio no se entera.
+
+### Código paso a paso
+
+<Pasos nombre="De CsvCrudDemo al repositorio">
+<Paso titulo="1. Todo junto">
+
+El punto de partida. Cada búsqueda vuelve a leer el CSV, y el CRUD está mezclado con `CSVParser` y `CSVPrinter`.
+
+<Fragmento archivo="CsvCrudDemo.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/CsvCrudDemo.java">
+
+```java
+public class CsvCrudDemo {
+    public record Producto(long id, String nombre, double precio) {}
+
+    public Optional<Producto> findById(long id) throws IOException {
+        // cada búsqueda vuelve a leer el CSV completo
+        return findAll().stream().filter(p -> p.id() == id).findFirst();
+    }
+
+    public void create(Producto producto) throws IOException {
+        List<Producto> items = findAll();
+        items.add(producto);
+        saveAll(items);   // y aquí dentro, CSVPrinter
+    }
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="2. El contrato">
+
+Las cinco operaciones, sin decir cómo se guardan. `T` es el tipo de la entidad y `ID` el de su identificador.
+
+<Fragmento archivo="IRepository.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/repository/IRepository.java">
+
+```java
+public interface IRepository<T, ID> {
+    List<T> findAll();
+    Optional<T> findById(ID id);
+    boolean create(T entity);
+    boolean update(T entity);
+    boolean delete(ID id);
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="3. El CRUD común">
+
+La clase abstracta escribe el CRUD una sola vez. La lista se carga la primera vez que se usa, no en el constructor (el porqué está en los errores típicos).
+
+<Fragmento archivo="AbstractFileRepository.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/repository/file/AbstractFileRepository.java">
+
+```java
+public abstract class AbstractFileRepository<T extends Identifiable<ID>, ID>
+        implements IRepository<T, ID> {
+
+    protected abstract List<T> readAll();
+    protected abstract void writeAll(List<T> elements);
+
+    @Override
+    public boolean create(T element) {
+        if (element == null || element.id() == null || findById(element.id()).isPresent()) {
+            return false;
+        }
+        lista().add(element);
+        writeAll(lista());
+        return true;
+    }
+
+    @Override
+    public Optional<T> findById(ID id) {
+        if (id == null) return Optional.empty();
+        // equals y no == : con Long, == compara objetos
+        return lista().stream().filter(p -> p.id().equals(id)).findFirst();
+    }
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="4. Solo el formato">
+
+Lo que queda de CSV: traducir filas a productos y productos a filas. Los errores de E/S se envuelven en `UncheckedIOException` porque el contrato no declara `throws`.
+
+<Fragmento archivo="CsvProductoRepository.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/repository/file/csv/CsvProductoRepository.java">
+
+```java
+public class CsvProductoRepository
+        extends AbstractFileRepository<Producto, Long> implements IProductoRepository {
+
+    @Override
+    protected List<Producto> readAll() {
+        List<Producto> productos = new ArrayList<>();
+        try (Reader reader = Files.newBufferedReader(getPath(), StandardCharsets.UTF_8);
+             CSVParser parser = inputFormat.parse(reader)) {
+            for (CSVRecord row : parser) {
+                productos.add(new Producto(Long.parseLong(row.get("id")),
+                        row.get("nombre"), Double.parseDouble(row.get("precio"))));
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return productos;
+    }
+}
+```
+
+</Fragmento>
+
+</Paso>
+</Pasos>
+
+### Errores típicos
+
+- **Comparar ids `Long` con `==`.** `==` compara si son el mismo objeto. Java reutiliza los `Long` entre -128 y 127, así que con ids pequeños parece funcionar y a partir de 128 deja de encontrar productos. Con objetos, siempre `equals` (o `Objects.equals` si puede haber `null`).
+- **Leer el fichero desde el constructor de la clase abstracta.** El constructor de la madre se ejecuta antes de que se inicialicen los atributos de la hija, así que `readAll()` se encuentra el `CSVFormat` o el `ObjectMapper` todavía a `null`. Por eso en `catalogo` la lista se carga la primera vez que se usa. La ruta del profesor lo resuelve de otra forma: cada hija llama a `readAll()` al final de su propio constructor.
+- **Dejar `throws IOException` en la interfaz.** Obliga a todo el programa a tratar errores de ficheros aunque mañana el repositorio use una base de datos.
+- **Devolver la lista interna en `findAll()`.** Quien la recibe podría cambiarla sin pasar por el repositorio. Devuelve una copia.
+
+### Prácticas de clase
+
+- **catalogo-productos-repositorios.** La refactorización completa: `IRepository`, `IProductoRepository`, `AbstractFileRepository` y los repositorios CSV, JSON y XML. Los tests prueban el mismo CRUD contra los tres formatos con un único método que recibe cómo crear cada repositorio, y usan `@TempDir` para no tocar los datos reales. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/catalogo-productos-repositorios)
+- **Examen RA1, fileLab-personas.** El examen daba hechos `IRepository` y `AbstractFileRepository`, y había que completar los repositorios de `Persona` en los tres formatos. Era justo el último paso de este tema: escribir solo `readAll` y `writeAll`. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/EXAMENES)
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué métodos tiene que escribir cada formato si hereda de `AbstractFileRepository`?</summary>
+
+`readAll()` y `writeAll()`. El resto del CRUD ya está en la clase abstracta.
+
+</details>
+<details>
+<summary>¿Por qué el resto del programa trabaja con `IProductoRepository` y no con `CsvProductoRepository`?</summary>
+
+Para poder cambiar de formato (o, más adelante, pasar a una base de datos) sin tocar el código que usa el repositorio. Solo cambia la línea donde se crea.
+
+</details>
+<details>
+<summary>¿Por qué `findById(200L)` puede fallar con `==` y `findById(5L)` no?</summary>
+
+Java guarda en caché los `Long` de -128 a 127, así que dos `5L` son el mismo objeto y `==` da `true`. Dos `200L` son objetos distintos y `==` da `false` aunque valgan lo mismo.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, ruta de ficheros, lecciones 12 a 16](https://codelearnacademy.github.io/ficheros/leccion12/)
+2. [Martin Fowler, Repository (catálogo de patrones)](https://martinfowler.com/eaaCatalog/repository.html)
+3. [Refactoring Guru, Template Method](https://refactoring.guru/es/design-patterns/template-method)
+4. [Javadoc de `Long.valueOf` y su caché (Java 21)](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Long.html#valueOf(long))
+
+## JSON y XML con Jackson
+
+### Qué se ve
+
+Los mismos productos, ahora en JSON y en XML. La librería Jackson se encarga de convertir objetos Java en texto y al revés en los dos formatos. Gracias al tema anterior, cada formato nuevo es una clase con `readAll` y `writeAll`.
+
+### Conceptos
+
+<mark>JSON</mark> representa datos con objetos (`{ }`), arrays (`[ ]`), textos, números, booleanos y `null`. A diferencia del CSV, conserva la estructura y distingue un número de un texto. El catálogo es un array donde cada elemento es un producto:
+
+```json
+[
+  { "id": 1, "nombre": "Teclado", "precio": 49.99 },
+  { "id": 2, "nombre": "Monitor", "precio": 219.9 }
+]
+```
+
+| JSON | Java |
+|---|---|
+| objeto | un objeto o un `record` |
+| array | `List<T>` |
+| texto | `String` |
+| número | `int`, `long`, `double`… |
+| `true` / `false` | `boolean` |
+| `null` | `null` |
+
+Pasar de objeto a texto se llama <mark>serializar</mark>, y de texto a objeto, <mark>deserializar</mark>. En Jackson las dos cosas las hace un `ObjectMapper` (dependencia `jackson-databind`): `writeValue` serializa y `readValue` deserializa. Jackson empareja los nombres de las propiedades del JSON con los del modelo, y desde la versión 2.12 entiende los `record` sin anotaciones. Crear un `ObjectMapper` es costoso y, una vez configurado, se puede compartir, así que se guarda como atributo y no se crea en cada llamada.
+
+Para leer una lista hay un detalle. Escribir `List.class` no basta, porque en ejecución Java borra los tipos genéricos (se llama <mark>borrado de tipos</mark>) y Jackson no sabría que los elementos son `Producto`. La solución es `new TypeReference<List<Producto>>() {}`, una clase anónima que conserva el tipo completo.
+
+<mark>XML</mark> organiza los datos como un documento de etiquetas anidadas, y exige un único elemento raíz que lo envuelva todo:
+
+```xml
+<productos>
+  <producto>
+    <id>1</id>
+    <nombre>Teclado</nombre>
+    <precio>49.99</precio>
+  </producto>
+</productos>
+```
+
+Jackson también lo lee y escribe con `XmlMapper` (dependencia `jackson-dataformat-xml`), que tiene la misma forma de uso que `ObjectMapper`. La diferencia es esa raíz: una `List<Producto>` no tiene dónde poner `<productos>`. Por eso se crea una <mark>clase envoltorio</mark> que representa el documento entero y contiene la lista. Dos anotaciones ajustan el resultado:
+
+- `@JacksonXmlRootElement(localName = "productos")` da nombre a la raíz.
+- `@JacksonXmlElementWrapper(useWrapping = false)` evita que Jackson meta la lista dentro de otra etiqueta más, de forma que cada `<producto>` cuelgue directamente de `<productos>`.
+
+Con eso, CSV, JSON y XML quedan como tres maneras de escribir lo mismo:
+
+| | CSV | JSON | XML |
+|---|---|---|---|
+| Forma | tabla | objetos y arrays | documento jerárquico |
+| Leer | `CSVParser` | `ObjectMapper` | `XmlMapper` + envoltorio |
+| Escribir | `CSVPrinter` | `ObjectMapper` | `XmlMapper` + envoltorio |
+| El CRUD | `AbstractFileRepository` | igual | igual |
+
+### Código paso a paso
+
+<Pasos nombre="Repositorios JSON y XML">
+<Paso titulo="1. Leer JSON">
+
+`readValue` con `TypeReference` devuelve la lista de productos. Si el JSON trae `null` en lugar de un array, se avisa con un error claro.
+
+<Fragmento archivo="JsonRepository.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/repository/file/JsonRepository.java">
+
+```java
+private final ObjectMapper mapper = new ObjectMapper();
+
+@Override
+protected List<Producto> readAll() {
+    try {
+        List<Producto> leidos = mapper.readValue(getPath().toFile(),
+                new TypeReference<List<Producto>>() {});
+        if (leidos == null) {
+            throw new IllegalArgumentException("El JSON debe contener una lista, no null");
+        }
+        return leidos;
+    } catch (IOException e) {
+        throw new UncheckedIOException("No se pudo cargar " + getPath(), e);
+    }
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="2. Escribir JSON sin riesgo">
+
+Escribir directamente sobre el fichero tiene un peligro: si el programa falla a mitad, el catálogo queda cortado. En `catalogo` se escribe primero en un fichero temporal y después se mueve encima del bueno; el movimiento es atómico cuando el sistema lo permite, así que el fichero queda o como antes o como después.
+
+<Fragmento archivo="JsonRepository.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/repository/file/JsonRepository.java">
+
+```java
+temporal = Files.createTempFile(directorio, "productos-", ".json.tmp");
+mapper.writerWithDefaultPrettyPrinter().writeValue(temporal.toFile(), productos);
+try {
+    Files.move(temporal, destino, StandardCopyOption.ATOMIC_MOVE,
+            StandardCopyOption.REPLACE_EXISTING);
+} catch (AtomicMoveNotSupportedException e) {
+    Files.move(temporal, destino, StandardCopyOption.REPLACE_EXISTING);
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="3. El envoltorio XML">
+
+La clase que representa `<productos>`. Necesita un constructor vacío y getter y setter para que Jackson pueda crearla y rellenarla.
+
+<Fragmento archivo="ProductosXml.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/model/ProductosXml.java">
+
+```java
+@JacksonXmlRootElement(localName = "productos")
+public class ProductosXml {
+    @JacksonXmlElementWrapper(useWrapping = false)   // sin etiqueta extra alrededor de la lista
+    @JacksonXmlProperty(localName = "producto")      // cada elemento se llama <producto>
+    public List<Producto> productos;
+
+    public ProductosXml() {
+        productos = new ArrayList<>();
+    }
+
+    public List<Producto> getProductos() { return productos; }
+    public void setProductos(List<Producto> productos) { this.productos = productos; }
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="4. Lo mismo con Persona">
+
+En el examen RA1 el envoltorio era el mismo con otro modelo. Cambian los nombres de las etiquetas y el tipo de la lista; nada más.
+
+<Fragmento archivo="DocumentoPersonas.java" ejercicio="examen RA1" ruta="EXAMENES/Ejercicio%20RA1/fileLab-personas-AlejandroDonateGarcia/fileLab-personas-AlejandroDonateGarcia/src/main/java/es/codelearnacademy/filelab/persona/xml/DocumentoPersonas.java">
+
+```java
+@JacksonXmlRootElement(localName = "personas")
+public class DocumentoPersonas {
+    @JacksonXmlElementWrapper(useWrapping = false)
+    @JacksonXmlProperty(localName = "persona")
+    private List<Persona> personas = new ArrayList<>();
+
+    public DocumentoPersonas() { }
+    public DocumentoPersonas(List<Persona> personas) { this.personas = personas; }
+
+    public List<Persona> getPersonas() { return personas; }
+    public void setPersonas(List<Persona> personas) { this.personas = personas; }
+}
+```
+
+</Fragmento>
+
+</Paso>
+</Pasos>
+
+### Errores típicos
+
+- **Leer una lista con `List.class`.** Jackson devuelve una lista de `LinkedHashMap` en vez de productos, y el error salta más tarde al usarlos. Usa `TypeReference`.
+- **Fichero vacío.** `readValue` sobre un fichero de 0 bytes lanza `MismatchedInputException` ("No content to map"). Comprueba `Files.size(path) == 0` antes y devuelve una lista vacía.
+- **Nombres que no coinciden.** Si el JSON dice `"name"` y el modelo `nombre`, Jackson falla con `UnrecognizedPropertyException`. Se arregla cambiando el nombre o con `@JsonProperty("name")`.
+- **XML con etiqueta de más.** Sin `useWrapping = false` aparece `<productos><productos><producto>…`, y un fichero escrito a mano con una sola capa ya no se puede leer.
+- **Envoltorio sin constructor vacío.** Jackson necesita crear el objeto antes de rellenarlo.
+
+### Prácticas de clase
+
+- **catalogo-productos-repositorios.** `JsonRepository` y `XmlRepository` sobre `AbstractFileRepository`. La escritura con fichero temporal no la pedía el ejercicio; la añadí para que un fallo al guardar no deje el catálogo a medias. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/catalogo-productos-repositorios)
+- **file-lab-alumnado**, paquetes `json` y `xml`. Los mismos repositorios para `Producto` y `Vehiculo`, con `DocumentoProductos` y `DocumentoVehiculos` como envoltorios. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/file-lab-alumnado)
+- **Examen RA1, fileLab-personas.** `PersonaJsonRepository` y `PersonaXmlRepository` con `DocumentoPersonas`. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/EXAMENES)
+
+### Repaso rápido
+
+<details>
+<summary>¿Para qué sirve `TypeReference`?</summary>
+
+Para decirle a Jackson el tipo completo de una colección genérica, como `List<Producto>`, que en ejecución se perdería por el borrado de tipos.
+
+</details>
+<details>
+<summary>¿Por qué XML necesita una clase envoltorio y JSON no?</summary>
+
+Porque un documento XML necesita una única etiqueta raíz, y una lista no tiene dónde ponerla. En JSON el propio array puede ser la raíz.
+
+</details>
+<details>
+<summary>¿Qué ganas escribiendo en un temporal y moviéndolo después?</summary>
+
+Que si algo falla al escribir, el fichero original sigue intacto. El fichero pasa de la versión anterior a la nueva de una vez.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, ruta de ficheros, lecciones 17 a 29](https://codelearnacademy.github.io/ficheros/leccion17/)
+2. [jackson-databind en GitHub (documentación de `ObjectMapper`)](https://github.com/FasterXML/jackson-databind)
+3. [jackson-dataformat-xml en GitHub](https://github.com/FasterXML/jackson-dataformat-xml)
+4. [RFC 8259: formato JSON](https://www.rfc-editor.org/rfc/rfc8259)
+5. [Tutorial de Oracle sobre el borrado de tipos](https://docs.oracle.com/javase/tutorial/java/generics/erasure.html)
+
+## Un repositorio para cualquier entidad
+
+### Qué se ve
+
+Hasta aquí todo giraba en torno a `Producto`. Este tema comprueba que `AbstractFileRepository` sirve también para otra entidad, `Vehiculo`, cuyo identificador es una matrícula de tipo `String`. Para eso la clase abstracta necesita saber sacar el id de cualquier objeto, y en clase vimos tres formas de hacerlo.
+
+### Conceptos
+
+Los <mark>genéricos</mark> permiten escribir una clase una vez y usarla con distintos tipos. En `AbstractFileRepository<T, ID>`, `T` es la entidad y `ID` el tipo de su identificador: `<Producto, Long>` para productos y `<Vehiculo, String>` para vehículos. El compilador comprueba los tipos en cada uso, así que no se puede guardar un `Vehiculo` en el repositorio de productos.
+
+El problema es que dentro de la clase abstracta `T` puede ser cualquier cosa, y para buscar, actualizar o borrar hace falta el id. Las tres soluciones que aparecen en los ejercicios:
+
+| Solución | Dónde | Cómo se obtiene el id |
+|---|---|---|
+| Interfaz `Identifiable<ID>` | `catalogo` | La entidad implementa `id()`; el genérico se restringe con `T extends Identifiable<ID>` |
+| `Function<T, ID>` | ruta del profesor | Cada repositorio pasa al constructor cómo sacarlo, por ejemplo `Producto::id` |
+| Método abstracto `getId(T)` | examen RA1 | Cada repositorio hijo lo implementa |
+
+Las tres funcionan. `Identifiable` obliga a tocar el modelo, pero a cambio el compilador garantiza que toda entidad tiene id. `Function` deja el modelo intacto y encaja con entidades cuyo id no se llama `id`, como `Vehiculo::matricula`. El método abstracto es la opción más sencilla de leer, aunque repite una línea en cada hijo.
+
+El caso de `Vehiculo` también sirve para hablar de validación. En la ruta del profesor el `record` revisa sus datos en el constructor compacto y normaliza la matrícula a mayúsculas, de forma que `"1234abc"` y `"1234ABC"` son el mismo vehículo:
+
+```java
+public record Vehiculo(String matricula, String marca, String modelo, int anio) {
+    public Vehiculo {
+        if (matricula == null || matricula.isBlank()) {
+            throw new IllegalArgumentException("La matrícula es obligatoria");
+        }
+        matricula = matricula.trim().toUpperCase();
+    }
+}
+```
+
+### Código paso a paso
+
+<Pasos nombre="Tres formas de obtener el id">
+<Paso titulo="1. Identifiable">
+
+La entidad declara que tiene id. En un `record`, el componente `id` ya implementa el método.
+
+<Fragmento archivo="Identifiable.java y Producto.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/model/Identifiable.java">
+
+```java
+public interface Identifiable<ID> {
+    ID id();
+}
+
+public record Producto(Long id, String nombre, Double precio) implements Identifiable<Long> {}
+
+// y en la clase abstracta:
+public abstract class AbstractFileRepository<T extends Identifiable<ID>, ID> { ... }
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="2. Function">
+
+La versión de la ruta del profesor. El modelo no cambia; cada repositorio dice cómo obtener el id con una referencia a método.
+
+```java
+protected AbstractFileRepository(Path path, Function<T, ID> idExtractor) {
+    this.path = path;
+    this.idExtractor = idExtractor;
+}
+
+// cada hijo:
+super(path, Producto::id);
+super(path, Vehiculo::matricula);
+```
+
+</Paso>
+<Paso titulo="3. getId abstracto">
+
+La versión del examen RA1. Cada repositorio de `Persona` responde con el DNI.
+
+<Fragmento archivo="PersonaJsonRepository.java" ejercicio="examen RA1" ruta="EXAMENES/Ejercicio%20RA1/fileLab-personas-AlejandroDonateGarcia/fileLab-personas-AlejandroDonateGarcia/src/main/java/es/codelearnacademy/filelab/persona/json/PersonaJsonRepository.java">
+
+```java
+public class PersonaJsonRepository
+        extends AbstractFileRepository<Persona, String> implements IPersonaRepository {
+
+    @Override
+    protected String getId(Persona p) {
+        return p.dni();
+    }
+}
+```
+
+</Fragmento>
+
+</Paso>
+</Pasos>
+
+### Errores típicos
+
+- **Usar tipos primitivos en el modelo genérico.** Los genéricos no aceptan `long` ni `double`. En `catalogo`, `Producto` usa `Long` y `Double` para que el id encaje con `ID` y pueda compararse con `equals`.
+- **Ids con mayúsculas y minúsculas mezcladas.** Si la matrícula no se normaliza, `"1234abc"` y `"1234ABC"` acaban como dos vehículos distintos.
+- **Restringir `T` sin necesidad.** Con `Function` o `getId` no hace falta `T extends Identifiable`; mezclar las dos ideas obliga a cambiar el modelo para nada.
+
+### Prácticas de clase
+
+- **catalogo-productos-repositorios.** Usa `Identifiable<ID>`. El comentario de `Producto` explica por qué los campos son `Long` y `Double`. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/catalogo-productos-repositorios)
+- **file-lab-alumnado.** Repositorios de `Producto` y `Vehiculo` sobre la misma clase abstracta, en los tres formatos. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/file-lab-alumnado)
+- **Examen RA1, fileLab-personas.** La versión con `getId` abstracto y `Persona` identificada por DNI. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/EXAMENES)
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué significan `T` e `ID` en `AbstractFileRepository<T, ID>`?</summary>
+
+`T` es el tipo de la entidad que se guarda y `ID` el tipo de su identificador. Por ejemplo, `<Vehiculo, String>`.
+
+</details>
+<details>
+<summary>¿Qué ventaja tiene `Function<T, ID>` frente a `Identifiable`?</summary>
+
+Que no obliga a modificar el modelo: sirve para entidades cuyo identificador tiene otro nombre, como `matricula` o `dni`.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, ruta de ficheros, lecciones 30 y 31](https://codelearnacademy.github.io/ficheros/leccion30/)
+2. [Tutorial de Oracle sobre genéricos](https://docs.oracle.com/javase/tutorial/java/generics/index.html)
+3. [Javadoc de `java.util.function.Function` (Java 21)](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/function/Function.html)
+
+## Elegir el formato con .properties
+
+### Qué se ve
+
+El último paso saca de Java la decisión de qué formato y qué fichero usar. Un fichero `.properties` dice "csv" o "json", y una clase lee esa configuración y crea el repositorio que toca. Cambiar de formato pasa a ser editar una línea, sin recompilar.
+
+### Conceptos
+
+Un fichero <mark>.properties</mark> guarda configuración como pares `clave=valor`, una por línea, con `#` para los comentarios. Java lo lee con la clase `Properties`:
+
+```properties
+# data/app.properties
+app.name=FileLab
+storage.format=json
+storage.path=data/productos.json
+```
+
+`getProperty("storage.format")` devuelve el valor como texto, o `null` si la clave no existe. Existe una segunda versión con valor por defecto, `getProperty("storage.format", "csv")`, que evita los `null` cuando falta una línea.
+
+Al cargar el fichero hay un detalle con las tildes. `Properties.load(InputStream)` lee el fichero como ISO-8859-1, el juego de caracteres histórico de este formato, y una "ó" escrita en UTF-8 sale rota. `Properties.load(Reader)` usa el juego de caracteres del lector, así que con `Files.newBufferedReader(path, StandardCharsets.UTF_8)` las tildes llegan bien.
+
+Con la configuración leída, falta una pieza que convierta el texto `"json"` en un objeto `JsonRepository`. Esa pieza es una <mark>factoría</mark>: un método cuyo único trabajo es crear el objeto adecuado según un dato. El resto del programa recibe un `IProductoRepository` y no sabe cuál le ha tocado. En los ejercicios aparecen dos versiones:
+
+- En `catalogo`, una cadena de `if` sobre el texto del `.properties`.
+- En `file-lab`, un `enum FileFormat` con los formatos válidos y un `switch` sobre él. Si mañana se añade un formato al `enum` y no al `switch`, el compilador avisa.
+
+La ruta del profesor termina con el proyecto DataBridge, que junta todo lo de la unidad: leer productos de un formato y escribirlos en otro (de CSV a JSON, de JSON a XML…) eligiendo origen y destino por configuración.
+
+### Código paso a paso
+
+<Pasos nombre="De la configuración al repositorio">
+<Paso titulo="1. Cargar el .properties">
+
+Se lee con un `Reader` en UTF-8. Si el fichero no existe, la `IOException` se envuelve para no obligar al que llama a tratarla.
+
+<Fragmento archivo="AppConfiguration.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/configuration/AppConfiguration.java">
+
+```java
+public static Properties cargarPropiedades(Path path) {
+    Properties properties = new Properties();
+    try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+        properties.load(reader);
+    } catch (IOException e) {
+        throw new UncheckedIOException(e);
+    }
+    return properties;
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="2. Factoría con if">
+
+La versión de `catalogo`. Lo que devuelve es la interfaz, así que el resto del programa no se entera del formato.
+
+<Fragmento archivo="AppConfiguration.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/configuration/AppConfiguration.java">
+
+```java
+public static IProductoRepository crearRepositorio(Properties properties) {
+    String formato = properties.getProperty("storage.format", "csv");
+    Path ruta = Path.of(properties.getProperty("storage.path", "data/productos.csv"));
+    if (formato.equals("csv")) {
+        return new CsvProductoRepository(ruta);
+    } else if (formato.equals("json")) {
+        return new JsonRepository(ruta);
+    } else if (formato.equals("xml")) {
+        return new XmlRepository(ruta);
+    }
+    throw new IllegalArgumentException("Formato no soportado: " + formato);
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="3. Factoría con enum">
+
+La versión de `file-lab`. `FileFormat.from` acepta mayúsculas o minúsculas y espacios; el `switch` sobre el `enum` tiene que cubrir todos los casos.
+
+<Fragmento archivo="RepositoryFactory.java" ejercicio="file-lab-alumnado" ruta="file-lab-alumnado/src/main/java/es/codelearnacademy/filelab/service/RepositoryFactory.java">
+
+```java
+public IProductoRepository create(FileFormat format, Path path) {
+    return switch (format) {
+        case CSV -> new ProductoCsvRepository(path);
+        case JSON -> new ProductoJsonRepository(path);
+        case XML -> new ProductoXmlRepository(path);
+    };
+}
+```
+
+</Fragmento>
+
+</Paso>
+</Pasos>
+
+### Errores típicos
+
+- **Leer el `.properties` con `load(InputStream)`.** Las tildes del fichero salen como `Ã³`. Usa un `Reader` en UTF-8.
+- **No dar valor por defecto.** `getProperty` devuelve `null` si falta la clave, y el `NullPointerException` aparece lejos de la causa.
+- **Formato mal escrito en el fichero.** `"JSON "` con un espacio no coincide con `"json"`. Recorta y compara sin distinguir mayúsculas, como hace `FileFormat.from`, y lanza un error que diga qué valor llegó.
+- **La ruta del `.properties` también es relativa.** Se resuelve desde el directorio de trabajo, igual que en el tema 1.
+
+### Prácticas de clase
+
+- **catalogo-productos-repositorios.** `AppConfiguration` lee `data/app.properties` y hace un CRUD de prueba con el repositorio elegido. El producto de prueba usa un id que no está en el fichero y se borra al final, para que ejecutar el `main` no cambie los datos. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/catalogo-productos-repositorios)
+- **file-lab-alumnado**, paquetes `config` y `service`. `PropertiesConfig`, `FileFormat`, `RepositoryFactory` y el servicio que convierte productos de un formato a otro. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/file-lab-alumnado)
+- **Examen RA1, fileLab-personas.** Incluía su propio `academia.properties` y una clase de configuración que había que completar. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/EXAMENES)
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué devuelve `getProperty("clave")` si la clave no está en el fichero?</summary>
+
+`null`. Con `getProperty("clave", "valor")` devuelve el valor por defecto.
+
+</details>
+<details>
+<summary>¿Por qué la factoría devuelve `IProductoRepository` y no la clase concreta?</summary>
+
+Para que el código que la usa no dependa del formato. Si devolviera `JsonRepository`, cambiar a CSV obligaría a tocar también ese código.
+
+</details>
+<details>
+<summary>¿Qué ventaja tiene el `switch` sobre un `enum` frente a la cadena de `if`?</summary>
+
+Que el compilador comprueba que están todos los casos, y que los valores posibles están escritos en un solo sitio.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, ruta de ficheros, lecciones 32 a 34](https://codelearnacademy.github.io/ficheros/leccion32/)
+2. [Javadoc de `java.util.Properties` (Java 21)](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Properties.html)
+3. [Refactoring Guru, Factory Method](https://refactoring.guru/es/design-patterns/factory-method)
