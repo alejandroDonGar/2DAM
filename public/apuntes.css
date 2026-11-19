@@ -132,7 +132,7 @@ mark, .resaltado {
 .tema > h2 { font-size: 1.7rem; margin: 0 0 .3em; display: flex; gap: .6em; align-items: baseline; }
 .tema > h2 .n { color: var(--suave); font-weight: 500; font-variant-numeric: tabular-nums; }
 .tema h3 { font-size: 1.12rem; margin: 2.2rem 0 .6rem; }
-.tema p, .tema li { max-width: 68ch; }
+
 .tema.plegado > :not(h2):not(.resumen) { display: none; }
 .tema .resumen { color: var(--suave); margin: 0; }
 
@@ -188,8 +188,7 @@ figure.codigo pre { margin: 0; padding: 14px 16px; overflow-x: auto; line-height
 
 /* ---------- Texto de las unidades (MDX) ---------- */
 .prosa { counter-reset: tema; }
-.prosa > * { max-width: 68ch; }
-.prosa > figure, .prosa > .pasos, .prosa > table, .prosa > pre { max-width: 100%; }
+/* Texto y código comparten el mismo ancho de columna. */
 .prosa h2 { counter-increment: tema; font-size: 1.7rem; border-top: 1px solid var(--linea); padding-top: 2rem; margin: 3.5rem 0 .4em; max-width: none; scroll-margin-top: 16px; }
 .prosa h2::before { content: counter(tema); color: var(--suave); font-weight: 500; margin-right: .6em; font-variant-numeric: tabular-nums; }
 .prosa h3 { font-size: 1.12rem; margin: 2.2rem 0 .6rem; scroll-margin-top: 16px; }
@@ -199,7 +198,7 @@ figure.codigo pre { margin: 0; padding: 14px 16px; overflow-x: auto; line-height
 .prosa table { border-collapse: collapse; font-size: .95rem; margin: 1.2rem 0; display: block; overflow-x: auto; }
 .prosa th, .prosa td { text-align: left; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--linea); vertical-align: top; }
 .prosa th { font-family: var(--sans); font-weight: 600; }
-.prosa details { border-bottom: 1px solid var(--linea); padding: 10px 0; max-width: 68ch; }
+.prosa details { border-bottom: 1px solid var(--linea); padding: 10px 0; }
 .prosa summary { cursor: pointer; font-family: var(--sans); font-weight: 500; }
 .prosa summary:hover { text-decoration: underline; text-decoration-color: var(--resaltador); text-decoration-thickness: 2px; }
 .prosa details > :not(summary) { color: var(--suave); }
