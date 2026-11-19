@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Crud from '../../components/Crud.astro';
+import PlanEmpresa from '../../components/PlanEmpresa.astro';
 import { getCollection } from 'astro:content';
 import { asignaturas } from '../../data/asignaturas';
 
@@ -23,6 +24,12 @@ const enlaces = [0, 1, 2, 3, 4].map(i => unidades.find(u => u.data.crud === i)).
     {a.slug === 'acceso-a-datos' && (<>
       <h2>El mismo CRUD, cinco veces</h2>
       <Crud aqui={4} enlaces={enlaces} />
+    </>)}
+
+    {a.slug === 'itinerario' && (<>
+      <h2>El plan de empresa, apartado a apartado</h2>
+      <p class="entrada">Cada apartado del modelo de plan de empresa y los temas que explican cómo rellenarlo.</p>
+      <PlanEmpresa />
     </>)}
 
     <h2>Unidades</h2>

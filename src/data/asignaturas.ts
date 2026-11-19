@@ -22,3 +22,40 @@ export const pasosCrud = [
 ];
 
 export const REPO_AD = 'https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/';
+
+// Itinerario: los apartados del modelo de plan de empresa y la unidad que explica cada uno.
+// u = unidad (sin asignatura), a = anclaje del tema en esa página, t = texto del enlace.
+type Enlace = { u: string; a: string; t: string };
+export const planEmpresa: { n: number; apartado: string; enlaces: Enlace[]; nota?: string }[] = [
+  { n: 2, apartado: 'Equipo promotor', enlaces: [{ u: 'ut2-iniciativa-emprendedora', a: 'emprender-modalidades-y-perfil', t: 'Perfil y acuerdos de equipo' }] },
+  { n: 3, apartado: 'Del problema a la idea', enlaces: [{ u: 'ut2-iniciativa-emprendedora', a: 'creatividad-y-oportunidades-en-canarias', t: 'Creatividad y oportunidades' }] },
+  { n: 4, apartado: 'Entorno y mercado en Canarias', enlaces: [
+    { u: 'ut1-empresa-entorno', a: 'el-entorno-pestel-y-porter', t: 'PESTEL y Porter' },
+    { u: 'ut2-iniciativa-emprendedora', a: 'creatividad-y-oportunidades-en-canarias', t: 'DAFO' },
+    { u: 'ut3-mercado-marketing', a: 'el-mercado-la-segmentación-y-la-demanda', t: 'Mercado' },
+  ] },
+  { n: 5, apartado: 'Validación', enlaces: [{ u: 'ut2-iniciativa-emprendedora', a: 'diseño-centrado-en-las-personas-y-validación-ágil', t: 'Entrevistas y PMV' }] },
+  { n: 6, apartado: 'Modelo de negocio', enlaces: [{ u: 'ut2-iniciativa-emprendedora', a: 'propuesta-de-valor-y-modelo-de-negocio', t: 'Canvas' }] },
+  { n: 7, apartado: 'Plan comercial y comunicación', enlaces: [
+    { u: 'ut3-mercado-marketing', a: 'marketing-mix-y-marketing-online', t: 'Marketing mix' },
+    { u: 'ut3-mercado-marketing', a: 'el-plan-de-marketing-y-el-estudio-de-mercado', t: 'Plan de marketing' },
+  ] },
+  { n: 8, apartado: 'Operaciones y personas', enlaces: [{ u: 'ut1-empresa-entorno', a: 'la-empresa-como-sistema', t: 'Subsistemas' }] },
+  { n: 9, apartado: 'Sostenibilidad e impacto en Canarias', enlaces: [
+    { u: 'ut1-empresa-entorno', a: 'responsabilidad-social-balance-social-y-ética', t: 'RSE y balance social' },
+    { u: 'ut2-iniciativa-emprendedora', a: 'ética-economía-social-y-economía-circular', t: 'Indicadores de impacto' },
+  ] },
+  { n: 10, apartado: 'Forma jurídica, trámites y REF', enlaces: [
+    { u: 'ut1-empresa-entorno', a: 'clasificar-una-empresa-y-el-ref-canario', t: 'REF' },
+    { u: 'ut2-iniciativa-emprendedora', a: 'elegir-forma-jurídica-primera-aproximación', t: 'Forma jurídica' },
+  ], nota: 'Los trámites, en la UT5' },
+  { n: 11, apartado: 'Plan económico y financiero', enlaces: [
+    { u: 'ut4-viabilidad-financiacion', a: 'el-plan-de-inversiones', t: 'Inversiones' },
+    { u: 'ut4-viabilidad-financiacion', a: 'fuentes-de-financiación-propias-y-ajenas', t: 'Financiación' },
+    { u: 'ut4-viabilidad-financiacion', a: 'previsión-de-resultados-y-tesorería', t: 'Resultados y tesorería' },
+    { u: 'ut4-viabilidad-financiacion', a: 'el-umbral-de-rentabilidad-y-los-escenarios', t: 'Umbral' },
+  ] },
+  { n: 12, apartado: 'Riesgos y decisión de viabilidad', enlaces: [{ u: 'ut4-viabilidad-financiacion', a: 'el-umbral-de-rentabilidad-y-los-escenarios', t: 'Escenarios' }] },
+  { n: 13, apartado: 'Calendario de puesta en marcha', enlaces: [], nota: 'En la UT5' },
+  { n: 15, apartado: 'Presentación y defensa', enlaces: [{ u: 'ut3-mercado-marketing', a: 'el-plan-de-marketing-y-el-estudio-de-mercado', t: 'Pitch de 90 segundos' }] },
+];

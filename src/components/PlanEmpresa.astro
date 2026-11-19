@@ -1,0 +1,17 @@
+---
+// Itinerario: cada apartado del plan de empresa con los temas que lo explican.
+import { planEmpresa } from '../data/asignaturas';
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+---
+<ol class="plan">
+  {planEmpresa.map((p) => (
+    <li>
+      <span class="num">{p.n}</span>
+      <span class="tit">{p.apartado}</span>
+      <span class="temas">
+        {p.enlaces.map((e) => <a href={`${base}itinerario/${e.u}/#${e.a}`}><span class="ut">{e.u.slice(0, 3).toUpperCase()}</span> {e.t}</a>)}
+        {p.nota && <span class="nota">{p.nota}</span>}
+      </span>
+    </li>
+  ))}
+</ol>

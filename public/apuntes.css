@@ -257,3 +257,14 @@ figure.codigo pre.astro-code { margin: 0; border: 0; border-radius: 0; }
 .esquema .punta { fill: var(--suave); }
 .esquema .con-flecha { marker-end: var(--flecha); }
 .esquema .t-bloque { font-weight: 650; font-size: 13px; }
+
+/* ---------- Itinerario: el plan de empresa, apartado a apartado ---------- */
+.plan { list-style: none; padding: 0; margin: 0 0 1rem; font-family: var(--sans); }
+.plan li { display: grid; grid-template-columns: 2.5rem minmax(10rem, 16rem) minmax(0, 1fr); gap: 4px 16px; padding: 12px 0; border-top: 1px solid var(--linea); align-items: baseline; }
+.plan .num { color: var(--suave); font-variant-numeric: tabular-nums; }
+.plan .tit { font-weight: 600; }
+.plan .temas { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .92rem; }
+.plan .temas a { color: var(--texto); }
+.plan .nota { color: var(--suave); }
+@media (max-width: 640px) { .plan li { grid-template-columns: 2rem minmax(0, 1fr); } .plan .temas { grid-column: 2; } }
+.plan .ut { color: var(--suave); font-variant-numeric: tabular-nums; }
