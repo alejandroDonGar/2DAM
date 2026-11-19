@@ -1,0 +1,7 @@
+---
+// Paso a paso del código. Sin JavaScript se ven todos los pasos seguidos;
+// apuntes.js los convierte en pestañas leyendo el título de cada <Paso>.
+interface Props { nombre: string }
+const { nombre } = Astro.props;
+---
+<div class="pasos" data-nombre={nombre}><slot /></div>

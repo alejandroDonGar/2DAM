@@ -1,0 +1,76 @@
+---
+import Base from '../../layouts/Base.astro';
+import Crud from '../../components/Crud.astro';
+import { getCollection, render } from 'astro:content';
+import { asignaturas } from '../../data/asignaturas';
+
+export async function getStaticPaths() {
+  const unidades = await getCollection('unidades');
+  return unidades.map(u => {
+    const [asig, ut] = u.id.split('/');
+    return { params: { asig, ut }, props: { u } };
+  });
+}
+const { u } = Astro.props;
+const [slug] = u.id.split('/');
+const a = asignaturas.find(x => x.slug === slug)!;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const hermanas = (await getCollection('unidades', x => x.id.startsWith(slug + '/')))
+  .sort((x, y) => x.data.orden - y.data.orden);
+const { Content, headings } = await render(u);
+
+// Temas (h2) con sus apartados (h3) para el índice y «En esta página»
+const temas: { slug: string; text: string; apartados: { slug: string; text: string }[] }[] = [];
+for (const h of headings) {
+  if (h.depth === 2) temas.push({ slug: h.slug, text: h.text, apartados: [] });
+  else if (h.depth === 3 && temas.length) temas.at(-1)!.apartados.push({ slug: h.slug, text: h.text });
+}
+const nombreUnidad = `${u.data.etiqueta} ${u.data.titulo}`;
+---
+<Base titulo={`${nombreUnidad} · ${a.nombre}`} descripcion={u.data.entrada} clase={a.clase}
+      migas={[{ texto: a.nombre, url: `${base}${slug}/` }, { texto: nombreUnidad }]}>
+  <div class="unidad">
+    <nav class="indice" aria-label={`Unidades de ${a.nombre}`}>
+      <details open>
+        <summary>Unidades y temas</summary>
+        <h2>{a.nombre}</h2>
+        <ol>
+          {hermanas.map(h => (
+            <li>
+              <a href={`${base}${h.id}/`} aria-current={h.id === u.id ? 'page' : undefined}>{h.data.etiqueta} {h.data.titulo}</a>
+              {h.id === u.id && (
+                <ol>{temas.map(t => <li><a href={`#${t.slug}`}>{t.text}</a></li>)}</ol>
+              )}
+            </li>
+          ))}
+        </ol>
+      </details>
+    </nav>
+
+    <main class="contenido">
+      <header>
+        <h1>{nombreUnidad}</h1>
+        <p class="entrada">{u.data.entrada}</p>
+        <dl class="ficha">
+          <div><dt>Cuándo</dt><dd>{u.data.cuando}</dd></div>
+          <div><dt>Ejercicios</dt><dd>{u.data.ejercicios}</dd></div>
+          {u.data.ruta && <div><dt>Ruta del profesor</dt><dd><a href={u.data.ruta.url}>{u.data.ruta.texto}</a></dd></div>}
+        </dl>
+        {u.data.crud !== undefined && <Crud aqui={u.data.crud} />}
+      </header>
+      <article class="prosa"><Content /></article>
+    </main>
+
+    <nav class="en-pagina" aria-label="En esta página">
+      <h2>En esta página</h2>
+      <ol>
+        {temas.map(t => (
+          <li data-tema={t.slug}>
+            <a href={`#${t.slug}`}>{t.text}</a>
+            <ol>{t.apartados.map(s => <li><a href={`#${s.slug}`}>{s.text}</a></li>)}</ol>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  </div>
+</Base>

@@ -1,9 +1,7 @@
-name: Documentation
+name: Publicar la web
 on:
   push:
-    branches:
-      - master
-      - main
+    branches: [main]
 permissions:
   contents: read
   pages: write
@@ -15,15 +13,16 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/configure-pages@v6
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-node@v6
         with:
-          python-version: 3.x
-      - run: pip install zensical
-      - run: zensical build --clean
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: site
+          path: dist
       - uses: actions/deploy-pages@v5
         id: deployment

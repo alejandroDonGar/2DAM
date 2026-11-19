@@ -1,0 +1,10 @@
+---
+// Bloque de código con su procedencia: archivo y ejercicio, enlazado al repo de la asignatura.
+import { REPO_AD } from '../data/asignaturas';
+interface Props { archivo: string; ejercicio: string; ruta: string }
+const { archivo, ejercicio, ruta } = Astro.props;
+---
+<figure class="codigo">
+  <figcaption><span>{archivo}</span><a href={`${REPO_AD}blob/main/${ruta}`}>{ejercicio}</a></figcaption>
+  <slot />
+</figure>

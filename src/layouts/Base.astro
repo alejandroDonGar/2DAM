@@ -1,0 +1,36 @@
+---
+// Esqueleto común: cabecera con migas, botón de tema y el color de la asignatura.
+interface Props { titulo: string; descripcion?: string; clase?: string; migas?: { texto: string; url?: string }[] }
+const { titulo, descripcion = 'Apuntes de 2º de DAM, curso 2026-2027.', clase, migas = [] } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+---
+<!DOCTYPE html>
+<html lang="es" class={clase}>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{titulo}</title>
+  <meta name="description" content={descripcion}>
+  <script is:inline>if (localStorage.getItem('tema') === 'claro') document.documentElement.dataset.tema = 'claro';</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Schibsted+Grotesk:wght@400..800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href={`${base}apuntes.css`}>
+</head>
+<body>
+  <nav class="barra" aria-label="Principal">
+    <a class="casa" href={base}>Apuntes 2DAM</a>
+    {migas.length > 0 && (
+      <span class="migas">
+        {migas.map(m => (<>
+          <span aria-hidden="true">/</span>
+          {m.url ? <a href={m.url}>{m.texto}</a> : <span aria-current="page">{m.texto}</span>}
+        </>))}
+      </span>
+    )}
+    <button class="tema-btn" type="button">Tema claro</button>
+  </nav>
+  <slot />
+  <script is:inline src={`${base}apuntes.js`}></script>
+</body>
+</html>

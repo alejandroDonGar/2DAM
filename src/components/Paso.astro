@@ -1,0 +1,8 @@
+---
+interface Props { titulo: string }
+const { titulo } = Astro.props;
+---
+<section class="paso" data-titulo={titulo}>
+  <h4 class="paso-titulo">{titulo}</h4>
+  <slot />
+</section>

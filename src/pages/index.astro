@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { asignaturas } from '../data/asignaturas';
+const unidades = await getCollection('unidades');
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const cuantas = (slug: string) => unidades.filter(u => u.id.startsWith(slug + '/')).length;
+---
+<Base titulo="Apuntes de 2º de DAM">
+  <main class="inicio">
+    <h1>Apuntes de 2º de DAM</h1>
+    <p>Lo que vemos en clase, explicado con mis palabras y con el código de los ejercicios. Curso 2026-2027.</p>
+    <ul class="separadores">
+      {asignaturas.map(a => {
+        const n = cuantas(a.slug);
+        return (
+          <li class={a.clase}><a href={`${base}${a.slug}/`}>
+            <span class="nombre">{a.nombre}</span>
+            <span class="sobre">{a.sobre}</span>
+            <span class="meta">{n ? `${n} ${n === 1 ? 'unidad' : 'unidades'}` : 'Próximamente'}</span>
+          </a></li>
+        );
+      })}
+    </ul>
+  </main>
+</Base>

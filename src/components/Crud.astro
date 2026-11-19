@@ -1,0 +1,13 @@
+---
+// «El mismo CRUD, cinco veces»: marca en qué paso estamos (0 a 4).
+import { pasosCrud } from '../data/asignaturas';
+interface Props { aqui: number; enlaces?: (string | undefined)[] }
+const { aqui, enlaces = [] } = Astro.props;
+---
+<ol class="crud" aria-label="En qué punto del CRUD estamos">
+  {pasosCrud.map((p, i) => (
+    <li class={i < aqui ? 'hecho' : i === aqui ? 'aqui' : undefined} aria-current={i === aqui ? 'step' : undefined}>
+      {enlaces[i] ? <a href={enlaces[i]}><strong>{p.nombre}</strong>{p.detalle}</a> : <><strong>{p.nombre}</strong>{p.detalle}</>}
+    </li>
+  ))}
+</ol>

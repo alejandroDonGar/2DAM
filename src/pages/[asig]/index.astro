@@ -1,0 +1,40 @@
+---
+import Base from '../../layouts/Base.astro';
+import Crud from '../../components/Crud.astro';
+import { getCollection } from 'astro:content';
+import { asignaturas } from '../../data/asignaturas';
+
+export function getStaticPaths() {
+  return asignaturas.map(a => ({ params: { asig: a.slug }, props: { a } }));
+}
+const { a } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const unidades = (await getCollection('unidades', u => u.id.startsWith(a.slug + '/')))
+  .sort((x, y) => x.data.orden - y.data.orden);
+const url = (id: string) => `${base}${id}/`;
+// Enlace de cada paso del CRUD a la unidad que lo trata
+const enlaces = [0, 1, 2, 3, 4].map(i => unidades.find(u => u.data.crud === i)).map(u => u && url(u.id));
+---
+<Base titulo={`${a.nombre} · Apuntes 2DAM`} clase={a.clase} migas={[{ texto: a.nombre }]}>
+  <main class="portada">
+    <h1>{a.nombre}</h1>
+    <p class="entrada">{a.entrada ?? a.sobre}</p>
+
+    {a.slug === 'acceso-a-datos' && (<>
+      <h2>El mismo CRUD, cinco veces</h2>
+      <Crud aqui={4} enlaces={enlaces} />
+    </>)}
+
+    <h2>Unidades</h2>
+    {unidades.length === 0 && <p class="entrada">Esta asignatura todavía no tiene apuntes. Empezaremos por sus primeras unidades de clase.</p>}
+    <ol class="unidades">
+      {unidades.map(u => (
+        <li><a href={url(u.id)}>
+          <span class="num">{u.data.etiqueta}</span><span class="tit">{u.data.titulo}</span>
+          <span class="fecha">{u.data.cuando}</span>
+          <span class="det">{u.data.entrada}</span>
+        </a></li>
+      ))}
+    </ol>
+  </main>
+</Base>
