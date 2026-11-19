@@ -1,0 +1,27 @@
+---
+import Esquema from '../Esquema.astro';
+const celdas = [
+  { x: 115, y: 45, t: 'Debilidades', v: 'Corregir', e: '«No sabemos vender»' },
+  { x: 395, y: 45, t: 'Fortalezas', v: 'Mantener', e: '«Dominamos la accesibilidad web»' },
+  { x: 115, y: 175, t: 'Amenazas', v: 'Afrontar', e: '«El mercado es muy competitivo»' },
+  { x: 395, y: 175, t: 'Oportunidades', v: 'Explotar', e: '«Muchos comercios sin digitalizar»' },
+];
+---
+<Esquema titulo="DAFO y CAME" alto={320}
+  descripcion="Una cuadrícula de dos por dos. Arriba lo interno: debilidades, que se corrigen, y fortalezas, que se mantienen. Abajo lo externo: amenazas, que se afrontan, y oportunidades, que se explotan. A la izquierda lo negativo y a la derecha lo positivo."
+  pie="El DAFO describe la situación y el CAME convierte cada cuadro en una acción.">
+  <text x="255" y="30" text-anchor="middle" class="t-suave">Negativo</text>
+  <text x="535" y="30" text-anchor="middle" class="t-suave">Positivo</text>
+  <text x="60" y="115" text-anchor="middle" class="t-suave">Interno</text>
+  <text x="60" y="133" text-anchor="middle" class="t-suave">(la empresa)</text>
+  <text x="60" y="245" text-anchor="middle" class="t-suave">Externo</text>
+  <text x="60" y="263" text-anchor="middle" class="t-suave">(el entorno)</text>
+  {celdas.map((c) => (
+    <g>
+      <rect x={c.x} y={c.y} width="280" height="130" class="caja" />
+      <text x={c.x + 16} y={c.y + 32} class="t-titulo">{c.t}</text>
+      <text x={c.x + 16} y={c.y + 60} class="t-acento">{c.v}</text>
+      <text x={c.x + 16} y={c.y + 98} class="t-suave">{c.e}</text>
+    </g>
+  ))}
+</Esquema>

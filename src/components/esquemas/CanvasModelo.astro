@@ -1,0 +1,26 @@
+---
+import Esquema from '../Esquema.astro';
+// Cada bloque: posición, tamaño, título y el ejemplo de la agenda digital para centros de actividades
+const bloques = [
+  { x: 10, y: 10, w: 140, h: 240, t: 'Socios clave', e: ['Proveedores', 'y entidades', 'del sector'] },
+  { x: 150, y: 10, w: 140, h: 120, t: 'Actividades clave', e: ['Desarrollo,', 'seguridad, soporte'] },
+  { x: 150, y: 130, w: 140, h: 120, t: 'Recursos clave', e: ['Equipo, software', 'y alojamiento'] },
+  { x: 290, y: 10, w: 140, h: 240, t: 'Propuesta de valor', e: ['Menos mensajes', 'dispersos: agenda', 'accesible con', 'confirmación', 'automática'], acento: true },
+  { x: 430, y: 10, w: 140, h: 120, t: 'Relación', e: ['Configuración', 'inicial y soporte'] },
+  { x: 430, y: 130, w: 140, h: 120, t: 'Canales', e: ['Demostraciones,', 'web y visitas'] },
+  { x: 570, y: 10, w: 140, h: 240, t: 'Segmentos', e: ['Centros de', 'actividades', 'pequeños'] },
+  { x: 10, y: 250, w: 350, h: 110, t: 'Costes', e: ['Personal, infraestructura y captación'] },
+  { x: 360, y: 250, w: 350, h: 110, t: 'Ingresos', e: ['Suscripción y cuota de puesta en marcha'] },
+];
+---
+<Esquema titulo="Los nueve bloques del modelo Canvas" alto={370}
+  descripcion="El lienzo de modelo de negocio con un ejemplo: una agenda digital para centros de actividades pequeños. Arriba, de izquierda a derecha: socios clave; actividades y recursos clave; la propuesta de valor en el centro; relación y canales; segmentos. Abajo, costes e ingresos."
+  pie="A la izquierda de la propuesta de valor está lo que la empresa necesita; a la derecha, a quién sirve y cómo llega. Abajo, el dinero.">
+  {bloques.map((b) => (
+    <g>
+      <rect x={b.x} y={b.y} width={b.w} height={b.h} class={b.acento ? 'caja-acento' : 'caja'} />
+      <text x={b.x + 12} y={b.y + 26} class={b.acento ? 't-bloque t-acento' : 't-bloque'}>{b.t}</text>
+      {b.e.map((l, i) => <text x={b.x + 12} y={b.y + 54 + i * 19} class="t-suave">{l}</text>)}
+    </g>
+  ))}
+</Esquema>

@@ -256,3 +256,4 @@ figure.codigo pre.astro-code { margin: 0; border: 0; border-radius: 0; }
 .esquema .agua { fill: color-mix(in srgb, var(--acento) 10%, transparent); }
 .esquema .punta { fill: var(--suave); }
 .esquema .con-flecha { marker-end: var(--flecha); }
+.esquema .t-bloque { font-weight: 650; font-size: 13px; }

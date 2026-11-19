@@ -1,0 +1,18 @@
+---
+import Esquema from '../Esquema.astro';
+const pasos = [['Empatizar', 'escuchar'], ['Definir', 'el problema'], ['Idear', 'alternativas'], ['Prototipar', 'barato'], ['Probar', 'con personas']];
+---
+<Esquema titulo="Los cinco momentos del pensamiento de diseño" alto={210}
+  descripcion="Cinco momentos en fila: empatizar, definir, idear, prototipar y probar. Una flecha curva vuelve desde probar hasta definir, porque una prueba puede obligar a replantear el problema."
+  pie="No es una cadena rígida: lo que se aprende al probar puede devolverte al problema.">
+  {pasos.map(([p, d], i) => (
+    <g>
+      <rect x={9 + i * 146} y="24" width="118" height="54" rx="8" class={i === 4 ? 'caja-acento' : 'caja'} />
+      <text x={68 + i * 146} y="49" text-anchor="middle">{p}</text>
+      <text x={68 + i * 146} y="68" text-anchor="middle" class="t-suave">{d}</text>
+      {i < 4 && <path d={`M${129 + i * 146} 51 H${151 + i * 146}`} class="trazo con-flecha" />}
+    </g>
+  ))}
+  <path d="M652 82 C652 165, 214 165, 214 86" class="trazo-acento discontinuo con-flecha" />
+  <text x="433" y="190" text-anchor="middle" class="t-suave">si la prueba falla, se vuelve a revisar el problema</text>
+</Esquema>

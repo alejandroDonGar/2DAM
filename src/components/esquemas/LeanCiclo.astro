@@ -1,0 +1,25 @@
+---
+import Esquema from '../Esquema.astro';
+---
+<Esquema titulo="Construir, medir y aprender" alto={320}
+  descripcion="Un ciclo de tres etapas. Construir un producto mínimo viable; medir con una métrica y un umbral fijados antes; aprender y decidir si pivotar o perseverar. De aprender salen ideas que vuelven a construir."
+  pie="Cada vuelta del ciclo pone a prueba una hipótesis con el menor coste posible.">
+  <rect x="285" y="40" width="150" height="58" rx="8" class="caja-acento" />
+  <text x="360" y="64" text-anchor="middle" class="t-titulo t-acento">Construir</text>
+  <text x="360" y="84" text-anchor="middle" class="t-suave">un PMV</text>
+
+  <rect x="425" y="232" width="150" height="58" rx="8" class="caja" />
+  <text x="500" y="256" text-anchor="middle" class="t-titulo">Medir</text>
+  <text x="500" y="276" text-anchor="middle" class="t-suave">métrica y umbral</text>
+
+  <rect x="145" y="232" width="150" height="58" rx="8" class="caja" />
+  <text x="220" y="256" text-anchor="middle" class="t-titulo">Aprender</text>
+  <text x="220" y="276" text-anchor="middle" class="t-suave">pivotar o perseverar</text>
+
+  <path d="M420 100 L478 226" class="trazo con-flecha" />
+  <text x="470" y="150">producto</text>
+  <path d="M421 261 H301" class="trazo con-flecha" />
+  <text x="361" y="252" text-anchor="middle">datos</text>
+  <path d="M242 226 L300 100" class="trazo con-flecha" />
+  <text x="250" y="150" text-anchor="end">ideas</text>
+</Esquema>

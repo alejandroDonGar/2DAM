@@ -11,7 +11,7 @@ import Entorno from '../../../components/esquemas/Entorno.astro';
 import Porter from '../../../components/esquemas/Porter.astro';
 import IcebergCultura from '../../../components/esquemas/IcebergCultura.astro';
 import IdentidadImagen from '../../../components/esquemas/IdentidadImagen.astro';
-import PasosRSE from '../../../components/esquemas/PasosRSE.astro';
+import Secuencia from '../../../components/esquemas/Secuencia.astro';
 
 ## La empresa como sistema
 
@@ -297,7 +297,10 @@ Tiene cinco características:
 
 Se aplica en cuatro áreas: el lugar de trabajo (seguridad más allá de la ley, conciliación, igualdad, formación), el mercado (accesibilidad, publicidad honesta, proveedores responsables), la acción social (colaborar con la comunidad y pagar los impuestos que corresponden) y el medio ambiente (reducir consumos, reciclar, ecodiseño). Se gestiona en cinco pasos:
 
-<PasosRSE />
+<Secuencia titulo="Cómo se gestiona la RSE"
+  descripcion="Cinco pasos en orden: planificar el objetivo y los recursos, ejecutar las acciones, evaluar los resultados, registrarlos en la memoria de sostenibilidad y comunicarlos."
+  pie="La RSE se gestiona como cualquier otra área: con un plan, una evaluación y un informe."
+  pasos={[['Planificar', 'objetivo y recursos'], ['Ejecutar', 'las acciones'], ['Evaluar', 'los resultados'], ['Registrar', 'la memoria'], ['Comunicar', 'darlo a conocer']]} />
 
 El registro suele ser una <mark>memoria de sostenibilidad</mark>, normalmente con la guía GRI. Para una pyme es voluntaria. Para algunas empresas grandes ya no: la Ley 11/2018 obliga a publicar información no financiera, y la directiva europea de información corporativa sobre sostenibilidad (CSRD) amplía esa obligación.
 

@@ -1,0 +1,29 @@
+---
+import Esquema from '../Esquema.astro';
+const lineal = ['Extraer', 'Producir', 'Usar', 'Desechar'];
+const circular: [string, string][] = [['Diseñar', 'para durar'], ['Producir', ''], ['Usar', ''], ['Reparar', 'y reutilizar']];
+---
+<Esquema titulo="Economía lineal y economía circular" alto={300}
+  descripcion="Arriba, la economía lineal: extraer, producir, usar y desechar, en línea recta. Abajo, la circular: diseñar para durar, producir, usar y reparar o reutilizar, con una flecha que devuelve los materiales al principio del ciclo."
+  pie="La lineal termina en la basura. La circular alarga el uso y devuelve los materiales al ciclo.">
+  <text x="10" y="48" class="t-titulo">Lineal</text>
+  {lineal.map((p, i) => (
+    <g>
+      <rect x={110 + i * 150} y="22" width="120" height="44" rx="8" class={i === 3 ? 'trazo discontinuo' : 'caja'} />
+      <text x={170 + i * 150} y="49" text-anchor="middle">{p}</text>
+      {i < 3 && <path d={`M${232 + i * 150} 44 H${256 + i * 150}`} class="trazo con-flecha" />}
+    </g>
+  ))}
+
+  <text x="10" y="172" class="t-titulo t-acento">Circular</text>
+  {circular.map(([p, d], i) => (
+    <g>
+      <rect x={110 + i * 150} y="140" width="120" height="54" rx="8" class={i === 3 ? 'caja-acento' : 'caja'} />
+      <text x={170 + i * 150} y={d ? 163 : 172} text-anchor="middle">{p}</text>
+      {d && <text x={170 + i * 150} y="182" text-anchor="middle" class="t-suave">{d}</text>}
+      {i < 3 && <path d={`M${232 + i * 150} 167 H${256 + i * 150}`} class="trazo con-flecha" />}
+    </g>
+  ))}
+  <path d="M620 196 C620 262, 170 262, 170 200" class="trazo-acento con-flecha" />
+  <text x="395" y="282" text-anchor="middle" class="t-suave">los materiales y los equipos vuelven al ciclo</text>
+</Esquema>

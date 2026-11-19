@@ -1,0 +1,19 @@
+---
+// Pasos en orden, de izquierda a derecha, con flechas. Solo para contenido que de verdad es una secuencia.
+import Esquema from '../Esquema.astro';
+interface Props { titulo: string; descripcion: string; pie: string; pasos: [string, string][] }
+const { titulo, descripcion, pie, pasos } = Astro.props;
+const hueco = 28;
+const ancho = (702 - (pasos.length - 1) * hueco) / pasos.length;
+const x = (i: number) => 9 + i * (ancho + hueco);
+---
+<Esquema titulo={titulo} alto={130} descripcion={descripcion} pie={pie}>
+  {pasos.map(([p, d], i) => (
+    <g>
+      <rect x={x(i)} y="24" width={ancho} height="54" rx="8" class="caja" />
+      <text x={x(i) + ancho / 2} y="56" text-anchor="middle">{i + 1}. {p}</text>
+      <text x={x(i) + ancho / 2} y="104" text-anchor="middle" class="t-suave">{d}</text>
+      {i < pasos.length - 1 && <path d={`M${x(i) + ancho + 2} 51 H${x(i + 1) - 4}`} class="trazo con-flecha" />}
+    </g>
+  ))}
+</Esquema>
