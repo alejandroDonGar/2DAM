@@ -1,0 +1,1094 @@
+---
+titulo: SQL y JDBC
+etiqueta: UT2
+orden: 2
+entrada: Los mismos productos y vehículos, ahora en una base de datos SQLite. Primero SQL a mano, después JDBC desde Java, y por último un DAO genérico que evita repetir el mismo código en cada tabla.
+cuando: 14 a 27 oct.
+ejercicios: repaso-sqlite, codelearn-jdbc-entrega2, gestion-java-jdbc-dao, taller mecánico y clínica veterinaria
+ruta: { texto: Persistencia relacional en CodeLearn, url: "https://codelearnacademy.github.io/orm/" }
+crud: 2
+---
+import Fragmento from '../../../components/Fragmento.astro';
+import Pasos from '../../../components/Pasos.astro';
+import Paso from '../../../components/Paso.astro';
+
+## De ficheros a SQLite
+
+### Qué se ve
+
+En la UT1 cada cambio obligaba a leer el fichero entero, tocar la lista y volver a escribirlo todo. Una base de datos permite trabajar fila a fila: buscar el producto 2, cambiarle el precio o borrarlo sin tocar los demás. Este tema presenta SQLite, la base que se usa en toda la unidad, y cómo se pasa del `record Producto` a una tabla.
+
+### Conceptos
+
+Una <mark>base de datos relacional</mark> guarda la información en tablas. Cada tabla tiene columnas con un tipo y cada fila es un registro. La tabla `producto` ocupa el lugar del `productos.csv`: las columnas son `id`, `nombre` y `precio`, y cada fila es un producto. El modelo de Java no cambia; lo que cambia es dónde y cómo se guarda.
+
+<mark>SQLite</mark> es una base embebida. No hay un servidor que arrancar: la librería va dentro del programa y la base entera es un fichero, como `datos/gestion.sqlite3`. Eso la hace cómoda para prácticas y aplicaciones locales. A cambio, no está pensada para que muchos usuarios escriban a la vez desde distintos equipos, que es para lo que sirven MySQL o PostgreSQL.
+
+La herramienta para probarla a mano es la consola `sqlite3`. Las órdenes que empiezan por punto son de la consola, no de SQL: `.tables` lista las tablas, `.schema` enseña cómo se crearon y `.quit` sale. Todo lo demás es SQL y termina en punto y coma. En clase también se usó DB Browser for SQLite, que hace lo mismo con ventanas y deja ver los cambios después de cada operación.
+
+La <mark>clave primaria</mark> identifica cada fila y no se puede repetir. Es la misma idea que el `id` de `IRepository<Producto, Long>` en la UT1. En `Producto` la clave es `id`; en `Vehiculo` es la matrícula, una clave natural de tipo texto.
+
+SQLite tiene pocos tipos. En vez de tipos estrictos usa <mark>afinidad</mark>: la columna sugiere un tipo, pero en principio aceptaría otro valor. Los que aparecen en la unidad son `INTEGER`, `REAL` (decimal en coma flotante), `TEXT` y `NUMERIC`. Fechas y booleanos no tienen tipo propio: las fechas se guardan como texto `AAAA-MM-DD` y los booleanos como 0 o 1. Una columna `INTEGER PRIMARY KEY` es especial, porque si al insertar no se le da valor, SQLite le asigna uno solo.
+
+Las <mark>restricciones</mark> hacen que sea la base la que rechace los datos incorrectos, no solo el programa. `NOT NULL` impide que falte el valor, `UNIQUE` impide repetirlo y `CHECK` comprueba una condición. Las bases de las prácticas traían varias: precio no negativo, nombre no vacío y matrícula en mayúsculas.
+
+`CREATE TABLE` es DDL (define la estructura). `INSERT`, `SELECT`, `UPDATE` y `DELETE` son DML (trabajan con los datos). Crear el esquema desde Java con `CREATE TABLE IF NOT EXISTS` permite arrancar el programa todas las veces que haga falta: la primera vez crea la tabla y las siguientes no hace nada. Ojo, eso tampoco modifica una tabla que ya exista con otras columnas.
+
+### Código paso a paso
+
+Así se crearon las dos tablas de la base de `repaso-sqlite`. Cada columna Java tiene su tipo SQL y las reglas del modelo pasan a ser restricciones:
+
+<Fragmento archivo="crear_base_de_datos.sql" ejercicio="repaso-sqlite" ruta="repaso-sqlite/crear_base_de_datos.sql">
+
+```sql
+CREATE TABLE Productos (
+    id INTEGER PRIMARY KEY CHECK(id > 0),
+    nombre TEXT NOT NULL CHECK(length(trim(nombre)) > 0),
+    precio REAL NOT NULL CHECK(precio >= 0)
+);
+
+CREATE TABLE Vehiculos (
+    matricula TEXT PRIMARY KEY NOT NULL
+        CHECK(length(trim(matricula)) > 0 AND matricula = upper(trim(matricula))),
+    marca TEXT NOT NULL CHECK(length(trim(marca)) > 0),
+    modelo TEXT NOT NULL CHECK(length(trim(modelo)) > 0),
+    anio INTEGER NOT NULL CHECK(anio >= 1886)
+);
+```
+
+</Fragmento>
+
+`NOT NULL` no basta para un texto obligatorio, porque `""` no es nulo. Por eso cada nombre lleva además `length(trim(...)) > 0`. El `CHECK` de la matrícula obliga a guardarla en mayúsculas, así que `"1234abc"` y `"1234ABC"` no pueden acabar como dos vehículos distintos.
+
+Para mirar la base desde la consola:
+
+```sql
+-- sqlite3 codelearn_modelos.sqlite3
+.tables
+.schema Productos
+SELECT * FROM Productos LIMIT 3;
+.quit
+```
+
+### Errores típicos
+
+- **Conectarse a una ruta que no existe.** SQLite no da error: crea una base vacía y las consultas fallan después con «no such table». Comprueba la ruta antes, como se hizo en el taller (tema 6).
+- **Confiar solo en `NOT NULL` para los textos.** Acepta `""` y `"   "`. Añade un `CHECK` con `trim` o valida en Java.
+- **Guardar fechas en formatos libres.** Con `"5/10/2026"` el orden alfabético no coincide con el de las fechas. En `AAAA-MM-DD` sí, y se puede ordenar con `ORDER BY fecha`.
+- **Esperar que `IF NOT EXISTS` actualice la tabla.** Si la tabla ya existe con otras columnas, la deja como está.
+
+### Prácticas de clase
+
+- **repaso-sqlite.** Una base con 100 productos y 100 vehículos de ejemplo, el script para recrearla y un corrector en Python que compara el resultado de cada consulta con el esperado. Se abría con DB Browser o con `sqlite3` antes de pasar a Java. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/repaso-sqlite)
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué diferencia hay entre `.tables` y `SELECT`?</summary>
+
+`.tables` es una orden de la consola `sqlite3` y no funciona desde Java. `SELECT` es SQL y funciona en cualquier sitio que hable con la base.
+
+</details>
+<details>
+<summary>¿Qué pasa si insertas un producto sin `id` en una tabla con `id INTEGER PRIMARY KEY`?</summary>
+
+SQLite le asigna un número él solo, normalmente el siguiente al mayor que ya existe.
+
+</details>
+<details>
+<summary>¿Por qué la matrícula puede ser clave primaria y el nombre de un producto no?</summary>
+
+Porque la matrícula no se repite entre vehículos y el nombre sí podría repetirse entre productos. La clave tiene que identificar una sola fila.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, ruta de persistencia, lecciones 1 a 3](https://codelearnacademy.github.io/orm/leccion01/)
+2. [CodeLearn, lección 6: crear el esquema desde Java](https://codelearnacademy.github.io/orm/leccion06/)
+3. [Tipos de datos en SQLite (afinidad)](https://www.sqlite.org/datatype3.html)
+4. [`CREATE TABLE` en SQLite](https://www.sqlite.org/lang_createtable.html)
+5. [La consola `sqlite3`](https://www.sqlite.org/cli.html)
+
+## SQL para consultar
+
+### Qué se ve
+
+Antes de escribir una línea de Java hay que saber pedirle cosas a la base. Este tema recorre el SQL de la unidad en el orden de `repaso-sqlite`: las cuatro sentencias del CRUD, filtrar y ordenar, contar y agrupar, y al final subconsultas y funciones de ventana.
+
+### Conceptos
+
+El CRUD de `IRepository` se traduce a SQL casi palabra por palabra:
+
+| Operación | SQL |
+|---|---|
+| `findAll` | `SELECT id, nombre, precio FROM producto ORDER BY id` |
+| `findById` | `SELECT id, nombre, precio FROM producto WHERE id = ?` |
+| `create` | `INSERT INTO producto(id, nombre, precio) VALUES (?, ?, ?)` |
+| `update` | `UPDATE producto SET nombre = ?, precio = ? WHERE id = ?` |
+| `delete` | `DELETE FROM producto WHERE id = ?` |
+
+Los `?` son huecos para valores que pondrá Java en el tema 4. `WHERE` decide a qué filas afecta la sentencia. Un `UPDATE` o un `DELETE` sin `WHERE` afecta a toda la tabla, y la base no pide confirmación.
+
+Para filtrar, además de `=`, `<` y `>`, están `BETWEEN a AND b` (incluye los dos extremos), `IN (...)` para una lista de valores y `LIKE` con comodines: `%` es cualquier cantidad de caracteres y `_` uno solo. En SQLite, `LIKE` no distingue mayúsculas de minúsculas en las letras sin tilde. `DISTINCT` quita las filas repetidas del resultado y `ORDER BY` lo ordena. Sin `ORDER BY`, SQL no garantiza ningún orden, aunque casi siempre salga el de inserción. `LIMIT` corta el número de filas.
+
+Las <mark>funciones de agregado</mark> resumen muchas filas en un valor: `COUNT`, `SUM`, `AVG`, `MIN` y `MAX`. Hay un matiz con las tablas vacías: `COUNT(*)` devuelve 0, pero `AVG`, `SUM`, `MIN` y `MAX` devuelven `NULL`. `COALESCE(AVG(precio), 0)` cambia ese `NULL` por 0. `COUNT(*)` cuenta filas y `COUNT(columna)` solo las que no tienen `NULL` en esa columna.
+
+`GROUP BY` forma grupos de filas con el mismo valor y calcula el agregado de cada grupo, por ejemplo cuántos vehículos hay de cada marca. Para filtrar esos grupos se usa `HAVING`, no `WHERE`. La diferencia está en el orden en que la base resuelve la consulta: primero `FROM`, después `WHERE` (filtra filas), luego `GROUP BY`, `HAVING` (filtra grupos), `SELECT` y por último `ORDER BY`. Por eso en `WHERE` todavía no existe `COUNT(*)`.
+
+Una <mark>subconsulta</mark> es un `SELECT` dentro de otro. «Productos más caros que la media» necesita primero la media y después compararla, y eso cabe en una sola sentencia: `WHERE precio > (SELECT AVG(precio) FROM productos)`.
+
+Las últimas consultas del repaso usaban <mark>funciones de ventana</mark> (`RANK() OVER (...)`, `SUM(...) OVER (...)`). Se parecen a un agregado, pero no juntan las filas: cada fila conserva sus datos y además recibe un valor calculado sobre las demás, como su puesto en un ranking o el total acumulado hasta ella.
+
+### Código paso a paso
+
+<Pasos nombre="Las consultas de repaso-sqlite">
+<Paso titulo="1. Filtrar">
+
+Productos entre 20 y 50 euros, del más barato al más caro. `BETWEEN` incluye los extremos.
+
+<Fragmento archivo="respuestas_alumno.sql" ejercicio="repaso-sqlite" ruta="repaso-sqlite/respuestas_alumno.sql">
+
+```sql
+-- EJERCICIO 06
+SELECT id, nombre, precio
+FROM productos
+WHERE precio BETWEEN 20 AND 50
+ORDER BY precio
+LIMIT 8;
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="2. Agregar">
+
+Tres agregados en una sola fila. La media se redondea a dos decimales.
+
+<Fragmento archivo="respuestas_alumno.sql" ejercicio="repaso-sqlite" ruta="repaso-sqlite/respuestas_alumno.sql">
+
+```sql
+-- EJERCICIO 11
+SELECT MIN(precio) AS minimo,
+       MAX(precio) AS maximo,
+       ROUND(AVG(precio), 2) AS media
+FROM productos;
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="3. Agrupar">
+
+Marcas con al menos cinco vehículos. `WHERE` no serviría porque el número de vehículos solo existe después de agrupar.
+
+<Fragmento archivo="respuestas_alumno.sql" ejercicio="repaso-sqlite" ruta="repaso-sqlite/respuestas_alumno.sql">
+
+```sql
+-- EJERCICIO 19
+SELECT marca, COUNT(*) AS cantidad
+FROM vehiculos
+GROUP BY marca
+HAVING cantidad > 5;
+```
+
+</Fragmento>
+
+Esta respuesta tiene un fallo que el corrector no detectó: «al menos cinco» es `>= 5`. Pasó porque en esta base todas las marcas tienen diez vehículos. Con una marca de cinco exactos, se quedaría fuera.
+
+</Paso>
+<Paso titulo="4. Subconsulta y ranking">
+
+Primero, los productos más caros que la media (en esta base salen 50 de 100). Después, un ranking por precio en el que cada fila conserva sus columnas y gana un puesto.
+
+<Fragmento archivo="respuestas_alumno.sql" ejercicio="repaso-sqlite" ruta="repaso-sqlite/respuestas_alumno.sql">
+
+```sql
+-- EJERCICIO 23
+SELECT id, nombre, precio
+FROM productos
+WHERE precio > (SELECT AVG(precio) FROM productos)
+ORDER BY precio DESC;
+
+-- EJERCICIO 26
+SELECT id, nombre, precio,
+       RANK() OVER (ORDER BY precio DESC) AS puesto
+FROM productos
+ORDER BY puesto
+LIMIT 10;
+```
+
+</Fragmento>
+
+</Paso>
+</Pasos>
+
+### Errores típicos
+
+- **Comillas dobles para los textos.** En SQL, `"Pro"` es el nombre de una columna y `'Pro'` es un texto. SQLite lo tolera: si no encuentra una columna con ese nombre, lo trata como texto. Así pasa la respuesta del ejercicio 5 (`LIKE "%Pro%"`), pero en otra base, o si existiera esa columna, fallaría. Usa siempre comillas simples.
+- **Traducir «al menos» por `>`.** «Al menos cinco» es `>= 5`. El corrector solo comprueba el resultado con estos datos, y por eso no lo vio en los ejercicios 19 y 20.
+- **Filtrar un agregado con `WHERE`.** `WHERE COUNT(*) > 5` da error. El filtro de grupos va en `HAVING`.
+- **Contar con `COUNT(*)` después de un `LEFT JOIN`.** Cuenta también las filas que salen con `NULL`. Usa `COUNT(columna)` (se ve en el tema 6).
+- **Dar por hecho el orden.** Sin `ORDER BY` el resultado puede salir en cualquier orden. El corrector del repaso exigía el orden del ejemplo, y ese es otro motivo para escribirlo siempre.
+
+### Prácticas de clase
+
+- **repaso-sqlite.** Treinta consultas en cinco niveles: consulta básica, agregados, agrupación, subconsultas y funciones de ventana. Las respuestas están en `respuestas_alumno.sql` y se comprueban con `python corregir.py respuestas_alumno.sql`. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/repaso-sqlite)
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué devuelve `SELECT AVG(precio) FROM productos` si la tabla está vacía?</summary>
+
+`NULL`, no 0. Para obtener 0 hay que escribir `COALESCE(AVG(precio), 0)`.
+
+</details>
+<details>
+<summary>¿Por qué no se puede usar `COUNT(*)` en un `WHERE`?</summary>
+
+Porque `WHERE` se aplica antes de agrupar, cuando todavía no hay grupos que contar. Para eso está `HAVING`.
+
+</details>
+<details>
+<summary>¿En qué se diferencia `RANK() OVER` de un `GROUP BY`?</summary>
+
+`GROUP BY` junta las filas y devuelve una por grupo. La función de ventana devuelve todas las filas y añade a cada una un valor calculado sobre las demás.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, lección 4: SQL para el CRUD](https://codelearnacademy.github.io/orm/leccion04/)
+2. [`SELECT` en SQLite](https://www.sqlite.org/lang_select.html)
+3. [Funciones de agregado en SQLite](https://www.sqlite.org/lang_aggfunc.html)
+4. [Funciones de ventana en SQLite](https://www.sqlite.org/windowfunctions.html)
+5. [Comillas en SQLite: la tolerancia con las comillas dobles](https://www.sqlite.org/quirks.html#double_quoted_string_literals_are_accepted)
+
+## JDBC: conexión, sentencia y ResultSet
+
+### Qué se ve
+
+Ahora el SQL se lanza desde Java. JDBC es la pieza que lo permite. Este tema sigue el camino completo de una consulta: abrir la conexión, preparar la sentencia, ejecutarla, recorrer las filas que devuelve y cerrarlo todo.
+
+### Conceptos
+
+<mark>JDBC</mark> es la API estándar de Java para bases de datos relacionales. Está en el paquete `java.sql` y define interfaces (`Connection`, `PreparedStatement`, `ResultSet`) que no saben nada de SQLite en concreto. Quien las implementa es el <mark>driver</mark>, una dependencia de Maven. Para SQLite se usa `org.xerial:sqlite-jdbc`. Si mañana se cambiara a PostgreSQL, se cambiaría el driver y la URL, y el código JDBC seguiría casi igual.
+
+La conexión se pide a `DriverManager.getConnection(url)`. La URL dice qué driver usar y dónde está la base: `jdbc:sqlite:datos/codelearn_modelos.sqlite3`. La ruta que va detrás de `jdbc:sqlite:` es relativa al directorio de trabajo, igual que con los ficheros de la UT1. Una `Connection` es una sesión abierta con la base, y se cierra al terminar.
+
+Con la conexión se crea una sentencia. `Statement` ejecuta un SQL fijo y sirve para cosas como `CREATE TABLE`. `PreparedStatement` admite huecos `?` y es la que se usa para todo lo demás (tema 4). Hay dos formas de ejecutarlas:
+
+| Método | Para qué | Devuelve |
+|---|---|---|
+| `executeQuery()` | `SELECT` | un `ResultSet` con las filas |
+| `executeUpdate()` | `INSERT`, `UPDATE`, `DELETE`, DDL | cuántas filas ha cambiado |
+
+El <mark>ResultSet</mark> funciona como un cursor. Empieza colocado antes de la primera fila. Cada llamada a `next()` avanza una fila y devuelve `true` mientras haya fila. Por eso el recorrido es siempre `while (rs.next())`, o `if (rs.next())` cuando se espera una sola fila. Los valores de la fila actual se leen con `getInt`, `getString` o `getDouble`, por nombre de columna o por posición, empezando en 1.
+
+Con los tipos primitivos hay una trampa: si la columna es `NULL`, `getInt` devuelve 0 y `getDouble` devuelve 0.0, como si hubiera un cero de verdad. Para distinguirlo, se llama a `rs.wasNull()` justo después de leer.
+
+Pasar cada fila a un objeto (`rs.getLong("id")`, `rs.getString("nombre")`… y llamar al constructor) es el <mark>mapeo manual</mark>. Se repite en cada consulta, y esa repetición es justo lo que el ORM de la UT3 viene a quitar.
+
+`Connection`, `PreparedStatement` y `ResultSet` ocupan recursos y se cierran con try-with-resources, como los lectores de la UT1. Hay una regla de JDBC que conviene conocer: al cerrar una sentencia se cierra también su `ResultSet`. Aun así, meterlo en el `try` deja claro cuándo se cierra.
+
+Los errores llegan como `SQLException`, que es comprobada. La ruta del profesor la envuelve en una excepción propia sin comprobar (`RepositoryException`), para que la interfaz del repositorio no tenga que declarar `throws SQLException`. Es la misma idea que `UncheckedIOException` en la UT1.
+
+### Código paso a paso
+
+En `codelearn-jdbc-entrega2` la conexión la da una clase aparte, y cada consulta la abre y la cierra:
+
+<Fragmento archivo="BaseDatos.java" ejercicio="codelearn-jdbc-entrega2" ruta="codelearn-jdbc-entrega2/src/main/java/es/codelearn/BaseDatos.java">
+
+```java
+public final class BaseDatos {
+    private static String url = "jdbc:sqlite:datos/codelearn_modelos.sqlite3";
+
+    public static Connection conectar() throws SQLException {
+        return DriverManager.getConnection(url);
+    }
+
+    /** Permite usar una base independiente en los tests. */
+    public static void configurar(String nuevaUrl) {
+        if (nuevaUrl == null || !nuevaUrl.startsWith("jdbc:sqlite:")) {
+            throw new IllegalArgumentException("URL SQLite no válida");
+        }
+        url = nuevaUrl;
+    }
+}
+```
+
+</Fragmento>
+
+Y así se recorre un `ResultSet` de varias filas. Pulsa «Depurar» para ver cómo avanza el cursor:
+
+<Fragmento archivo="Consultas.java" ejercicio="codelearn-jdbc-entrega2" ruta="codelearn-jdbc-entrega2/src/main/java/es/codelearn/Consultas.java" depurar={[
+  { l: 1, t: 'Se llama sin parámetros: la URL de la base la guarda BaseDatos.' },
+  { l: 2, v: { listaDeMarcas: '[]' }, t: 'Lista vacía para ir guardando las marcas.' },
+  { l: 3, v: { connection: 'Connection → datos/codelearn_modelos.sqlite3' }, t: 'Se abre la conexión con la base.' },
+  { l: 4, v: { sentencia: 'PreparedStatement: SELECT DISTINCT marca FROM vehiculos ORDER BY marca ASC' }, t: 'El SQL no tiene huecos ?, así que no hay que asignar nada antes de ejecutarlo.' },
+  { l: 5, v: { resultado: 'ResultSet (antes de la primera fila)' }, t: 'executeQuery lanza el SELECT. El cursor empieza antes de la primera fila, todavía sin datos.' },
+  { l: 6, v: { resultado: 'ResultSet → fila 1: marca = "Ford"' }, t: 'next() avanza a la primera fila y devuelve true.' },
+  { l: 7, v: { listaDeMarcas: '["Ford"]' }, t: 'getString("marca") lee la columna de la fila actual.' },
+  { l: 6, v: { resultado: 'ResultSet → fila 2: marca = "Honda"' }, t: 'Siguiente vuelta: next() pasa a la fila 2.' },
+  { l: 7, v: { listaDeMarcas: '["Ford", "Honda"]' }, t: 'Se añade la segunda marca.' },
+  { l: 7, v: { resultado: 'ResultSet → fila 10: marca = "Volkswagen"', listaDeMarcas: '["Ford", "Honda", "Hyundai", "Kia", "Opel", "Peugeot", "Renault", "SEAT", "Toyota", "Volkswagen"]' }, t: 'Las vueltas se repiten igual con el resto. Tras la décima fila están las diez marcas, sin repetir por el DISTINCT.' },
+  { l: 6, v: { resultado: 'ResultSet (después de la última fila)' }, t: 'next() ya no encuentra fila y devuelve false: el bucle termina.' },
+  { l: 9, v: { resultado: null, sentencia: null, connection: null }, t: 'Al salir del try se cierran la sentencia y la conexión. El ResultSet se cierra con su sentencia.' },
+  { l: 14, v: { 'return': '10 marcas' }, t: 'Se devuelve la lista. Si hubiera fallado algo, el catch habría devuelto List.of().' },
+]}>
+
+```java
+public static List<String> listarMarcas() {
+    List<String> listaDeMarcas = new ArrayList<>();
+    try (Connection connection = BaseDatos.conectar();
+        PreparedStatement sentencia = connection.prepareStatement("SELECT DISTINCT marca FROM vehiculos ORDER BY marca ASC")) {
+            ResultSet resultado = sentencia.executeQuery();
+            while (resultado.next()) {
+                listaDeMarcas.add(resultado.getString("marca"));
+            }
+    }
+    catch (SQLException e) {
+        System.err.println("Error SQL al listar las marcas: " + e.getMessage());
+        return List.of();
+    }
+    return listaDeMarcas;
+}
+```
+
+</Fragmento>
+
+Cuando el resultado es un solo número, el `ResultSet` tiene una fila y una columna, y se lee por posición. `AVG` de una tabla vacía es `NULL`, y `wasNull()` lo detecta:
+
+<Fragmento archivo="Consultas.java" ejercicio="codelearn-jdbc-entrega2" ruta="codelearn-jdbc-entrega2/src/main/java/es/codelearn/Consultas.java">
+
+```java
+public static double obtenerPrecioMedio() {
+    try (Connection connection = BaseDatos.conectar();
+        PreparedStatement sentencia = connection.prepareStatement("SELECT AVG(precio) FROM productos")) {
+            ResultSet resultado = sentencia.executeQuery();
+            while (resultado.next()) {
+                Double precioMedio = resultado.getDouble(1);
+                return resultado.wasNull() ? 0.0 : precioMedio;
+            }
+    } catch (SQLException e) {
+        System.err.println("Error SQL al obtener el precio medio: " + e.getMessage());
+        return Double.NaN;
+    }
+    return 0.0;
+}
+```
+
+</Fragmento>
+
+### Errores típicos
+
+- **Leer columnas antes de `next()`.** El cursor empieza antes de la primera fila, así que `rs.getString(1)` sin un `next()` previo lanza `SQLException`.
+- **Contar las columnas desde 0.** En JDBC empiezan en 1, tanto en `getInt(1)` como en `setInt(1, ...)`.
+- **Tomar un 0 por un valor real.** Si la columna es `NULL`, `getInt` y `getDouble` devuelven 0. Comprueba `wasNull()` justo después o usa `COALESCE` en el SQL.
+- **Usar `while` cuando solo puede haber una fila.** Funciona, pero `if (rs.next())` o `rs.next() ? … : …` dicen mejor lo que se espera. En `entrega2` quedó `while` en las consultas de un valor.
+- **Avisar del error devolviendo un número.** Devolver `-1` o `Double.NaN` obliga a quien llama a recordar qué significa cada valor. En los temas 5 y 6 se ven dos alternativas: devolver vacío y registrar el error, o lanzar una excepción propia.
+
+### Prácticas de clase
+
+- **codelearn-jdbc-entrega2.** Doce métodos estáticos en `Consultas` que había que completar hasta pasar 24 tests: contar, comprobar si existe un registro, medias, máximos y listas ordenadas. El enunciado prohibía declarar `throws SQLException` y pasar la conexión como parámetro, así que cada método abre la suya con `BaseDatos.conectar()`. Los tests cambian la URL con `BaseDatos.configurar` para trabajar sobre una base temporal de cinco registros. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/codelearn-jdbc-entrega2)
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué parte de JDBC cambiarías para pasar de SQLite a PostgreSQL?</summary>
+
+El driver del `pom.xml` y la URL de conexión. Las interfaces de `java.sql` son las mismas.
+
+</details>
+<details>
+<summary>¿Qué devuelve `executeUpdate()`?</summary>
+
+El número de filas que ha cambiado la sentencia. Si un `UPDATE` no encuentra ninguna fila con ese `WHERE`, devuelve 0.
+
+</details>
+<details>
+<summary>¿Por qué el recorrido se escribe `while (rs.next())` y no `do { … } while (rs.next())`?</summary>
+
+Porque el cursor empieza antes de la primera fila. El primer `next()` es el que llega a ella, y si la consulta no devuelve nada, el bucle no se ejecuta ni una vez.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, lecciones 5 a 7: JDBC, esquema y ResultSet](https://codelearnacademy.github.io/orm/leccion05/)
+2. [Tutorial de Oracle: JDBC Basics](https://docs.oracle.com/javase/tutorial/jdbc/basics/index.html)
+3. [Javadoc de `java.sql.ResultSet` (Java 21)](https://docs.oracle.com/en/java/javase/21/docs/api/java.sql/java/sql/ResultSet.html)
+4. [Javadoc de `java.sql.Statement` (Java 21)](https://docs.oracle.com/en/java/javase/21/docs/api/java.sql/java/sql/Statement.html)
+5. [Driver sqlite-jdbc de Xerial](https://github.com/xerial/sqlite-jdbc)
+
+## PreparedStatement y el CRUD
+
+### Qué se ve
+
+Con lo del tema anterior ya se puede leer, pero para buscar, insertar o modificar hay que meter valores de Java dentro del SQL. Este tema explica por qué eso se hace con `?` y `PreparedStatement` y nunca pegando cadenas, y monta el CRUD completo de productos y vehículos.
+
+### Conceptos
+
+La forma ingenua de buscar por nombre sería construir el SQL con `+`: `"SELECT * FROM productos WHERE nombre = '" + nombre + "'"`. Funciona hasta que el nombre trae una comilla, como `D'Artagnan`, y la sentencia se rompe. Si el valor lo escribe un usuario, puede ser peor: con `' OR '1'='1` la condición pasa a ser siempre verdadera y la consulta devuelve toda la tabla. Eso es la <mark>inyección SQL</mark>, una de las vulnerabilidades más conocidas, y está entre los riesgos más graves de la lista de OWASP.
+
+<mark>PreparedStatement</mark> lo resuelve separando el SQL de los datos. La sentencia se escribe con huecos `?` y la base la analiza antes de recibir los valores. Después se asigna cada hueco por posición, empezando en 1, con `setInt`, `setString`, `setDouble` o `setObject`. Los valores viajan aparte y se tratan siempre como datos: una comilla dentro de un nombre es solo un carácter más.
+
+Los `?` solo sirven para valores. No pueden sustituir el nombre de una tabla, el de una columna ni una palabra de SQL como `ASC`. Si eso tiene que variar, se elige entre opciones fijas del código, nunca a partir de lo que escribe el usuario.
+
+Para `LIKE` los comodines van en el valor, no en el SQL: se escribe `WHERE nombre LIKE ?` y se asigna `"%" + texto + "%"`.
+
+En escritura, `executeUpdate()` devuelve las filas afectadas, y eso encaja con el contrato del repositorio. Un `update` o un `delete` devuelven `true` si cambiaron alguna fila y `false` si el id no existía. Insertar un id que ya existe no devuelve 0: la base lanza una `SQLException` por la clave primaria repetida.
+
+La ruta del profesor construye primero `ProductoJdbcCrudDemo`, una clase que lo hace todo (conexión, SQL, mapeo, CRUD), igual que `CsvCrudDemo` en la UT1. Primero se consigue que funcione. Después se refactoriza.
+
+### Código paso a paso
+
+En `gestion-java-jdbc-dao`, cada método del DAO abre su conexión, prepara el SQL, asigna los huecos y lo ejecuta. Pulsa «Depurar» para ver cómo se van llenando los `?`:
+
+<Fragmento archivo="ProductoDao.java" ejercicio="gestion-java-jdbc-dao" ruta="gestion-java-jdbc-dao/src/main/java/es/ejemplo/gestion/dao/ProductoDao.java" depurar={[
+  { l: 1, v: { producto: 'Producto{4, "Teclado Compacto RGB", 42.5}' }, t: 'Se quiere cambiar el nombre y el precio del producto 4, que ahora es «Teclado Compacto» a 37.69.' },
+  { l: 2, v: { connection: 'Connection → datos/gestion.sqlite3' }, t: 'obtenerConexion() viene de ConexionBD, la clase madre.' },
+  { l: 3, v: { sentencia: 'UPDATE productos SET nombre=?, precio=? WHERE id=?' }, t: 'La base recibe el SQL con los tres huecos vacíos y lo analiza antes de conocer los valores.' },
+  { l: 4, v: { sentencia: 'UPDATE productos SET nombre="Teclado Compacto RGB", precio=?, id=?' }, t: 'Hueco 1: el nombre. Viaja como dato, así que aunque tuviera comillas no podría cambiar la sentencia.' },
+  { l: 5, v: { sentencia: 'UPDATE productos SET nombre="Teclado Compacto RGB", precio=42.5 WHERE id=?' }, t: 'Hueco 2: el precio, con setDouble.' },
+  { l: 6, v: { sentencia: 'UPDATE productos SET nombre="Teclado Compacto RGB", precio=42.5 WHERE id=4' }, t: 'Hueco 3: el id del WHERE. Fíjate en que el orden de los set sigue el de los ? en el SQL, no el del constructor.' },
+  { l: 7, v: { filas: '1', 'return': 'true' }, t: 'executeUpdate cambia una fila y devuelve 1, así que el método devuelve true. Con un id que no existiera devolvería 0 y el método, false.' },
+  { l: 8, v: { sentencia: null, connection: null }, t: 'Al salir del try se cierran la sentencia y la conexión.' },
+]}>
+
+```java
+public boolean actualizar(Producto producto) {
+    try (Connection connection = this.obtenerConexion();
+        PreparedStatement sentencia = connection.prepareStatement("UPDATE productos SET nombre=?, precio=? WHERE id=?")) {
+        sentencia.setString(1, producto.getNombre());
+        sentencia.setDouble(2, producto.getPrecio());
+        sentencia.setInt(3, producto.getId());
+        return sentencia.executeUpdate() > 0;
+    } catch (Exception e) {
+        throw new AplicationException(e.getMessage(), e.getCause());
+    }
+}
+```
+
+</Fragmento>
+
+El resto del CRUD sigue la misma forma. En la búsqueda, `rs.next()` decide entre un `Optional` con el producto o uno vacío:
+
+<Fragmento archivo="ProductoDao.java" ejercicio="gestion-java-jdbc-dao" ruta="gestion-java-jdbc-dao/src/main/java/es/ejemplo/gestion/dao/ProductoDao.java">
+
+```java
+public Optional<Producto> buscarPorId(int id) {
+    try (Connection connection = this.obtenerConexion();
+        PreparedStatement sentencia = connection.prepareStatement("SELECT id, nombre, precio FROM Productos WHERE id=?")) {
+        sentencia.setInt(1, id);
+        ResultSet resultado = sentencia.executeQuery();
+        return resultado.next() ? Optional.of(mapperToClass(resultado)) : Optional.empty();
+    } catch (Exception e) {
+        throw new AplicationException(e.getMessage(), e);
+    }
+}
+```
+
+</Fragmento>
+
+Para ver la diferencia con la concatenación, un ejemplo que no está en los ejercicios:
+
+```java
+String nombre = "x' OR '1'='1";
+
+// MAL: el valor pasa a formar parte del SQL
+String sql = "SELECT * FROM productos WHERE nombre = '" + nombre + "'";
+// queda: ... WHERE nombre = 'x' OR '1'='1'   → devuelve todos los productos
+
+// BIEN: el valor es solo un dato
+PreparedStatement ps = con.prepareStatement("SELECT * FROM productos WHERE nombre = ?");
+ps.setString(1, nombre);   // busca un producto que se llame literalmente así
+```
+
+### Errores típicos
+
+- **Concatenar valores en el SQL.** Rompe con cualquier comilla y abre la puerta a la inyección. Siempre `?` y `setX`.
+- **Poner la comilla alrededor del `?`.** `WHERE nombre = '?'` busca el texto «?». El hueco va sin comillas.
+- **Cambiar el orden de los `set`.** En el `UPDATE` el id va el último porque su `?` está en el `WHERE`. Si se asigna como primero, el nombre acaba comparado con el id.
+- **Perder la causa del error.** En `gestion-java-jdbc-dao`, varias excepciones se crearon con `e.getCause()` en vez de `e`. La `SQLException` original casi nunca tiene causa, así que el error llega sin el motivo real. Pasa la excepción entera: `new AplicationException(mensaje, e)`.
+- **Un `INSERT` sin columnas.** `INSERT INTO productos VALUES (?,?,?)` depende del orden en que se creó la tabla. Escribir `INSERT INTO productos(id, nombre, precio) …` lo deja claro y no se rompe si un día se añade otra columna.
+
+### Prácticas de clase
+
+- **gestion-java-jdbc-dao.** Menú de consola con el CRUD de productos y vehículos sobre `datos/gestion.sqlite3`. Hay tres bases: `ejemplo.sqlite3`, que no se toca; `gestion.sqlite3`, la que usa el programa; y `test.sqlite3`, una plantilla vacía que los tests copian antes de cada prueba. 17 tests de producto y 19 de vehículo, ordenados con `@Order`. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/gestion-java-jdbc-dao)
+
+### Repaso rápido
+
+<details>
+<summary>¿Se puede escribir `SELECT * FROM ? WHERE id = ?` para elegir la tabla?</summary>
+
+No. Los `?` solo sustituyen valores. El nombre de la tabla tiene que ir escrito en el SQL, elegido entre opciones fijas del programa.
+
+</details>
+<details>
+<summary>¿Cómo se busca con `LIKE` un texto en cualquier parte del nombre?</summary>
+
+Con `WHERE nombre LIKE ?` y `ps.setString(1, "%" + texto + "%")`. Los comodines forman parte del valor.
+
+</details>
+<details>
+<summary>¿Qué devuelve `actualizar` si el id no existe?</summary>
+
+`false`, porque `executeUpdate()` devuelve 0 filas afectadas. No es un error de la base: simplemente ninguna fila cumple el `WHERE`.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, lecciones 8 y 9: PreparedStatement y CRUD completo](https://codelearnacademy.github.io/orm/leccion08/)
+2. [Tutorial de Oracle: Using Prepared Statements](https://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html)
+3. [Javadoc de `java.sql.PreparedStatement` (Java 21)](https://docs.oracle.com/en/java/javase/21/docs/api/java.sql/java/sql/PreparedStatement.html)
+4. [OWASP: cómo evitar la inyección SQL](https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html)
+5. [OWASP Top 10: inyección](https://owasp.org/Top10/A03_2021-Injection/)
+
+## Del CRUD al DAO genérico
+
+### Qué se ve
+
+Con dos tablas, el código del tema anterior ya se repite: cada método abre la conexión, ejecuta, recorre el `ResultSet` y captura el error. Este tema es el equivalente al «Del CRUD al repositorio» de la UT1. Sigue tres versiones del mismo DAO genérico, de la primera de `gestion-java-jdbc-dao` a la del taller.
+
+### Conceptos
+
+Un <mark>DAO</mark> (Data Access Object) es la clase que concentra el acceso a una tabla: el SQL, los parámetros y el mapeo. El resto del programa le pide «dame el producto 4» y no ve ni una línea de JDBC. La ruta del profesor lo llama repositorio (`ProductoJdbcRepository`) e implementa la misma `IProductoRepository` de la UT1. En los ejercicios de clase se llamó DAO. La idea es la misma: separar qué se quiere hacer de cómo se guarda.
+
+Hay una diferencia con `AbstractFileRepository`: aquí no hace falta cargar toda la colección en memoria. Cada método se traduce a su propia sentencia SQL y la base solo devuelve las filas que se piden.
+
+La parte común sube a una clase abstracta genérica `AbstractDao<T>`, donde `T` es la entidad. Las hijas solo aportan lo que cambia: el SQL de cada operación, cómo se asignan los parámetros y el <mark>mapeo</mark> de una fila a un objeto (`mapRsToClass` o `mapear`). Es otra vez el patrón plantilla de la UT1.
+
+La pregunta interesante es qué se le pasa a la clase madre. En la primera versión, `consultar(String query)` recibía el SQL como texto y preparaba ella la sentencia. Así no había forma de asignar parámetros, y solo `listar()` la podía usar: `buscarPorId` tuvo que escribir su JDBC a mano. La segunda versión invierte el reparto: el DAO hijo abre la conexión, prepara la sentencia y asigna los `?`, y la madre recibe el `PreparedStatement` ya listo para ejecutarlo y recorrerlo. En el taller se dio un paso más, con `consultarLista(String sql, Object... parametros)`: la madre recibe el SQL y los valores, y los asigna en un bucle con `setObject`.
+
+Con un segundo parámetro genérico, `AbstractDao<T, ID>`, la madre puede implementar también `buscarPorId` y `eliminar` para todas las tablas. Solo necesita saber el nombre de la tabla y el de su columna clave. `ID` es `Integer` en casi todas las tablas del taller y `String` en vehículos, porque su clave es la matrícula.
+
+Los nombres de tabla y columna se pegan al SQL con `+`, y eso no es inyección: son constantes que pone el propio código en el constructor y nunca vienen de un usuario. Los valores, en cambio, siguen yendo siempre por `?`.
+
+Queda decidir qué hacer con los errores. Las tres versiones eligieron distinto, y cada opción tiene su coste:
+
+| Ejercicio | Si falla la base | Ventaja | Inconveniente |
+|---|---|---|---|
+| `gestion` (1.ª versión) | lanza `AplicationException` | el error no pasa desapercibido | quien llama debe estar preparado |
+| `gestion-T` y taller | registra en el log y devuelve vacío, `false` o 0 | el programa sigue funcionando | «no hay datos» y «ha fallado» se ven igual |
+| clínica | lanza `DaoException` con la causa | el error llega completo | igual que la primera |
+
+### Código paso a paso
+
+<Pasos nombre="Tres versiones del DAO genérico">
+<Paso titulo="1. Recibe el SQL">
+
+La primera versión. Como recibe un `String`, no puede asignar parámetros, y solo sirve para consultas sin `?`.
+
+<Fragmento archivo="AbstractDao.java" ejercicio="gestion-java-jdbc-dao" ruta="gestion-java-jdbc-dao/src/main/java/es/ejemplo/gestion/dao/AbstractDao.java">
+
+```java
+public abstract class AbstractDao<T> extends ConexionBD {
+
+    abstract T mapperToClass(ResultSet rs);
+
+    public List<T> consultar(String query) {
+        List<T> lista = new ArrayList<>();
+        try (Connection connection = this.obtenerConexion();
+             PreparedStatement sentencia = connection.prepareStatement(query)) {
+            ResultSet rs = sentencia.executeQuery();
+            while(rs.next()) {
+                lista.add(mapperToClass(rs));
+            }
+        } catch (Exception e) {
+            throw new AplicationException(e.getMessage(), e.getCause());
+        }
+        return lista;
+    }
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="2. Recibe la sentencia">
+
+La versión del ejercicio `-T`. El hijo prepara y asigna; la madre ejecuta y recorre. Si una fila no se puede mapear, devuelve una lista vacía en vez de una lista a medias. Pulsa «Depurar» para seguir un `listar()` con dos productos:
+
+<Fragmento archivo="AbstractDao.java" ejercicio="gestion-java-jdbc-dao-T" ruta="gestion-java-jdbc-dao-T/src/main/java/es/ejemplo/gestion/dao/AbstractDao.java" depurar={[
+  { l: 1, v: { ps: 'SELECT id,nombre,precio FROM Productos ORDER BY id' }, t: 'ProductoDao.listar() ha abierto la conexión, ha preparado la sentencia y se la pasa a la madre.' },
+  { l: 2, t: 'Comprobación defensiva: si la sentencia no existe, no hay nada que ejecutar.' },
+  { l: 3, v: { rs: 'ResultSet (antes de la primera fila)' }, t: 'Se ejecuta el SELECT. El ResultSet va en el try para que se cierre al salir.' },
+  { l: 4, v: { resultado: '[]' }, t: 'Lista vacía para los productos.' },
+  { l: 5, v: { rs: 'fila 1: id=1, nombre="Monitor", precio=100.0' }, t: 'next() llega a la primera fila.' },
+  { l: 6, v: { entidad: 'Optional[Producto{1, Monitor, 100.0}]' }, t: 'mapRsToClass es lo único que pone ProductoDao: cómo se convierte una fila en un Producto.' },
+  { l: 7, t: 'El Optional tiene producto, así que se sigue. Si el mapeo hubiera fallado, se devolvería una lista vacía y no una incompleta.' },
+  { l: 8, v: { resultado: '[Producto{1, Monitor, 100.0}]' }, t: 'Se añade a la lista.' },
+  { l: 5, v: { rs: 'fila 2: id=3, nombre="Ratón", precio=12.0' }, t: 'Segunda fila.' },
+  { l: 6, v: { entidad: 'Optional[Producto{3, Ratón, 12.0}]' }, t: 'Se mapea igual.' },
+  { l: 8, v: { resultado: '[Producto{1, Monitor, 100.0}, Producto{3, Ratón, 12.0}]' }, t: 'Ya están los dos.' },
+  { l: 5, v: { rs: 'ResultSet (después de la última fila)', entidad: null }, t: 'No quedan filas: el bucle termina.' },
+  { l: 10, v: { rs: null, 'return': '2 productos' }, t: 'Se devuelve la lista y se cierra el ResultSet. La sentencia y la conexión las cierra listar(), que es quien las abrió.' },
+]}>
+
+```java
+protected List<T> consultar(PreparedStatement ps) {
+    if (ps == null) return List.of();
+    try (ResultSet rs = ps.executeQuery()) {
+        List<T> resultado = new ArrayList<>();
+        while (rs.next()) {
+            Optional<T> entidad = mapRsToClass(rs);
+            if (entidad.isEmpty()) return List.of(); // No devolver una lista parcial
+            resultado.add(entidad.get());
+        }
+        return resultado;
+    } catch (SQLException | RuntimeException e) {
+        registrar("consultar", e);
+        return List.of();
+    }
+}
+```
+
+</Fragmento>
+
+Y el hijo queda reducido al SQL y los parámetros:
+
+<Fragmento archivo="ProductoDao.java" ejercicio="gestion-java-jdbc-dao-T" ruta="gestion-java-jdbc-dao-T/src/main/java/es/ejemplo/gestion/dao/ProductoDao.java">
+
+```java
+public List<Producto> buscarPorNombre(String texto) {
+    if (texto == null) return List.of();
+    String sql = "SELECT id,nombre,precio FROM Productos WHERE LOWER(nombre) LIKE LOWER(?) ORDER BY nombre, id";
+    try (Connection con = obtenerConexion();
+         PreparedStatement ps = con.prepareStatement(sql)) {
+        // % delante y detras: el texto puede estar en cualquier parte del nombre
+        ps.setString(1, "%" + texto + "%");
+        return consultar(ps);
+    } catch (SQLException | RuntimeException e) {
+        registrar("buscar productos por nombre", e);
+        return List.of();
+    }
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="3. Recibe SQL y valores">
+
+La versión del taller. Con la tabla y la columna clave guardadas en el constructor, `buscarPorId` y `eliminar` se escriben una sola vez para las cinco tablas.
+
+<Fragmento archivo="AbstractDao.java" ejercicio="taller mecánico" ruta="taller-mecanico-alejandroDonateGarcia/src/main/java/es/ejemplo/taller/dao/AbstractDao.java">
+
+```java
+public abstract class AbstractDao<T, ID> extends ConexionBD {
+    private final String tabla;
+    private final String columnaId;
+    protected final String select;
+
+    protected AbstractDao(String url, String tabla, String columnaId, String columnas) {
+        super(url);
+        this.tabla = tabla;
+        this.columnaId = columnaId;
+        // Los nombres de tabla y columnas son constantes del codigo, nunca datos del usuario
+        this.select = "SELECT " + columnas + " FROM " + tabla;
+    }
+
+    protected abstract T mapear(ResultSet rs) throws SQLException;
+
+    public Optional<T> buscarPorId(ID id) {
+        if (id == null) return Optional.empty();
+        List<T> encontrados = consultarLista(select + " WHERE " + columnaId + " = ?", id);
+        return encontrados.isEmpty() ? Optional.empty() : Optional.of(encontrados.get(0));
+    }
+
+    protected List<T> consultarLista(String sql, Object... parametros) {
+        List<T> lista = new ArrayList<>();
+        try (Connection con = abrir(url);
+             PreparedStatement ps = preparar(con, sql, parametros);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                lista.add(mapear(rs));
+            }
+        } catch (SQLException e) {
+            registrar("consultar " + tabla, e);
+            return new ArrayList<>();
+        }
+        return lista;
+    }
+
+    private void asignar(PreparedStatement ps, Object... parametros) throws SQLException {
+        for (int i = 0; i < parametros.length; i++) {
+            ps.setObject(i + 1, parametros[i]);
+        }
+    }
+}
+```
+
+</Fragmento>
+
+</Paso>
+</Pasos>
+
+### Errores típicos
+
+- **Pasar el SQL como texto a la clase madre sin los valores.** Obliga a escribir a mano todos los métodos con `?`, que son casi todos. La madre tiene que recibir la sentencia preparada o los valores.
+- **Devolver una lista a medias.** Si la fila 50 de 100 no se puede mapear, una lista con 49 productos parece correcta y no lo es. En `-T`, `consultar` devuelve una lista vacía en ese caso.
+- **Cerrar la conexión dentro de `obtenerConexion()`.** Con un `try (Connection c = …) { return c; }` se devuelve una conexión ya cerrada. El enunciado de `-T` lo advertía: quien abre la conexión es el DAO, y es el DAO quien la cierra.
+- **Pegar al SQL valores que vienen de fuera.** Pegar el nombre de la tabla está bien porque es una constante del código. Pegar un valor que llega de un usuario es inyección SQL, también dentro de la clase genérica.
+- **Subir a la madre lo que no es común.** En el taller, `insertar` y `actualizar` se quedaron en cada DAO: cada tabla tiene sus columnas y sus validaciones, y la tabla de vehículos no genera id.
+
+### Prácticas de clase
+
+- **gestion-java-jdbc-dao.** La primera versión de `AbstractDao<T>` con `consultar(String)` y `mapperToClass`. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/gestion-java-jdbc-dao)
+- **gestion-java-jdbc-dao-T.** El ejercicio daba hechos `ProductoDao.listar()` y `mapRsToClass` como ejemplo, y había que completar los dos DAO con el mismo patrón. `AbstractDao` añade además `consultarUno`, `ejecutar`, `consultarEntero`, `consultarDecimal` y `consultarAgrupado` para las consultas que devuelven un número o un mapa. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/gestion-java-jdbc-dao-T)
+- **Taller mecánico.** `AbstractDao<T, ID>` común a cinco DAO. La `MEMORIA.md` explica qué subió a la madre y qué se quedó en cada hijo. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/taller-mecanico-alejandroDonateGarcia)
+
+### Repaso rápido
+
+<details>
+<summary>¿Por qué `consultar(String query)` no sirve para `buscarPorId`?</summary>
+
+Porque `buscarPorId` necesita asignar el `?` del id, y con un `String` la madre no tiene forma de saber qué valor poner.
+
+</details>
+<details>
+<summary>¿Para qué sirve el segundo genérico de `AbstractDao<T, ID>`?</summary>
+
+Para que la madre implemente `buscarPorId(ID id)` y `eliminar(ID id)` con el tipo de clave de cada tabla: `Integer` en clientes o reparaciones y `String` en vehículos.
+
+</details>
+<details>
+<summary>¿Qué inconveniente tiene devolver una lista vacía cuando la base falla?</summary>
+
+Que quien llama no puede distinguir «no hay datos» de «ha fallado la conexión». Solo el log lo aclara.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, lección 10: refactorizar a ProductoJdbcRepository](https://codelearnacademy.github.io/orm/leccion10/)
+2. [Oracle: el patrón Data Access Object](https://www.oracle.com/java/technologies/data-access-object.html)
+3. [Martin Fowler: Repository](https://martinfowler.com/eaaCatalog/repository.html)
+4. [Javadoc de `PreparedStatement.setObject` (Java 21)](https://docs.oracle.com/en/java/javase/21/docs/api/java.sql/java/sql/PreparedStatement.html#setObject(int,java.lang.Object))
+
+## Varias tablas: claves foráneas y JOIN
+
+### Qué se ve
+
+Hasta aquí cada tabla iba por su cuenta. El taller mecánico y la clínica veterinaria tienen cinco tablas relacionadas: un cliente tiene vehículos, un vehículo tiene reparaciones y una reparación tiene piezas. Este tema no tiene lección propia en la ruta del profesor, pero ocupó los dos ejercicios más largos de la unidad. Trata las claves foráneas, los `JOIN`, los importes con `BigDecimal` y cómo recuperar el id que genera la base.
+
+### Conceptos
+
+Una <mark>clave foránea</mark> es una columna que apunta a la clave primaria de otra tabla. En el taller, `vehiculos.id_cliente` apunta a `clientes.id_cliente`, y con eso se sabe de quién es cada coche. La relación es 1:N: un cliente puede tener muchos vehículos y cada vehículo es de un solo cliente. La clave foránea va siempre en el lado de los «muchos».
+
+Declarar la clave foránea con `REFERENCES` hace que la base proteja la relación: no deja guardar un vehículo de un cliente que no existe. `ON DELETE RESTRICT` impide además borrar un cliente que tiene vehículos. En SQLite hay una trampa: las claves foráneas vienen desactivadas y hay que activarlas con `PRAGMA foreign_keys = ON` en **cada conexión**. En el taller se comprobó en una copia de la base: con las claves desactivadas, la base aceptaba un vehículo del cliente 999, que no existe; con las claves activas, lo rechazaba con `FOREIGN KEY constraint failed`.
+
+Relacionar tablas y proteger la relación son cosas distintas. Un <mark>JOIN</mark> une filas de dos tablas según la condición que escribas, haya o no una clave foránea declarada. `INNER JOIN` solo devuelve las parejas que encajan. `LEFT JOIN` devuelve todas las filas de la tabla de la izquierda, y las que no tienen pareja salen con `NULL` en las columnas de la derecha. Por eso «cuántos vehículos tiene cada cliente, incluidos los que no tienen ninguno» necesita `LEFT JOIN` y `COUNT(v.matricula)`: `COUNT(*)` contaría también la fila con `NULL` y un cliente sin coches saldría con 1.
+
+Con importes aparece `BigDecimal`. Un `double` guarda los números en binario, y muchos decimales no tienen representación exacta: `0.1 + 0.2` da `0.30000000000000004`. Para dinero o horas facturables se usa `BigDecimal`, que trabaja en decimal exacto. Se compara con `compareTo`, no con `equals`, porque `equals` considera distintos `2.0` y `2.00`. SQLite no tiene un tipo decimal exacto, así que en el taller el coste de las piezas se suma en Java con `BigDecimal` y no con `SUM(cantidad * precio)` en SQL.
+
+Cuando la clave la genera la base (`INTEGER PRIMARY KEY AUTOINCREMENT`), el programa no sabe qué id tiene la fila que acaba de insertar. Los ejercicios lo resolvieron de dos maneras:
+
+- **Taller:** `prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)` y, después de ejecutar, `getGeneratedKeys()` devuelve un `ResultSet` con el id. Es la forma estándar de JDBC y funciona con cualquier base.
+- **Clínica:** `INSERT … RETURNING id`, que hace que el propio `INSERT` devuelva filas como un `SELECT`, así que se ejecuta con `executeQuery()`. Es más directo, pero solo funciona en bases que entienden `RETURNING` (SQLite desde la versión 3.35).
+
+### Código paso a paso
+
+<Pasos nombre="Relaciones en el taller">
+<Paso titulo="1. Abrir con las claves activas">
+
+Todas las conexiones del taller pasan por aquí. Comprueba que el fichero existe antes de llamar a JDBC (SQLite crearía una base vacía), activa las claves foráneas y verifica que están las cinco tablas.
+
+<Fragmento archivo="ConexionBD.java" ejercicio="taller mecánico" ruta="taller-mecanico-alejandroDonateGarcia/src/main/java/es/ejemplo/taller/infra/ConexionBD.java">
+
+```java
+public static Connection abrir(String url) throws SQLException {
+    if (url == null || !url.startsWith(PREFIJO)) {
+        throw new SQLException("URL no valida: debe empezar por " + PREFIJO);
+    }
+    // SQLite crea una base vacia si la ruta no existe: por eso lo comprobamos antes de llamar a JDBC
+    Path ruta = Path.of(url.substring(PREFIJO.length()));
+    if (!Files.isRegularFile(ruta) || !Files.isReadable(ruta)) {
+        throw new SQLException("No existe o no se puede leer la base de datos: " + ruta.getFileName());
+    }
+    Connection conexion = DriverManager.getConnection(url);
+    try (Statement st = conexion.createStatement()) {
+        // ON DELETE RESTRICT solo funciona si se activa en CADA conexion
+        st.execute("PRAGMA foreign_keys = ON");
+        try (ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN "
+                + "('clientes','vehiculos','mecanicos','reparaciones','piezas_reparacion')")) {
+            if (!rs.next() || rs.getInt(1) != 5) {
+                throw new SQLException("La base no tiene las cinco tablas del taller: " + ruta.getFileName());
+            }
+        }
+        return conexion;
+    } catch (SQLException e) {
+        // Cerramos la conexion antes de lanzar el error para no dejar el archivo bloqueado
+        conexion.close();
+        throw e;
+    }
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="2. Unir tablas">
+
+Dos consultas de `consultas.sql`. La primera une cuatro tablas para leer cada reparación con su cliente y su mecánico. La segunda cuenta vehículos por cliente sin perder a los que no tienen ninguno.
+
+<Fragmento archivo="consultas.sql" ejercicio="taller mecánico" ruta="taller-mecanico-alejandroDonateGarcia/consultas.sql">
+
+```sql
+-- 7. Reparaciones con el nombre del cliente, la matrícula y el mecánico.
+SELECT r.id_reparacion, c.nombre AS cliente, r.matricula, m.nombre AS mecanico, r.descripcion, r.estado
+FROM reparaciones r
+INNER JOIN vehiculos v ON r.matricula = v.matricula
+INNER JOIN clientes c ON v.id_cliente = c.id_cliente
+INNER JOIN mecanicos m ON r.id_mecanico = m.id_mecanico
+ORDER BY r.id_reparacion;
+
+-- 8. Vehículos de cada cliente, incluidos los clientes sin vehículos.
+-- COUNT(v.matricula) no cuenta los NULL: un cliente sin vehículos sale con 0.
+SELECT c.id_cliente, c.nombre, COUNT(v.matricula) AS num_vehiculos
+FROM clientes c
+LEFT JOIN vehiculos v ON v.id_cliente = c.id_cliente
+GROUP BY c.id_cliente, c.nombre
+ORDER BY c.id_cliente;
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="3. Recuperar el id generado">
+
+Pulsa «Depurar» para seguir el alta de un cliente nuevo. `ClienteDao.insertar` llama a este método con el SQL y los tres valores:
+
+<Fragmento archivo="AbstractDao.java" ejercicio="taller mecánico" ruta="taller-mecanico-alejandroDonateGarcia/src/main/java/es/ejemplo/taller/dao/AbstractDao.java" depurar={[
+  { l: 1, v: { sql: 'INSERT INTO clientes (nombre, email, telefono) VALUES (?,?,?)', parametros: '["Cliente de prueba", "prueba@ejemplo.com", "600000000"]' }, t: 'ClienteDao ya ha validado el cliente y pasa el SQL con los tres valores. La tabla tiene 6 clientes.' },
+  { l: 2, v: { con: 'Connection (fichero comprobado, foreign_keys = ON)' }, t: 'abrir() comprueba el fichero, activa las claves foráneas y verifica las cinco tablas.' },
+  { l: 3, v: { ps: 'INSERT … VALUES (?,?,?) · RETURN_GENERATED_KEYS' }, t: 'La sentencia se prepara pidiendo que guarde la clave que genere la base.' },
+  { l: 4, v: { ps: 'INSERT … VALUES ("Cliente de prueba", "prueba@ejemplo.com", "600000000")' }, t: 'asignar() recorre los parámetros y llama a setObject(1, …), setObject(2, …) y setObject(3, …).' },
+  { l: 5, v: { filas: '1' }, t: 'executeUpdate inserta la fila y devuelve 1. Si hubiera devuelto 0, el método acabaría aquí con 0.' },
+  { l: 7, v: { claves: 'ResultSet → fila 1: 7' }, t: 'getGeneratedKeys() devuelve un ResultSet con la clave nueva. Con AUTOINCREMENT es la siguiente a la última usada, que era 6.' },
+  { l: 8, v: { 'return': '7' }, t: 'Se lee la primera columna y se devuelve. Quien llama ya sabe que el cliente nuevo es el 7, sin suponer nada.' },
+  { l: 9, v: { claves: null, ps: null, con: null }, t: 'Se cierran en orden inverso: primero claves, después ps y por último con. Si el email ya existiera, el UNIQUE haría saltar el catch y se devolvería 0.' },
+]}>
+
+```java
+protected int insertarDevolviendoId(String sql, Object... parametros) {
+    try (Connection con = abrir(url);
+         PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        asignar(ps, parametros);
+        if (ps.executeUpdate() == 0) return 0;
+        // No suponemos que el id sea 1: se lo pedimos a la base de datos
+        try (ResultSet claves = ps.getGeneratedKeys()) {
+            return claves.next() ? claves.getInt(1) : 0;
+        }
+    } catch (SQLException e) {
+        registrar("insertar en " + tabla, e);
+        return 0;
+    }
+}
+```
+
+</Fragmento>
+
+</Paso>
+<Paso titulo="4. La versión de la clínica">
+
+La clínica usa `RETURNING id` y lanza una excepción propia en vez de devolver 0. El importe de horas viaja como `BigDecimal` en las dos direcciones.
+
+<Fragmento archivo="ConsultaDao.java" ejercicio="clínica veterinaria" ruta="clinica-veterinaria-AlejandroDonateGarcia/clinica-veterinaria-alumnado/src/main/java/es/ejemplo/clinica/dao/ConsultaDao.java">
+
+```java
+try (Connection c = this.abrir();
+        PreparedStatement st = c.prepareStatement("INSERT INTO consultas (id_mascota, id_veterinario, fecha, horas, estado) VALUES (?,?,?,?,?) RETURNING id")) {
+    st.setInt(1, entidad.getIdMascota());
+    st.setInt(2, entidad.getIdVeterinario());
+    st.setString(3, entidad.getFecha());
+    st.setBigDecimal(4, entidad.getHoras());
+    st.setString(5, entidad.getEstado());
+    try (ResultSet rs = st.executeQuery()) {
+        while (rs.next()) {
+            return rs.getInt("id");
+        }
+    }
+} catch (Exception e) {
+    throw new DaoException(e.getMessage(), e);
+}
+```
+
+</Fragmento>
+
+</Paso>
+</Pasos>
+
+### Errores típicos
+
+- **Creer que la clave foránea ya protege.** En SQLite no hace nada hasta ejecutar `PRAGMA foreign_keys = ON`, y hay que hacerlo en cada conexión. Lo más seguro es activarlo en el único método que abre conexiones.
+- **`COUNT(*)` con `LEFT JOIN`.** Un cliente sin vehículos sale con 1 en vez de 0. Cuenta una columna de la tabla de la derecha.
+- **Sumar dinero con `double`.** Los errores de redondeo se acumulan. Usa `BigDecimal` y compáralo con `compareTo`.
+- **Suponer el id generado.** Pensar que el nuevo cliente será el 7 porque hay 6 falla en cuanto se borra alguno: con `AUTOINCREMENT` los números no se reutilizan. Pídeselo a la base con `getGeneratedKeys()` o `RETURNING`.
+- **Lanzar `RETURNING` con `executeUpdate()`.** El `INSERT … RETURNING` devuelve filas, así que se ejecuta con `executeQuery()`.
+
+### Prácticas de clase
+
+- **Taller mecánico.** Cinco tablas (clientes, vehículos, mecánicos, reparaciones y piezas) con claves foráneas `ON DELETE RESTRICT`. 90 tests: 50 de los cinco DAO y 40 de ampliación. En `consultas.sql` están las consultas con `WHERE`, `JOIN` y agregados, y en `MEMORIA.md`, el experimento de integridad referencial y las decisiones sobre errores. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/taller-mecanico-alejandroDonateGarcia)
+- **Clínica veterinaria.** Otras cinco tablas (clientes, mascotas, veterinarios, consultas y tratamientos), 33 métodos (25 de CRUD y 8 específicos) y una interfaz por DAO. Los fallos se envuelven en `DaoException` conservando la causa. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/clinica-veterinaria-AlejandroDonateGarcia)
+
+### Repaso rápido
+
+<details>
+<summary>¿En qué tabla va la clave foránea de una relación 1:N?</summary>
+
+En la del lado de los «muchos». Cada vehículo guarda el id de su cliente; el cliente no guarda la lista de sus vehículos.
+
+</details>
+<details>
+<summary>¿Qué diferencia hay entre `INNER JOIN` y `LEFT JOIN`?</summary>
+
+`INNER JOIN` solo devuelve las filas que tienen pareja en las dos tablas. `LEFT JOIN` devuelve todas las de la izquierda, y las que no tienen pareja salen con `NULL` en las columnas de la derecha.
+
+</details>
+<details>
+<summary>¿Por qué `new BigDecimal("2.0").equals(new BigDecimal("2.00"))` es `false`?</summary>
+
+Porque `equals` compara también la escala (el número de decimales). Para comparar el valor se usa `compareTo`, que en ese caso devuelve 0.
+
+</details>
+
+### Fuentes
+
+1. [Claves foráneas en SQLite y `PRAGMA foreign_keys`](https://www.sqlite.org/foreignkeys.html)
+2. [`RETURNING` en SQLite](https://www.sqlite.org/lang_returning.html)
+3. [`AUTOINCREMENT` en SQLite](https://www.sqlite.org/autoinc.html)
+4. [Tutorial de Oracle: claves generadas y `getGeneratedKeys`](https://docs.oracle.com/javase/tutorial/jdbc/basics/retrieving.html)
+5. [Javadoc de `java.math.BigDecimal` (Java 21)](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html)
+
+## Transacciones y tests con una base temporal
+
+### Qué se ve
+
+Las dos últimas lecciones del bloque JDBC. La primera trata qué pasa cuando dos cambios tienen que guardarse juntos o no guardarse. La segunda, cómo probar un DAO contra una base SQLite real sin tocar los datos de verdad. En los ejercicios de la unidad no se usaron transacciones, así que esa parte se explica con un ejemplo propio. Los tests con base temporal sí aparecen en todos.
+
+### Conceptos
+
+Por defecto, JDBC trabaja en modo <mark>autocommit</mark>: cada sentencia se confirma en cuanto termina. Casi siempre es lo que se quiere, pero no cuando dos cambios van juntos. Por ejemplo, cerrar una reparación y apuntar sus piezas: si la primera sentencia se guarda y la segunda falla, la base queda a medias.
+
+Una <mark>transacción</mark> agrupa varias operaciones para que se confirmen todas o ninguna. En JDBC se hace en tres pasos: `con.setAutoCommit(false)` al empezar, `con.commit()` si todo ha ido bien y `con.rollback()` en el `catch` para deshacer lo que se hubiera hecho. Mientras no se llame a `commit()`, los cambios no son definitivos. La lección del profesor añade que el ORM de la UT3 no elimina las transacciones; solo las hace más cómodas.
+
+Un test que escribe en la base no puede usar la base del programa, porque la iría ensuciando y los resultados dependerían de lo que hubiera de antes. La solución de la ruta es una <mark>base temporal</mark> para cada prueba: JUnit crea una carpeta con `@TempDir`, el test crea dentro un `.db`, construye el esquema y trabaja con él. Al terminar, JUnit borra la carpeta. Cada test empieza siempre desde el mismo estado y no afecta a los demás.
+
+En los ejercicios se hizo lo mismo de otra forma: copiar una base plantilla (`test.sqlite3`, vacía pero con las restricciones reales) a un fichero temporal antes de cada test y borrarlo después. Copiar la plantilla tiene una ventaja: las pruebas se hacen con el mismo esquema y los mismos `CHECK` que la base real, sin reescribir el `CREATE TABLE` en el test.
+
+Un test se lee en tres fases: preparar (crear la base y el DAO), actuar (llamar al método) y comprobar (`assertEquals`, `assertTrue`). Si un test falla, saber en qué fase ayuda a encontrar el motivo.
+
+### Código paso a paso
+
+La preparación de los tests de `gestion-java-jdbc-dao-T`. Cada prueba recibe una copia nueva de la plantilla y la borra al acabar:
+
+<Fragmento archivo="BaseDatosTest.java" ejercicio="gestion-java-jdbc-dao-T" ruta="gestion-java-jdbc-dao-T/src/test/java/es/ejemplo/gestion/BaseDatosTest.java">
+
+```java
+public abstract class BaseDatosTest {
+    protected String url;
+    private Path baseTemporal;
+
+    @BeforeEach
+    void prepararBaseDatos() throws Exception {
+        baseTemporal = Files.createTempFile("gestion-test-", ".sqlite3");
+        Path datos = Path.of("datos/test.sqlite3");
+        if (!Files.exists(datos)) datos = Path.of("gestion-java-jdbc-dao/datos/test.sqlite3");
+        Files.copy(datos, baseTemporal,
+                   StandardCopyOption.REPLACE_EXISTING);
+        url = "jdbc:sqlite:" + baseTemporal.toAbsolutePath();
+    }
+
+    @AfterEach
+    void limpiarBaseDatos() throws Exception {
+        Files.deleteIfExists(baseTemporal);
+    }
+}
+```
+
+</Fragmento>
+
+Un test que la usa. La base empieza vacía, así que el primer `listar()` tiene que devolver una lista vacía:
+
+<Fragmento archivo="ProductoDaoTest.java" ejercicio="gestion-java-jdbc-dao-T" ruta="gestion-java-jdbc-dao-T/src/test/java/es/ejemplo/gestion/ProductoDaoTest.java">
+
+```java
+@Test @Order(1)
+void listarTodos() {
+    assertTrue(dao.listar().isEmpty());
+    assertTrue(dao.insertar(new Producto(3, "Ratón", 12)));
+    assertTrue(dao.insertar(new Producto(1, "Monitor", 100)));
+    List<Producto> productos = dao.listar();
+    assertEquals(2, productos.size());
+    assertEquals(List.of(1, 3), productos.stream().map(Producto::getId).toList());
+}
+```
+
+</Fragmento>
+
+Y una transacción. Este ejemplo no está en los ejercicios: guarda una reparación como finalizada y apunta su pieza, y si cualquiera de las dos falla, no queda ninguna.
+
+```java
+try (Connection con = abrir(url)) {
+    con.setAutoCommit(false);                 // a partir de aquí nada es definitivo
+    try (PreparedStatement estado = con.prepareStatement(
+             "UPDATE reparaciones SET estado = 'FINALIZADA' WHERE id_reparacion = ?");
+         PreparedStatement pieza = con.prepareStatement(
+             "INSERT INTO piezas_reparacion (id_reparacion, nombre, cantidad, precio_unitario) VALUES (?,?,?,?)")) {
+        estado.setInt(1, idReparacion);
+        estado.executeUpdate();
+        pieza.setInt(1, idReparacion);
+        pieza.setString(2, "Filtro de aceite");
+        pieza.setInt(3, 1);
+        pieza.setBigDecimal(4, new BigDecimal("12.50"));
+        pieza.executeUpdate();
+        con.commit();                         // las dos se guardan a la vez
+    } catch (SQLException e) {
+        con.rollback();                       // se deshace también el UPDATE
+        throw e;
+    }
+}
+```
+
+### Errores típicos
+
+- **Olvidar `setAutoCommit(false)`.** Sin él, cada sentencia ya está confirmada al terminar y el `rollback()` no tiene nada que deshacer.
+- **Hacer `commit()` sin `rollback()` en el `catch`.** Si algo falla a mitad, lo hecho hasta entonces queda pendiente, y qué pasa con ello al cerrar la conexión depende del driver. Deshazlo de forma explícita.
+- **Probar contra la base del programa.** Los tests ensucian los datos y dependen del orden en que se ejecuten. Usa una copia o una base temporal para cada prueba.
+- **Dejar la conexión abierta en el test.** En Windows, un fichero SQLite abierto no se puede borrar, y `deleteIfExists` falla en el `@AfterEach`. Cierra todo con try-with-resources.
+- **Encadenar tests que dependen unos de otros.** `@Order` decide el orden, pero si cada test prepara su propia base, ninguno debería necesitar lo que dejó el anterior.
+
+### Prácticas de clase
+
+- **Tests de todos los ejercicios.** `entrega2` cambia la URL de `BaseDatos` hacia una base temporal de cinco registros por tabla. `gestion` y `gestion-T` copian `test.sqlite3` antes de cada test. El taller y la clínica traen sus propias bases de prueba (`taller-test.sqlite3` y `clinica-test.sqlite3`). [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/gestion-java-jdbc-dao-T)
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué hace `rollback()` si la conexión está en autocommit?</summary>
+
+No puede deshacer nada: cada sentencia se confirmó al terminar. Además, según la especificación de JDBC, llamar a `rollback()` en autocommit lanza una `SQLException`.
+
+</details>
+<details>
+<summary>¿Por qué cada test usa su propia base y no una compartida?</summary>
+
+Para que todos empiecen desde el mismo estado y el resultado de uno no dependa de lo que dejaron los anteriores.
+
+</details>
+<details>
+<summary>¿Qué ventaja tiene copiar una plantilla frente a crear el esquema en el test?</summary>
+
+Las pruebas usan exactamente las mismas tablas y restricciones que la base real, sin repetir el `CREATE TABLE` en el código de los tests.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, lecciones 11 y 12: transacciones y tests con SQLite temporal](https://codelearnacademy.github.io/orm/leccion11/)
+2. [Tutorial de Oracle: Using Transactions](https://docs.oracle.com/javase/tutorial/jdbc/basics/transactions.html)
+3. [Guía de JUnit 5: `@TempDir`](https://junit.org/junit5/docs/current/user-guide/#writing-tests-built-in-extensions-TempDirectory)
+4. [Transacciones en SQLite](https://www.sqlite.org/lang_transaction.html)
