@@ -54,7 +54,13 @@ El último concepto del bloque es Maven. Java trae `Path`, `Files` y `Properties
 
 En `file-lab` cada operación con rutas está envuelta en un método pequeño. Calcular la extensión, por ejemplo, combina `getFileName()` con un poco de manejo de cadenas:
 
-<Fragmento archivo="PathService.java" ejercicio="file-lab-alumnado" ruta="file-lab-alumnado/src/main/java/es/codelearnacademy/filelab/io/PathService.java">
+<Fragmento archivo="PathService.java" ejercicio="file-lab-alumnado" ruta="file-lab-alumnado/src/main/java/es/codelearnacademy/filelab/io/PathService.java" depurar={[
+  { l: 1, v: { path: 'data/informe.final.pdf' }, t: 'Se llama con una ruta relativa que tiene dos puntos en el nombre.' },
+  { l: 2, v: { archivo: '"informe.final.pdf"' }, t: 'nombre() se queda con el último elemento de la ruta, sin las carpetas.' },
+  { l: 3, v: { punto: '13' }, t: 'lastIndexOf busca el último punto. Por eso la extensión será «pdf» y no «final.pdf».' },
+  { l: 4, t: 'punto no vale -1, así que hay extensión y el if se salta. Con «README» valdría -1 y se devolvería "".' },
+  { l: 7, v: { 'return': '"pdf"' }, t: 'substring(14) devuelve lo que va después del punto.' },
+]}>
 
 ```java
 public String extension(Path path) {
@@ -232,7 +238,17 @@ private void saveAll(List<Producto> items) throws IOException {
 
 Crear, modificar y borrar repiten la misma idea: leer todo, cambiar la lista y guardar. Así queda `update`:
 
-<Fragmento archivo="CsvCrudDemo.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/CsvCrudDemo.java">
+<Fragmento archivo="CsvCrudDemo.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/CsvCrudDemo.java" depurar={[
+  { l: 1, v: { producto: 'Producto{2, Ratón inalámbrico, 15.0}' }, t: 'Se quiere cambiar el nombre y el precio del producto 2.' },
+  { l: 2, v: { items: '[Producto{1, Teclado, 24.9}, Producto{2, Ratón, 12.5}]' }, t: 'findAll lee el CSV entero. Cada modificación vuelve a leer el fichero desde el disco.' },
+  { l: 3, v: { i: '0' }, t: 'Empieza el recorrido por posición, porque luego hará falta set(i, …).' },
+  { l: 4, t: 'El id de la posición 0 es 1 y el buscado es 2: no coincide. Aquí == sirve porque el id del record es un long primitivo.' },
+  { l: 3, v: { i: '1' }, t: 'Siguiente posición.' },
+  { l: 4, t: 'Ahora sí coincide.' },
+  { l: 5, v: { items: '[Producto{1, Teclado, 24.9}, Producto{2, Ratón inalámbrico, 15.0}]' }, t: 'Los records no se pueden modificar, así que se sustituye el objeto entero en esa posición.' },
+  { l: 6, t: 'saveAll reescribe el fichero completo con las dos filas, aunque solo haya cambiado una.' },
+  { l: 7, v: { 'return': 'true' }, t: 'Se devuelve true. Si ningún id hubiera coincidido, el bucle acabaría y se llegaría al return false.' },
+]}>
 
 ```java
 public boolean update(Producto producto) throws IOException {
@@ -571,7 +587,12 @@ protected List<Producto> readAll() {
 
 Escribir directamente sobre el fichero tiene un peligro: si el programa falla a mitad, el catálogo queda cortado. En `catalogo` se escribe primero en un fichero temporal y después se mueve encima del bueno; el movimiento es atómico cuando el sistema lo permite, así que el fichero queda o como antes o como después.
 
-<Fragmento archivo="JsonRepository.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/repository/file/JsonRepository.java">
+<Fragmento archivo="JsonRepository.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/repository/file/JsonRepository.java" depurar={[
+  { l: 1, v: { productos: '[Producto{1, Teclado, 24.9}, Producto{2, Ratón, 12.5}]', destino: 'data/productos.json (versión anterior)', temporal: 'data/productos-4821.json.tmp (vacío)' }, t: 'Se crea un fichero temporal vacío en la misma carpeta que el destino. Tiene que estar en el mismo disco para que el movimiento pueda ser atómico.' },
+  { l: 2, v: { temporal: 'data/productos-4821.json.tmp (JSON con 2 productos)' }, t: 'Jackson escribe la lista en el temporal, con sangría. Si el programa fallara ahora, productos.json seguiría intacto.' },
+  { l: 4, v: { destino: 'data/productos.json (JSON nuevo)', temporal: null }, t: 'El temporal se mueve encima del destino de una sola vez: nadie llega a ver un productos.json a medio escribir. El temporal deja de existir.' },
+  { l: 6, t: 'Este catch no se ha ejecutado. Solo entra si el sistema no admite ATOMIC_MOVE; entonces se hace un movimiento normal, que también reemplaza el fichero pero sin esa garantía.' },
+]}>
 
 ```java
 temporal = Files.createTempFile(directorio, "productos-", ".json.tmp");
@@ -864,7 +885,14 @@ public static Properties cargarPropiedades(Path path) {
 
 La versión de `catalogo`. Lo que devuelve es la interfaz, así que el resto del programa no se entera del formato.
 
-<Fragmento archivo="AppConfiguration.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/configuration/AppConfiguration.java">
+<Fragmento archivo="AppConfiguration.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/configuration/AppConfiguration.java" depurar={[
+  { l: 1, v: { properties: '{storage.format=json, storage.path=data/productos.json}' }, t: 'Llega el Properties ya cargado desde el fichero de configuración.' },
+  { l: 2, v: { formato: '"json"' }, t: 'getProperty con valor por defecto: si faltara la clave, formato valdría "csv" en vez de null.' },
+  { l: 3, v: { ruta: 'data/productos.json' }, t: 'Lo mismo con la ruta del fichero de datos.' },
+  { l: 4, t: '"json" no es "csv": se pasa a la siguiente condición.' },
+  { l: 6, t: 'Coincide con "json".' },
+  { l: 7, v: { 'return': 'JsonRepository(data/productos.json)' }, t: 'Se crea el repositorio JSON. Quien llama solo recibe un IProductoRepository, así que el resto del programa no sabe qué formato hay detrás.' },
+]}>
 
 ```java
 public static IProductoRepository crearRepositorio(Properties properties) {
