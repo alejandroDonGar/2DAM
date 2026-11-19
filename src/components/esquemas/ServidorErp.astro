@@ -1,0 +1,32 @@
+---
+import Esquema from '../Esquema.astro';
+---
+<Esquema titulo="El servidor preparado para el ERP" alto={270}
+  descripcion="A la izquierda, el navegador del usuario. Se conecta por el puerto 8069 al servidor Debian, donde el cortafuegos solo deja pasar los puertos 22 y 8069. Dentro, Odoo se ejecuta con su propio usuario de servicio y se conecta a PostgreSQL con el rol odoo. PostgreSQL escucha en el puerto 5432 solo para el propio servidor, así que un equipo de fuera no puede conectarse a la base de datos."
+  pie="Cada pieza solo abre lo que necesita: el usuario entra por el 8069 y la base de datos no se ve desde fuera.">
+  <rect x="20" y="96" width="140" height="70" rx="8" class="caja" />
+  <text x="90" y="126" text-anchor="middle" class="t-titulo">Navegador</text>
+  <text x="90" y="146" text-anchor="middle" class="t-suave">el cliente</text>
+
+  <rect x="210" y="16" width="490" height="230" rx="12" class="trazo discontinuo" />
+  <text x="228" y="42" class="t-titulo">Servidor Debian</text>
+  <text x="682" y="42" text-anchor="end" class="t-suave">cortafuegos: solo 22 y 8069</text>
+
+  <path d="M162 131 H244" class="trazo con-flecha" />
+  <text x="203" y="122" text-anchor="middle">8069</text>
+
+  <rect x="250" y="90" width="180" height="82" rx="8" class="caja-acento" />
+  <text x="340" y="120" text-anchor="middle" class="t-titulo t-acento">Odoo</text>
+  <text x="340" y="140" text-anchor="middle" class="t-suave">usuario de servicio odoo</text>
+  <text x="340" y="158" text-anchor="middle" class="t-suave">sin inicio de sesión</text>
+
+  <path d="M432 131 H496" class="trazo con-flecha" />
+  <text x="464" y="122" text-anchor="middle" class="t-suave">rol odoo</text>
+
+  <rect x="500" y="90" width="180" height="82" rx="8" class="caja" />
+  <text x="590" y="120" text-anchor="middle" class="t-titulo">PostgreSQL</text>
+  <text x="590" y="140" text-anchor="middle" class="t-suave">puerto 5432</text>
+  <text x="590" y="158" text-anchor="middle" class="t-suave">solo localhost</text>
+
+  <text x="228" y="222" class="t-suave">Administración por SSH (22) con un usuario con sudo; root no puede entrar.</text>
+</Esquema>

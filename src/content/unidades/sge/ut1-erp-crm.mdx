@@ -1,0 +1,308 @@
+---
+titulo: Sistemas ERP, CRM y BI
+etiqueta: UT1
+orden: 1
+entrada: Qué es un ERP y por qué sustituye a un montón de programas sueltos, qué aportan el CRM y la inteligencia de negocio, cómo se paga cada modelo y qué hay que preparar en el servidor antes de instalar uno.
+cuando: septiembre
+ejercicios: A1 elección de ERP para TecnoCanarias (en grupo), A2 Odoo frente a Dolibarr y A3 servidor y base de datos
+ruta: { texto: Temario del profesor, url: "https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/" }
+---
+import FlujoVenta from '../../../components/esquemas/FlujoVenta.astro';
+import ModelosNube from '../../../components/esquemas/ModelosNube.astro';
+import ServidorErp from '../../../components/esquemas/ServidorErp.astro';
+
+## Qué es un ERP y cuáles hay
+
+### Qué se ve
+
+Durante años, una empresa tenía un programa para la contabilidad, otro para facturar, otro para el almacén y otro para las nóminas. Cada uno guardaba sus datos y las cifras no siempre cuadraban entre ellos. Un ERP los junta en una sola aplicación. Este tema explica qué es, de dónde viene, qué productos hay en el mercado y cómo se elige uno.
+
+### Conceptos
+
+Un <mark>ERP</mark> (*Enterprise Resource Planning*, planificación de recursos empresariales) es un programa de gestión integrada: reúne contabilidad, ventas, compras, almacén, recursos humanos o producción sobre una <mark>base de datos centralizada</mark>. La idea que lo define es que cada dato se introduce una sola vez. Cuando ventas registra un pedido, almacén, facturación y contabilidad lo ven sin volver a teclearlo.
+
+Tiene tres rasgos:
+
+| Rasgo | Qué significa |
+|---|---|
+| Integración | Todas las áreas comparten la misma base de datos y se relacionan entre sí |
+| Modularidad | Cada área es un módulo que se activa cuando hace falta |
+| Adaptabilidad | Se ajusta a cada empresa. A veces se hace al revés: la empresa cambia algún proceso para encajar con el ERP y abaratar la implantación |
+
+Así se ve el recorrido de una venta en TecnoCanarias, la empresa ficticia del curso, a través de los módulos:
+
+<FlujoVenta />
+
+El ERP viene del <mark>MRP</mark> (planificación de materiales), que nació para controlar la logística en Estados Unidos durante la Segunda Guerra Mundial y se usó después en las fábricas. En los años ochenta pasó a llamarse MRP II, porque ya planificaba todos los recursos de fabricación. A principios de los noventa se amplió a finanzas, recursos humanos o proyectos, y de ahí sale el ERP. Hoy un ERP también cubre el comercio electrónico, los clientes (CRM), la cadena de suministro (SCM), los proveedores (SRM) y el análisis de datos (BI).
+
+Técnicamente se apoya en dos piezas: una base de datos relacional y una <mark>arquitectura cliente-servidor</mark>. Los usuarios trabajan desde un cliente (normalmente el navegador) que pide datos al servidor, y es el servidor quien habla con la base de datos.
+
+En el mercado hay dos familias. Los ERP <mark>propietarios</mark> se pagan por licencia: SAP (el líder en ventas, con productos para cada tamaño de empresa, como Business One para pymes), Oracle (JD Edwards) y Microsoft Dynamics, heredero de Navision. Los de <mark>software libre</mark> publican su código: Odoo (antes OpenERP), con el servidor en Python, PostgreSQL y un catálogo enorme de módulos; OpenBravo, de origen español y con interfaz web; y Dolibarr, más sencillo y pensado para pymes.
+
+Para elegir uno se valora que cubra las áreas que la empresa necesita, que sea fácil de usar y de adaptar, que se integre con otros sistemas, que dé informes, que sea seguro, que funcione con el sistema operativo y la base de datos disponibles, que tenga detrás una empresa solvente y que ofrezca formación, actualizaciones y soporte.
+
+### Casos y ejemplos
+
+TecnoCanarias es una pyme de Tenerife con 15 empleados: vende equipos informáticos en tienda física y online, tiene servicio técnico y contratos de mantenimiento. En la A1 el grupo comparó SAP Business One, Dynamics 365 Business Central, OpenBravo, Dolibarr y Odoo, y eligió Odoo en su edición Enterprise. El motivo decisivo fue canario: la localización fiscal con IGIC y el modelo 420. La propuesta incluía nueve módulos (Inventario, Compras, Ventas, Facturación y Contabilidad, Punto de venta, Comercio electrónico, CRM, Atención al cliente y Reparaciones) y una implantación en tres fases.
+
+### Errores típicos
+
+- **Confundir un ERP con un programa de contabilidad.** La contabilidad es solo un módulo. El ERP integra todas las áreas sobre la misma base de datos.
+- **Pensar que libre significa gratis del todo.** Odoo Community es libre, pero la edición Enterprise, el alojamiento y el soporte se pagan.
+- **Elegir solo por el precio de la licencia.** Pesan igual la localización fiscal (el IGIC en Canarias), el soporte y lo que cuesta adaptarlo.
+- **Activar todos los módulos.** Para una empresa pequeña, un ERP con todo encendido queda sobredimensionado y confunde a quien lo usa.
+
+### Prácticas de clase
+
+- **A1, caso de empresa y elección de ERP (en grupo).** Procesos clave de TecnoCanarias, elección razonada de un ERP real, módulos, ventajas e inconvenientes y una presentación oral.
+
+### Repaso rápido
+
+<details>
+<summary>¿Cuáles son los tres rasgos de un ERP?</summary>
+
+Integración, modularidad y adaptabilidad.
+
+</details>
+<details>
+<summary>¿Qué diferencia a un ERP de varios programas de gestión independientes?</summary>
+
+En el ERP los datos se introducen una vez en una base de datos común y todos los módulos los comparten. Con programas separados cada uno guarda los suyos y se repite información.
+
+</details>
+<details>
+<summary>¿Qué base de datos usa Odoo?</summary>
+
+PostgreSQL.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT1, apartados 1 y 2](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo: documentación oficial](https://www.odoo.com/documentation/)
+3. [Dolibarr ERP CRM](https://www.dolibarr.org/)
+
+## CRM e inteligencia de negocio
+
+### Qué se ve
+
+Un ERP organiza la empresa por dentro. Dos complementos miran hacia fuera y hacia los datos: el CRM gestiona la relación con los clientes y la inteligencia de negocio convierte los datos acumulados en información para decidir. Hoy casi todos los ERP los traen integrados.
+
+### Conceptos
+
+Un <mark>CRM</mark> (*Customer Relationship Management*) gestiona la relación con los clientes actuales y los posibles: sus datos, el seguimiento de cada venta y las campañas de marketing. Lo usan sobre todo ventas, marketing y atención al cliente. Tiene dos partes. La <mark>operacional</mark> ejecuta y automatiza tareas (registrar una oportunidad, programar una llamada, enviar una campaña). La <mark>analítica</mark> estudia lo acumulado para saber qué clientes compran más, cuáles han dejado de hacerlo o qué campaña ha funcionado.
+
+Para que sirva, la base de datos de clientes tiene que estar unificada e integrada con el resto: si ventas y facturación tienen fichas distintas del mismo cliente, el CRM no sabe la verdad. Bien usado, acorta los ciclos de venta, ayuda a retener clientes y descubre oportunidades. Su éxito no depende solo del programa: hacen falta una estrategia, personas formadas y procesos rediseñados alrededor del cliente.
+
+Los CRM actuales pueden ser un <mark>módulo del ERP</mark> (el de Odoo, SAP o Dynamics) o un producto <mark>exclusivo</mark> e independiente, como Salesforce, HubSpot o Zoho CRM. Por lo que hacen, se distinguen herramientas para los canales de distribución, centros de atención telefónica, autoservicio para el cliente y gestión de las actividades de venta.
+
+La <mark>inteligencia de negocio</mark> (BI, *Business Intelligence*) reúne las herramientas que analizan y presentan los datos de la empresa para tomar decisiones: informes, cuadros de mando y gráficos. Funciona bien precisamente porque el ERP ya tiene todos los datos en un mismo sitio. En la UT3 se trabaja con más detalle.
+
+### Casos y ejemplos
+
+En TecnoCanarias, la parte operacional del CRM registraría que una academia ha pedido presupuesto para 20 portátiles, asignaría la oportunidad a un comercial y programaría una llamada de seguimiento. La analítica, a final de trimestre, mostraría que los contratos de mantenimiento se renuevan más cuando el cliente ha usado el servicio técnico en los últimos seis meses. Esa conclusión es BI: un dato que ya estaba en el sistema se convierte en una decisión comercial.
+
+### Errores típicos
+
+- **Pensar que un CRM es una agenda de contactos.** También sigue las oportunidades, las actividades y las campañas, y analiza los resultados.
+- **Tener los clientes duplicados en varios programas.** Sin una base de datos única, los informes del CRM no son fiables.
+- **Creer que comprar el CRM basta.** Sin formación y sin cambiar los procesos, el equipo comercial sigue con sus hojas de cálculo.
+
+### Prácticas de clase
+
+- **A1, caso de empresa.** Clasificar los procesos de TecnoCanarias en ERP, CRM y BI antes de elegir el producto.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué dos partes tiene un CRM?</summary>
+
+La operacional, que ejecuta y automatiza tareas, y la analítica, que saca conocimiento de los datos acumulados.
+
+</details>
+<details>
+<summary>Cita un CRM integrado en un ERP y uno exclusivo.</summary>
+
+Integrado: el módulo CRM de Odoo. Exclusivo: Salesforce.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT1, apartados 3 y 4](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo: documentación del módulo CRM](https://www.odoo.com/documentation/17.0/es/applications/sales/crm.html)
+
+## Licencias y formas de pago
+
+### Qué se ve
+
+Antes de instalar un ERP hay que decidir dos cosas que condicionan todo lo demás: si su licencia es privativa o libre, y si se compra para tenerlo en casa o se paga por usarlo en la nube. Este tema compara las opciones y la A2 las aplica a Odoo y Dolibarr.
+
+### Conceptos
+
+Con una <mark>licencia privativa</mark>, el código no está disponible y todo depende de una sola empresa. Eso crea dependencia: si sube las tarifas, cierra o pone trabas para migrar, la empresa cliente tiene poco margen. Con una <mark>licencia libre</mark>, el código es público y varias empresas pueden desarrollarlo y dar soporte, así que si un proveedor desaparece otro puede seguir. El temario recomienda, en general, los ERP libres. Las licencias que aparecen son la GPL y la AGPL (la de Odoo Community y gran parte de sus módulos).
+
+Odoo sigue un modelo llamado <mark>open core</mark>: la edición Community es libre, y la Enterprise añade funciones (entre ellas la localización fiscal canaria) a cambio de una cuota por usuario.
+
+La segunda decisión es dónde vive el programa. En el modelo <mark>on-premise</mark>, la empresa compra las licencias y lo instala en sus propios equipos. Con la nube aparecen tres modelos según cuánto gestiona el proveedor:
+
+<ModelosNube />
+
+En IaaS y PaaS la aplicación sigue siendo de la empresa, solo cambia dónde está alojada. En <mark>SaaS</mark> no se compra ninguna licencia: se paga por usar una aplicación que gestiona otro, según el número de usuarios y las funciones contratadas. No exige invertir en servidores y se actualiza sola, pero crea dependencia del proveedor, necesita internet y solo se puede personalizar lo que el proveedor permita. Es la opción que más crece entre las pymes.
+
+### Casos y ejemplos
+
+La A2 comparó Odoo y Dolibarr para una empresa como TecnoCanarias:
+
+| | Odoo | Dolibarr |
+|---|---|---|
+| Licencia | Community libre (AGPL) y Enterprise de pago | Libre (GPL) y gratuito |
+| Modelo | Open core: varios planes de pago por usuario | Todo el programa es libre |
+| Alojamiento | Odoo Online (SaaS), Odoo.sh o instalación propia | Instalación propia o alojamiento de terceros |
+| Soporte | Oficial con la edición de pago | De la comunidad o de empresas externas |
+| Encaja con | Empresas que necesitan muchos módulos integrados | Pymes con necesidades sencillas |
+
+Los precios cambian a menudo, y en la propia A1 y A2 salieron cifras distintas para el mismo plan. Cualquier comparación de costes tiene que citar la web oficial y la fecha de consulta.
+
+### Errores típicos
+
+- **Pensar que open source es siempre gratis.** El código es libre, pero el alojamiento, el soporte y las funciones de la edición de pago cuestan dinero.
+- **Confundir tener la aplicación en la nube con contratar SaaS.** Si la aplicación es tuya y la alojas en un servidor alquilado, es IaaS o PaaS. En SaaS pagas por usar la de otro.
+- **Copiar precios sin fecha ni fuente.** Las tarifas cambian, y dos documentos del mismo trabajo pueden acabar contradiciéndose.
+
+### Prácticas de clase
+
+- **A2, comparativa de Odoo y Dolibarr.** Módulos, planes y precios, alojamiento, manuales y soporte técnico de los dos.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué riesgo tiene una licencia privativa?</summary>
+
+La dependencia de una sola empresa: puede subir precios, cerrar o dificultar la migración a otro sistema.
+
+</details>
+<details>
+<summary>¿En qué modelo de nube no se compra ninguna licencia?</summary>
+
+En SaaS: se paga por el uso de una aplicación que gestiona el proveedor.
+
+</details>
+<details>
+<summary>¿Qué es el modelo open core de Odoo?</summary>
+
+Una edición libre (Community) y otra de pago (Enterprise) que añade funciones sobre la misma base.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT1, apartado 5](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo: ediciones Community y Enterprise](https://www.odoo.com/page/editions)
+3. [GNU: la licencia AGPL](https://www.gnu.org/licenses/agpl-3.0.html)
+
+## Preparar el servidor: sistema operativo y base de datos
+
+### Qué se ve
+
+Un ERP no se instala en el vacío: necesita un sistema operativo bien configurado y un gestor de base de datos funcionando. Este tema recorre lo que hay que dejar listo antes de instalar Odoo, cómo se comprueba que funciona y cómo se documenta, con el servidor que se montó en la A3.
+
+### Conceptos
+
+Todo ERP se apoya en un <mark>SGBD</mark> (sistema gestor de bases de datos), casi siempre relacional. Odoo usa PostgreSQL. Cualquier instalación pide siempre cuatro datos para conectarse a la base de datos: dónde está, un usuario, una contraseña y un puerto.
+
+Preparar el sistema operativo es sobre todo cuestión de seguridad:
+
+- Un usuario administrador con `sudo` y prohibir el acceso directo de `root` por SSH.
+- <mark>Usuarios de servicio</mark> para cada programa (`postgres`, `odoo`), sin posibilidad de iniciar sesión.
+- Abrir solo los puertos necesarios con el cortafuegos: SSH (22) para administrar y el 8069 de Odoo.
+- Mantener el sistema actualizado, con actualizaciones de seguridad automáticas.
+
+En PostgreSQL se comprueba que el servicio arranca solo, que escucha únicamente en local (la base de datos no tiene por qué verse desde fuera), cómo se autentica cada conexión (`pg_hba.conf`) y se crea un rol para el ERP sin permisos de superusuario.
+
+<ServidorErp />
+
+<mark>Verificar</mark> es comprobar todo eso antes de dar la instalación por buena: el servicio está activo, el puerto escucha donde debe, el rol se conecta a su base de datos y desde otro equipo no se llega al 5432. <mark>Documentar</mark> es dejarlo por escrito para que otra persona pueda repetirlo: decisiones, entorno, comandos, parámetros (sin contraseñas en claro), comprobaciones e incidencias con su causa y su solución.
+
+### Casos y ejemplos
+
+La A3 se hizo con Debian 13 y PostgreSQL 17 en WSL2. Estos son los pasos principales, con nombres de ejemplo:
+
+```bash
+# Usuario administrador con sudo y sin root por SSH
+sudo adduser admintc
+sudo usermod -aG sudo admintc
+# en /etc/ssh/sshd_config: PermitRootLogin no
+
+# Actualizaciones, también las de seguridad automáticas
+sudo apt update && sudo apt upgrade
+sudo apt install unattended-upgrades
+sudo dpkg-reconfigure unattended-upgrades
+
+# Cortafuegos: primero SSH, después el resto
+sudo ufw allow 22/tcp
+sudo ufw allow 8069/tcp
+sudo ufw enable
+```
+
+```bash
+# PostgreSQL: servicio, clúster y puerto
+sudo apt install postgresql
+systemctl is-enabled postgresql
+pg_lsclusters
+ss -tlnp | grep 5432          # debe escuchar solo en 127.0.0.1
+
+# Rol del ERP sin superusuario y base de datos de prueba
+sudo -u postgres createuser --pwprompt odoo
+sudo -u postgres createdb -O odoo -E UTF8 -T template0 tecnocanarias_test
+psql -h localhost -U odoo -d tecnocanarias_test
+```
+
+La A3 documentó tres incidencias reales:
+
+| Incidencia | Causa | Solución |
+|---|---|---|
+| Al activar el cortafuegos se perdió la conexión SSH | Se ejecutó `ufw enable` sin una regla para el puerto 22 | Permitir el 22 antes de activar `ufw` |
+| `apt` se quedó bloqueado por `debconf` | Otro proceso de instalación tenía el bloqueo | Esperar a que terminara o cerrar ese proceso y volver a lanzar el comando |
+| `Peer authentication failed` al conectar como `odoo` | Sin `-h`, PostgreSQL usa autenticación `peer`, que exige que el usuario del sistema se llame igual que el rol | Conectar con `-h localhost` (contraseña) o ejecutar el cliente como el usuario `odoo` |
+
+### Errores típicos
+
+- **Activar el cortafuegos antes de permitir SSH.** Te quedas fuera del servidor. Primero la regla del 22 y después `ufw enable`.
+- **Dejar PostgreSQL escuchando en todas las interfaces.** Si Odoo está en la misma máquina, el 5432 solo tiene que verse en local.
+- **Dar permisos de superusuario al rol del ERP.** Si alguien compromete Odoo, tendría control total de la base de datos.
+- **Guardar contraseñas en la documentación.** Se documentan los parámetros, no las claves.
+- **Comparar un solo gestor de base de datos.** La A3 pedía al menos dos. Aunque Odoo solo funcione con PostgreSQL, conviene contrastarlo con MySQL o MariaDB para justificar la elección.
+
+### Prácticas de clase
+
+- **A3, instalación y verificación del SO y del SGBD.** Dos sistemas operativos con sus requisitos, configuración segura de Debian, PostgreSQL con su rol y una base de datos de prueba, conexión desde un cliente, tres incidencias y un registro de las 17 operaciones realizadas.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué cuatro datos pide siempre la instalación de un ERP para conectarse a su base de datos?</summary>
+
+La ubicación de la base de datos, un usuario, una contraseña y un puerto.
+
+</details>
+<details>
+<summary>¿Por qué PostgreSQL debe escuchar solo en localhost si Odoo está en el mismo servidor?</summary>
+
+Porque nadie de fuera necesita conectarse directamente a la base de datos, y así se reduce la superficie de ataque.
+
+</details>
+<details>
+<summary>¿Por qué falla `psql -U odoo` sin `-h localhost`?</summary>
+
+Porque la conexión local usa autenticación `peer`, que exige que el usuario del sistema tenga el mismo nombre que el rol.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT1, apartados 6 a 9](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [PostgreSQL: el archivo pg_hba.conf](https://www.postgresql.org/docs/current/auth-pg-hba-conf.html)
+3. [Debian: actualizaciones desatendidas](https://wiki.debian.org/UnattendedUpgrades)
+4. [Ubuntu: cortafuegos ufw](https://help.ubuntu.com/community/UFW)

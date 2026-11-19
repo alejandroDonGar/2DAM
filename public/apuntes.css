@@ -268,3 +268,4 @@ figure.codigo pre.astro-code { margin: 0; border: 0; border-radius: 0; }
 .plan .nota { color: var(--suave); }
 @media (max-width: 640px) { .plan li { grid-template-columns: 2rem minmax(0, 1fr); } .plan .temas { grid-column: 2; } }
 .plan .ut { color: var(--suave); font-variant-numeric: tabular-nums; }
+.esquema .t-num { fill: var(--fondo); font-size: 12px; font-weight: 650; }

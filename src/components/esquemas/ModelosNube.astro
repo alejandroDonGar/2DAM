@@ -1,0 +1,28 @@
+---
+import Esquema from '../Esquema.astro';
+const capas = ['Aplicación', 'Plataforma', 'Sistema operativo', 'Infraestructura'];
+// Cuántas capas, contando desde abajo, gestiona el proveedor en cada modelo
+const modelos: [string, number][] = [['On-premise', 0], ['IaaS', 1], ['PaaS', 3], ['SaaS', 4]];
+---
+<Esquema titulo="Quién gestiona cada capa" alto={300}
+  descripcion="Cuatro columnas con las mismas cuatro capas: infraestructura, sistema operativo, plataforma y aplicación. En on-premise la empresa gestiona todo. En IaaS el proveedor gestiona la infraestructura. En PaaS, la infraestructura, el sistema operativo y la plataforma. En SaaS, todo."
+  pie="Cuanto más a la derecha, menos gestiona la empresa y menos puede personalizar.">
+  {modelos.map(([m, prov], c) => (
+    <g>
+      <text x={105 + c * 175} y="34" text-anchor="middle" class="t-titulo">{m}</text>
+      {capas.map((capa, i) => {
+        const delProveedor = 3 - i < prov;
+        return (
+          <g>
+            <rect x={30 + c * 175} y={52 + i * 46} width="150" height="40" rx="6" class={delProveedor ? 'caja-acento' : 'caja'} />
+            <text x={105 + c * 175} y={77 + i * 46} text-anchor="middle" class={delProveedor ? 't-acento' : ''}>{capa}</text>
+          </g>
+        );
+      })}
+    </g>
+  ))}
+  <rect x="30" y="256" width="18" height="14" rx="3" class="caja-acento" />
+  <text x="56" y="268" class="t-suave">la gestiona el proveedor</text>
+  <rect x="230" y="256" width="18" height="14" rx="3" class="caja" />
+  <text x="256" y="268" class="t-suave">la gestiona la empresa</text>
+</Esquema>

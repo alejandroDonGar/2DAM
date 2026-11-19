@@ -1,0 +1,42 @@
+---
+// Flujo de una venta por los módulos de un ERP (redibujado del esquema de la actividad UT2-A1).
+import Esquema from '../Esquema.astro';
+const modulos = [
+  { x: 20, y: 40, t: 'CRM', d: ['Oportunidad', 'Actividades'] },
+  { x: 270, y: 40, t: 'Ventas', d: ['Presupuesto', 'Pedido de venta'] },
+  { x: 520, y: 40, t: 'Facturación', d: ['Factura de cliente', 'Factura de proveedor', 'Pago'] },
+  { x: 270, y: 250, t: 'Inventario', d: ['Albarán de salida', 'Albarán de entrada', 'Stock'] },
+  { x: 520, y: 250, t: 'Compra', d: ['Solicitud de presupuesto', 'Pedido de compra'] },
+];
+const pasos: [number, number, number][] = [[1, 235, 95], [2, 325, 198], [3, 395, 198], [4, 485, 95], [5, 485, 285], [6, 485, 325], [7, 625, 198]];
+---
+<Esquema titulo="Una venta recorre los módulos del ERP" alto={410}
+  descripcion="Cinco módulos conectados. 1: una oportunidad ganada en CRM pasa a Ventas como presupuesto. 2: el pedido confirmado genera un albarán de salida en Inventario. 3: la entrega validada actualiza las cantidades entregadas en Ventas. 4: el pedido entregado genera la factura de cliente en Facturación. 5: si el stock baja del mínimo, Inventario pide presupuesto a Compra. 6: el pedido de compra genera un albarán de entrada. 7: la mercancía recibida genera la factura de proveedor. Abajo a la izquierda, los datos maestros que comparten todos: contactos, productos, impuestos y empleados."
+  pie="El dato se introduce una vez y viaja de un módulo a otro. Los números siguen el orden de la venta.">
+  <path d="M200 95 H266" class="trazo con-flecha" />
+  <path d="M450 95 H516" class="trazo con-flecha" />
+  <path d="M340 150 V246" class="trazo con-flecha" />
+  <path d="M380 250 V154" class="trazo discontinuo con-flecha" />
+  <path d="M450 285 H516" class="trazo con-flecha" />
+  <path d="M520 325 H454" class="trazo con-flecha" />
+  <path d="M610 250 V154" class="trazo con-flecha" />
+  {modulos.map((m) => (
+    <g>
+      <rect x={m.x} y={m.y} width="180" height="110" rx="8" class="caja" />
+      <text x={m.x + 16} y={m.y + 28} class="t-titulo">{m.t}</text>
+      {m.d.map((d, i) => <text x={m.x + 16} y={m.y + 56 + i * 20} class="t-suave">{d}</text>)}
+    </g>
+  ))}
+  {pasos.map(([n, x, y]) => (
+    <g>
+      <circle cx={x} cy={y} r="11" class="relleno-acento" />
+      <text x={x} y={y + 4.5} text-anchor="middle" class="t-num">{n}</text>
+    </g>
+  ))}
+  <rect x="20" y="250" width="200" height="140" rx="8" class="trazo discontinuo" />
+  <text x="36" y="278" class="t-titulo">Datos maestros</text>
+  <text x="36" y="304" class="t-suave">Contactos</text>
+  <text x="36" y="324" class="t-suave">Productos y precios</text>
+  <text x="36" y="344" class="t-suave">Impuestos (IGIC)</text>
+  <text x="36" y="364" class="t-suave">Empleados</text>
+</Esquema>
