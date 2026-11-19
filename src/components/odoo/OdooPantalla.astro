@@ -1,0 +1,32 @@
+---
+// Recreación de una pantalla de Odoo con la paleta de la web (no es una captura).
+// app y menus: barra superior. migas: ruta del panel de control. botones: el primero es el principal.
+// estados: barra de estados de la ficha, con el activo marcado.
+interface Props { app: string; menus?: string[]; migas: string[]; botones?: string[]; estados?: string[]; activo?: number; pie: string }
+const { app, menus = [], migas, botones = [], estados = [], activo = 0, pie } = Astro.props;
+---
+<figure class="odoo">
+  <div class="odoo-marco">
+    <div class="odoo-barra">
+      <strong>{app}</strong>
+      {menus.map((m) => <span>{m}</span>)}
+    </div>
+    <div class="odoo-control">
+      <div class="odoo-migas">
+        {migas.map((m, i) => i < migas.length - 1 ? <span>{m} /</span> : <strong>{m}</strong>)}
+      </div>
+      {estados.length > 0 && (
+        <ol class="odoo-estados" aria-label="Estado del documento">
+          {estados.map((e, i) => <li aria-current={i === activo ? 'step' : undefined}>{e}</li>)}
+        </ol>
+      )}
+    </div>
+    {botones.length > 0 && (
+      <div class="odoo-botones">
+        {botones.map((b, i) => <span class={i === 0 ? 'principal' : undefined}>{b}</span>)}
+      </div>
+    )}
+    <div class="odoo-cuerpo"><slot /></div>
+  </div>
+  <figcaption>{pie} Recreación con datos inventados.</figcaption>
+</figure>

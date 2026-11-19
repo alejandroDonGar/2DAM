@@ -1,0 +1,31 @@
+---
+import Esquema from '../Esquema.astro';
+const piezas = ['Cliente (navegador)', 'Servidor de Odoo', 'Base de datos'];
+---
+<Esquema titulo="Monopuesto y cliente/servidor" alto={260}
+  descripcion="A la izquierda, una instalación monopuesto: un solo equipo tiene el cliente, el servidor de Odoo y la base de datos, y se entra por localhost. A la derecha, cliente/servidor: el navegador está en un equipo y se conecta por la red, con la IP del servidor, a otro equipo que tiene el servidor de Odoo y la base de datos."
+  pie="La diferencia está en dónde vive cada pieza y en la dirección con la que se conecta el cliente.">
+  <text x="20" y="30" class="t-titulo">Monopuesto</text>
+  <rect x="20" y="44" width="260" height="196" rx="10" class="trazo discontinuo" />
+  <text x="36" y="68" class="t-suave">un solo equipo</text>
+  {piezas.map((p, i) => (
+    <g>
+      <rect x="40" y={82 + i * 48} width="220" height="38" rx="6" class="caja" />
+      <text x="150" y={106 + i * 48} text-anchor="middle">{p}</text>
+    </g>
+  ))}
+  <text x="150" y="232" text-anchor="middle" class="t-acento">localhost:8069</text>
+
+  <text x="330" y="30" class="t-titulo">Cliente/servidor</text>
+  <rect x="330" y="96" width="150" height="60" rx="8" class="caja" />
+  <text x="405" y="124" text-anchor="middle">Navegador</text>
+  <text x="405" y="143" text-anchor="middle" class="t-suave">equipo del usuario</text>
+  <path d="M482 126 H536" class="trazo con-flecha" />
+  <text x="509" y="116" text-anchor="middle" class="t-acento">IP:8069</text>
+  <rect x="540" y="44" width="170" height="196" rx="10" class="trazo discontinuo" />
+  <text x="556" y="68" class="t-suave">equipo servidor</text>
+  <rect x="556" y="90" width="138" height="38" rx="6" class="caja" />
+  <text x="625" y="114" text-anchor="middle">Servidor de Odoo</text>
+  <rect x="556" y="146" width="138" height="38" rx="6" class="caja" />
+  <text x="625" y="170" text-anchor="middle">Base de datos</text>
+</Esquema>

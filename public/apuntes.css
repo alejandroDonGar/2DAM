@@ -269,3 +269,37 @@ figure.codigo pre.astro-code { margin: 0; border: 0; border-radius: 0; }
 @media (max-width: 640px) { .plan li { grid-template-columns: 2rem minmax(0, 1fr); } .plan .temas { grid-column: 2; } }
 .plan .ut { color: var(--suave); font-variant-numeric: tabular-nums; }
 .esquema .t-num { fill: var(--fondo); font-size: 12px; font-weight: 650; }
+
+/* ---------- Pantallas de Odoo recreadas con la paleta ---------- */
+.odoo { margin: 1.6rem 0; }
+.odoo-marco { border: 1px solid var(--linea); border-radius: 10px; background: var(--capa); font-family: var(--sans); font-size: .88rem; overflow-x: auto; }
+.odoo figcaption { font-family: var(--sans); font-size: .85rem; color: var(--suave); margin-top: 8px; }
+.odoo-barra { display: flex; gap: 18px; padding: 10px 16px; border-bottom: 1px solid var(--linea); color: var(--suave); }
+.odoo-barra strong { color: var(--texto); font-weight: 650; }
+.odoo-control { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; padding: 10px 16px 0; }
+.odoo-migas span { color: var(--suave); margin-right: 4px; }
+.odoo-migas strong { font-weight: 600; }
+.odoo-estados { display: flex; list-style: none; margin: 0; padding: 0; }
+.odoo-estados li { border: 1px solid var(--linea); padding: 3px 12px; margin-left: -1px; color: var(--suave); font-size: .8rem; background: var(--fondo); }
+.odoo-estados li[aria-current] { background: var(--acento); border-color: var(--acento); color: var(--fondo); font-weight: 600; }
+.odoo-botones { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 0; }
+.odoo-botones span { border: 1px solid var(--linea); border-radius: 6px; padding: 3px 10px; font-size: .8rem; }
+.odoo-botones .principal { background: var(--acento); border-color: var(--acento); color: var(--fondo); font-weight: 600; }
+.odoo-cuerpo { padding: 12px 16px 16px; min-width: 520px; }
+.odoo-hoja { background: var(--fondo); border: 1px solid var(--linea); border-radius: 8px; padding: 14px 18px; }
+.odoo-sub { color: var(--suave); font-size: .8rem; }
+.odoo-titulo { font-size: 1.3rem; font-weight: 650; margin: 2px 0 6px; }
+.odoo-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.odoo-tags span, .odoo-etiqueta { font-size: .75rem; padding: 1px 8px; border-radius: 99px; background: var(--marca); }
+.odoo-etiqueta.no { background: transparent; border: 1px solid var(--linea); color: var(--suave); }
+.odoo-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 28px; margin: 6px 0 0; }
+.odoo-campos div { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: 8px; }
+.odoo-campos dt { color: var(--suave); }
+.odoo-campos dd { margin: 0; }
+.odoo-pestanas { display: flex; gap: 2px; border-bottom: 1px solid var(--linea); margin: 14px 0 0; }
+.odoo-pestanas span { padding: 5px 12px; color: var(--suave); }
+.odoo-pestanas .activa { color: var(--texto); font-weight: 600; box-shadow: inset 0 -2px var(--acento); }
+.odoo-lista table { width: 100%; border-collapse: collapse; }
+.odoo-lista th { text-align: left; color: var(--suave); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--linea); }
+.odoo-lista td { padding: 6px 8px; border-bottom: 1px solid var(--linea); }
+.odoo-lista .der { text-align: right; font-variant-numeric: tabular-nums; }

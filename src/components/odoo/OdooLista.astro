@@ -1,0 +1,20 @@
+---
+// Vista de lista de Odoo. Una celda puede ser texto o { t, estado } para pintarla como etiqueta
+// (estado 'si' = verde-acento, 'no' = neutra).
+type Celda = string | { t: string; estado: 'si' | 'no' };
+interface Props { columnas: string[]; filas: Celda[][]; derecha?: number[] }
+const { columnas, filas, derecha = [] } = Astro.props;
+const der = (i: number) => (derecha.includes(i) ? 'der' : undefined);
+---
+<div class="odoo-lista">
+  <table>
+    <thead><tr>{columnas.map((c, i) => <th class={der(i)}>{c}</th>)}</tr></thead>
+    <tbody>
+      {filas.map((f) => (
+        <tr>{f.map((c, i) => (
+          <td class={der(i)}>{typeof c === 'string' ? c : <span class={`odoo-etiqueta ${c.estado}`}>{c.t}</span>}</td>
+        ))}</tr>
+      ))}
+    </tbody>
+  </table>
+</div>

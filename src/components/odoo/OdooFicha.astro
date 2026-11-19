@@ -1,0 +1,20 @@
+---
+// Vista de ficha (formulario) de Odoo: título, etiquetas, campos en dos columnas y pestañas.
+// Debajo de las pestañas va lo que se pase en el slot (normalmente un OdooLista).
+interface Props { titulo: string; subtitulo?: string; etiquetas?: string[]; campos?: [string, string][]; pestanas?: string[]; activa?: number }
+const { titulo, subtitulo, etiquetas = [], campos = [], pestanas = [], activa = 0 } = Astro.props;
+---
+<div class="odoo-hoja">
+  {subtitulo && <div class="odoo-sub">{subtitulo}</div>}
+  <div class="odoo-titulo">{titulo}</div>
+  {etiquetas.length > 0 && <div class="odoo-tags">{etiquetas.map((e) => <span>{e}</span>)}</div>}
+  {campos.length > 0 && (
+    <dl class="odoo-campos">
+      {campos.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}
+    </dl>
+  )}
+  {pestanas.length > 0 && (
+    <div class="odoo-pestanas">{pestanas.map((p, i) => <span class={i === activa ? 'activa' : undefined}>{p}</span>)}</div>
+  )}
+  <slot />
+</div>

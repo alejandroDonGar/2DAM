@@ -1,0 +1,316 @@
+---
+titulo: Instalación y configuración de Odoo
+etiqueta: UT2
+orden: 2
+entrada: Dónde se instala cada pieza de un ERP, qué módulos se activan, cómo se levanta Odoo con Docker y se adapta a una empresa, y cómo se dan de alta contactos, productos y almacén.
+cuando: octubre y noviembre
+ejercicios: A1 módulos (en grupo), A2 Odoo en máquina virtual, A3 PixelManga con Docker y A4 terceros, productos y almacén
+ruta: { texto: Temario del profesor, url: "https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/" }
+---
+import TiposInstalacion from '../../../components/esquemas/TiposInstalacion.astro';
+import OdooPantalla from '../../../components/odoo/OdooPantalla.astro';
+import OdooLista from '../../../components/odoo/OdooLista.astro';
+import OdooFicha from '../../../components/odoo/OdooFicha.astro';
+
+## Monopuesto y cliente/servidor
+
+### Qué se ve
+
+Antes de instalar un ERP hay que decidir dónde va cada una de sus tres piezas: la base de datos, el servidor con la lógica de la aplicación y el cliente que usa la persona. Este tema compara las formas de instalarlo y la A2 lo prueba en una máquina virtual.
+
+### Conceptos
+
+Hay cuatro formas de conseguir un ERP funcionando. Una <mark>máquina virtual</mark> ya preparada sirve para evaluar el producto, no para producción. Los <mark>paquetes</mark> de la distribución se instalan con un asistente y resuelven las dependencias solos, aunque no siempre traen la última versión. La <mark>instalación personalizada</mark> descarga el software y lo instala con comandos: más control, más trabajo. Y en <mark>SaaS</mark> no se instala nada, porque la aplicación vive en el servidor del proveedor.
+
+Según dónde estén las piezas, la instalación es:
+
+<TiposInstalacion />
+
+En <mark>monopuesto</mark> todo está en el mismo equipo y el cliente se conecta a `localhost`. Es lo cómodo para probar. En <mark>cliente/servidor</mark> los datos y la aplicación están centralizados en un equipo servidor y los usuarios se conectan desde sus equipos con la IP de ese servidor. Si el servidor ofrece una interfaz web, como Odoo, basta un navegador para entrar.
+
+Por dentro, Odoo se organiza en capas y sigue el patrón <mark>MVC</mark> (modelo, vista, controlador). El modelo se apoya en un ORM que traduce entre los objetos de Python y las tablas de PostgreSQL, la misma idea que Hibernate en Acceso a Datos.
+
+El servidor puede estar en la empresa (on-premise) o en la nube. Además del coste, pesa la protección de datos: el RGPD y la LOPDGDD limitan dónde se pueden guardar ciertos datos personales.
+
+### Casos y ejemplos
+
+En la A2 se instaló Odoo en una máquina virtual con Linux Mint y se probaron las dos modalidades. En monopuesto, el navegador de la propia máquina abría `localhost:8069`. En cliente/servidor, el navegador del equipo anfitrión abría `IP-de-la-máquina:8069`, con el adaptador de red de la máquina virtual configurado para que se vieran entre sí.
+
+### Errores típicos
+
+- **Usar `localhost` desde otro equipo.** `localhost` es siempre la máquina desde la que escribes. Desde fuera hay que usar la IP del servidor.
+- **Dejar la red de la máquina virtual en NAT sin redirigir puertos.** El anfitrión no llega al 8069. Hay que usar un adaptador puente o reenviar el puerto.
+- **Montar producción en una máquina virtual de evaluación.** Sirve para probar, no para guardar los datos reales de una empresa.
+
+### Prácticas de clase
+
+- **A2, instalación de Odoo en máquina virtual.** Linux Mint, instalación paso a paso con evidencias de cada fase y prueba de las dos modalidades.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué tres piezas tiene una instalación de un ERP?</summary>
+
+La base de datos, el servidor con la lógica de la aplicación y el cliente.
+
+</details>
+<details>
+<summary>¿Con qué dirección se conecta el cliente en una instalación cliente/servidor?</summary>
+
+Con la IP (o el nombre) del equipo servidor, no con `localhost`.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT2, apartado 1](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo 17: instalación](https://www.odoo.com/documentation/17.0/es/administration/on_premise.html)
+
+## Los módulos y cómo se conectan
+
+### Qué se ve
+
+Toda la funcionalidad de un ERP está repartida en módulos. Este tema explica cuáles vienen de serie, cuáles se añaden, cómo se pasan información entre ellos y qué hace el módulo de localización del país.
+
+### Conceptos
+
+Un <mark>módulo</mark> es una pieza que cubre una función concreta. El <mark>módulo base</mark> se instala siempre: configuración, idioma, usuarios y permisos, y los <mark>datos maestros</mark> (contactos, productos, impuestos), que usan todos los demás. El resto se activa según lo que necesite la empresa: contabilidad, compras, almacén, ventas, facturación, recursos humanos, CRM, proyectos.
+
+Los módulos comparten rasgos: se instalan y desinstalan desde la propia aplicación, se configuran, generan sus informes, tienen niveles de permiso y, sobre todo, están <mark>interconectados</mark>. El resultado de un proceso dispara el siguiente sobre la misma base de datos: la oportunidad del CRM se convierte en pedido, el pedido en albarán, el albarán en factura y la factura en asiento contable.
+
+El <mark>módulo de localización</mark> adapta el ERP a la ley de cada país: plan contable, impuestos, validación del NIF, provincias y traducción. Al crear la base de datos y elegir el país, Odoo carga la localización correspondiente.
+
+En Odoo, el menú Aplicaciones muestra qué está instalado y qué no:
+
+<OdooPantalla app="Aplicaciones" menus={['Actualizar lista']} migas={['Aplicaciones']} pie="La lista de aplicaciones con su estado. Las instaladas ya comparten la base de datos.">
+<OdooLista columnas={['Módulo', 'Categoría', 'Versión', 'Estado']}
+  filas={[
+    ['Ventas', 'Ventas', '17.0', { t: 'Instalado', estado: 'si' }],
+    ['Facturación', 'Contabilidad', '17.0', { t: 'Instalado', estado: 'si' }],
+    ['Inventario', 'Cadena de suministro', '17.0', { t: 'Instalado', estado: 'si' }],
+    ['Compra', 'Cadena de suministro', '17.0', { t: 'Instalado', estado: 'si' }],
+    ['CRM', 'Ventas', '17.0', { t: 'No instalado', estado: 'no' }],
+    ['Punto de venta', 'Ventas', '17.0', { t: 'No instalado', estado: 'no' }],
+    ['Fabricación', 'Cadena de suministro', '17.0', { t: 'No instalado', estado: 'no' }],
+  ]} />
+</OdooPantalla>
+
+### Casos y ejemplos
+
+En la A1 el grupo partió de las aplicaciones instaladas en una base de datos, revisó el catálogo y la lista de módulos con su estado, dibujó cómo se relacionan (el esquema del flujo de una venta que está en la UT1) y propuso los módulos que faltaban para la empresa del caso, sin instalarlos todavía.
+
+Una empresa que solo vende servicios, como una asesoría, no necesita Inventario ni Fabricación: le bastan Contactos, Ventas y Facturación con la localización española. Activar menos módulos hace la aplicación más sencilla para quien la usa.
+
+### Errores típicos
+
+- **Instalar módulos «por si acaso».** Cada módulo añade menús, campos y dependencias. Se activa lo que la empresa usa.
+- **Olvidar la localización.** Sin ella no hay plan contable ni impuestos del país, y las facturas salen mal.
+- **Pensar que los módulos son programas separados.** Comparten base de datos: desinstalar uno puede afectar a otros que dependen de él.
+
+### Prácticas de clase
+
+- **A1, identificación de módulos (en grupo).** Aplicaciones instaladas, catálogo, estado de los módulos, esquema de relaciones y módulos propuestos para el caso.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué incluye el módulo base?</summary>
+
+La configuración, el idioma, los usuarios y permisos y los datos maestros que usan todos los módulos.
+
+</details>
+<details>
+<summary>¿Para qué sirve el módulo de localización?</summary>
+
+Para adaptar el ERP a la ley del país: plan contable, impuestos, validación del NIF y traducción.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT2, apartado 2](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo 17: localización fiscal de España](https://www.odoo.com/documentation/17.0/es/applications/finance/fiscal_localizations/spain.html)
+
+## Odoo con Docker: instalar, configurar y actualizar
+
+### Qué se ve
+
+En la A3 Odoo no se instaló a mano, sino con Docker: un contenedor para Odoo y otro para PostgreSQL. Este tema explica ese montaje, la configuración para adaptarlo a una empresa, cómo se actualiza y cómo se comprueba con una compra de prueba.
+
+### Conceptos
+
+Con <mark>Docker Compose</mark> se describen los dos servicios en un `docker-compose.yml`: la base de datos y Odoo, con sus volúmenes para que los datos no se pierdan al borrar un contenedor y sus variables de entorno para las credenciales. Todo se arranca con `docker compose up -d` y se para con `docker compose down`. La ventaja es que cualquiera puede repetir el mismo entorno.
+
+Al entrar por primera vez en `localhost:8069`, Odoo pide crear la base de datos: nombre, usuario administrador, contraseña, idioma, país y si se cargan datos de demostración. También muestra la <mark>contraseña maestra</mark>, que protege la gestión de bases de datos y hay que guardar en lugar seguro.
+
+<mark>Configurar</mark> es ajustar parámetros para que el sistema funcione en la empresa: los datos de la empresa, el idioma, la moneda, los impuestos, los usuarios con sus permisos y los módulos. En una instalación clásica muchos parámetros están en `/etc/odoo/odoo.conf` (`db_user`, `db_password`, `addons_path`); con Docker pasan a variables de entorno.
+
+Las <mark>actualizaciones</mark> son de dos tipos. Los parches dentro de la misma versión (17.0 a una 17.0 más reciente) suelen ser automáticos. El cambio de versión (de la 17 a la 18) es una migración: se prueba antes en una copia, porque cambia la estructura de la base de datos.
+
+### Casos y ejemplos
+
+El caso de la A3 era PixelManga Studio, una tienda de manga digital y figuras. El montaje partía de un compose como este (credenciales de ejemplo, que en el ejercicio salían de un `.env`):
+
+```yaml
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+  odoo:
+    image: odoo:17
+    depends_on: [db]
+    ports:
+      - "8069:8069"
+    environment:
+      HOST: db
+      USER: odoo
+      PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - odoo-data:/var/lib/odoo
+volumes:
+  db-data:
+  odoo-data:
+```
+
+```bash
+docker compose up -d                                  # arrancar
+docker compose pull                                   # traer la imagen más reciente
+docker compose run --rm odoo odoo -d mi_bd -u all --stop-after-init   # actualizar los módulos de la BD
+docker compose logs -f odoo                           # ver qué pasa
+```
+
+Después se configuraba la empresa (NIF, idioma, euro), dos impuestos de IVA (21 % y 4 %), dos usuarios con roles distintos (gestión comercial y almacén) y dos productos: un manga digital de 8 € con IVA del 4 % y una figura de 45 € con IVA del 21 %, almacenable, con 50 unidades.
+
+<OdooPantalla app="Inventario" menus={['Resumen', 'Operaciones', 'Productos']} migas={['Productos', 'Figura coleccionable 25 cm']} botones={['Actualizar cantidad', 'Reponer']} pie="La ficha de la figura, con su impuesto y sus 50 unidades en stock.">
+<OdooFicha titulo="Figura coleccionable 25 cm" subtitulo="Producto" etiquetas={['Puede venderse', 'Puede comprarse']}
+  campos={[['Tipo', 'Almacenable'], ['Precio de venta', '45,00 €'], ['Impuesto cliente', 'IVA 21 %'], ['Coste', '22,00 €'], ['Categoría', 'Merchandising'], ['A mano', '50 unidades']]}
+  pestanas={['Información general', 'Ventas', 'Compra', 'Inventario']} />
+</OdooPantalla>
+
+La prueba final era una compra con los dos productos: pedido, descarga del manga, albarán solo para la figura (el producto digital no se envía), stock de 50 a 49, factura y cobro. El total correcto es 45 × 1,21 + 8 × 1,04 = 54,45 + 8,32 = 62,77 €.
+
+### Errores típicos
+
+- **Copiar los comandos sin mirar el compose.** Los nombres del servicio y de la base de datos tienen que ser los de tu `docker-compose.yml`. Si el servicio se llama `odoo`, un comando con `web` falla.
+- **Buscar un módulo que no existe en esa versión.** Los nombres técnicos cambian entre versiones. En Odoo 17, la venta de productos digitales va dentro del comercio electrónico. Si un módulo no aparece, se documenta como incidencia.
+- **No comprobar los cálculos.** Si la factura no cuadra con las líneas del pedido, algo está mal en los datos de partida. Hay que rehacer la cuenta con los precios y los impuestos de cada línea.
+- **Llamar `odoo` o `postgres` a la base de datos.** Son nombres reservados en este montaje y dan problemas. Usa un nombre propio.
+- **Perder la contraseña maestra.** Sin ella no se pueden duplicar, restaurar ni borrar bases de datos desde el gestor.
+- **Actualizar de versión en producción sin probar.** Una migración se ensaya antes en una copia.
+
+### Prácticas de clase
+
+- **A3, configuración y despliegue de Odoo (PixelManga Studio).** Siete pasos: levantar Odoo con Docker, instalar y justificar los módulos, configurar empresa, impuestos y usuarios, crear los productos, actualizar anotando la versión antes y después, probar una compra combinada y llevar una bitácora de incidencias.
+
+### Repaso rápido
+
+<details>
+<summary>¿Para qué sirven los volúmenes en el compose?</summary>
+
+Para que los datos de PostgreSQL y de Odoo sigan existiendo aunque se borre y se vuelva a crear el contenedor.
+
+</details>
+<details>
+<summary>¿Qué diferencia hay entre aplicar un parche y cambiar de versión?</summary>
+
+El parche es una mejora dentro de la misma versión y suele ser automático. El cambio de versión es una migración que modifica la base de datos y se prueba antes en una copia.
+
+</details>
+<details>
+<summary>¿Por qué el albarán de la compra de prueba solo lleva la figura?</summary>
+
+Porque el manga es un producto digital: se descarga y no sale del almacén.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT2, apartados 3 a 7](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Imagen oficial de Odoo en Docker Hub](https://hub.docker.com/_/odoo)
+3. [Documentación de Docker Compose](https://docs.docker.com/compose/)
+
+## Terceros, productos y almacén
+
+### Qué se ve
+
+Con Odoo configurado, toca cargar los datos con los que trabajan todos los módulos: clientes y proveedores, productos y servicios, y el almacén. Este tema sigue la A4 hasta comprar un mismo producto a dos proveedores y ajustar el inventario.
+
+### Conceptos
+
+Los <mark>terceros</mark> son los contactos de la empresa. Una empresa puede tener personas de contacto vinculadas, y se clasifican con <mark>etiquetas</mark> para filtrarlos. En la ficha de un proveedor, el campo Vendedor es la persona de nuestra empresa que lleva esa relación, y no tiene nada que ver con el Comprador de una orden de compra concreta.
+
+Los <mark>productos</mark> pueden ser almacenables (se controla su stock), consumibles o servicios (no ocupan almacén). Se ordenan en <mark>categorías</mark> jerárquicas, como Informática / Periféricos / Teclados. En la pestaña Compra de un producto se guardan los <mark>precios de proveedor</mark>: cada proveedor con su precio, su cantidad mínima y su plazo de entrega.
+
+Cada compra mueve el stock en tres pasos: la orden de compra, la <mark>recepción</mark> (el albarán de entrada que suma las unidades) y la factura del proveedor. Cuando lo que hay en el almacén no coincide con lo que dice el sistema, por roturas o pérdidas, se hace un <mark>ajuste de inventario</mark>: se apunta la cantidad contada, Odoo calcula la diferencia y se indica el motivo.
+
+### Casos y ejemplos
+
+La ficha de un proveedor, con su contacto y sus etiquetas:
+
+<OdooPantalla app="Contactos" menus={['Contactos', 'Configuración']} migas={['Contactos', 'Distribuciones Atlántico, S.L.']} botones={['Nuevo', 'Acción']} pie="Un proveedor con una persona de contacto vinculada y dos etiquetas.">
+<OdooFicha titulo="Distribuciones Atlántico, S.L." subtitulo="Empresa" etiquetas={['Muy importante', 'VIP']}
+  campos={[['NIF', 'B00000000'], ['Teléfono', '922 000 000'], ['Dirección', 'Polígono Industrial, Tenerife'], ['Vendedor', 'Responsable de compras']]}
+  pestanas={['Contactos y direcciones', 'Ventas y compras', 'Contabilidad']}>
+<OdooLista columnas={['Contacto', 'Puesto', 'Correo']} filas={[['Persona de contacto', 'Comercial', 'contacto@ejemplo.com']]} />
+</OdooFicha>
+</OdooPantalla>
+
+Y un producto con precios de dos proveedores. El descuento se guarda ya aplicado, como precio neto:
+
+<OdooPantalla app="Inventario" menus={['Resumen', 'Operaciones', 'Productos']} migas={['Productos', 'Teclado mecánico']} pie="La pestaña Compra con el precio, la cantidad mínima y el plazo de cada proveedor.">
+<OdooFicha titulo="Teclado mecánico" subtitulo="Producto almacenable" campos={[['Categoría', 'Informática / Periféricos / Teclados'], ['Precio de venta', '79,00 €']]} pestanas={['Información general', 'Ventas', 'Compra', 'Inventario']} activa={2}>
+<OdooLista columnas={['Proveedor', 'Cantidad mínima', 'Precio', 'Plazo']} derecha={[1, 2, 3]}
+  filas={[['Distribuciones Atlántico, S.L.', '1', '42,00 €', '3 días'], ['Distribuciones Atlántico, S.L.', '20', '38,00 €', '3 días'], ['Suministros del Norte, S.L.', '10', '39,50 €', '7 días']]} />
+</OdooFicha>
+</OdooPantalla>
+
+El cierre de la A4: el mismo teclado comprado a los dos proveedores, dos recepciones validadas, dos facturas de proveedor publicadas y un ajuste por una unidad rota.
+
+<OdooPantalla app="Inventario" menus={['Resumen', 'Operaciones', 'Productos']} migas={['Inventario físico']} botones={['Aplicar', 'Cantidades contadas']} pie="El ajuste de inventario: Odoo calcula la diferencia entre lo que esperaba y lo contado.">
+<OdooLista columnas={['Producto', 'Ubicación', 'Cantidad prevista', 'Contada', 'Diferencia', 'Motivo']} derecha={[2, 3, 4]}
+  filas={[['Teclado mecánico', 'Almacén Principal', '30', '29', '−1', 'Unidad dañada en la recepción']]} />
+</OdooPantalla>
+
+### Errores típicos
+
+- **Confundir Vendedor y Comprador.** El vendedor de la ficha del proveedor es quien lleva la relación; el comprador es quien firma una orden concreta. Pueden ser personas distintas.
+- **Crear un producto como consumible cuando debía ser almacenable.** Odoo no controla su stock y el ajuste de inventario no tiene sentido.
+- **Apuntar el descuento aparte.** En los precios de proveedor se guarda el precio neto, ya con el descuento.
+- **Validar la factura antes que la recepción.** Primero entra la mercancía y después se factura lo recibido.
+- **Ajustar el inventario sin motivo.** Sin el motivo, nadie sabrá después por qué falta una unidad.
+
+### Prácticas de clase
+
+- **A4, terceros, productos, servicios y almacén.** Ocho terceros (cuatro proveedores y cuatro clientes) con personas de contacto, etiquetas de importancia, el campo Vendedor frente al Comprador, el almacén renombrado y categorías en tres niveles, diez productos almacenables y cinco servicios con precios de varios proveedores, y el ciclo completo de compra a dos proveedores con su ajuste de inventario.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué tres documentos deja una compra completa?</summary>
+
+La orden de compra, la recepción (albarán de entrada) y la factura del proveedor.
+
+</details>
+<details>
+<summary>¿Qué datos se guardan en los precios de proveedor de un producto?</summary>
+
+El proveedor, la cantidad mínima, el precio neto y el plazo de entrega.
+
+</details>
+<details>
+<summary>¿Para qué sirve un ajuste de inventario?</summary>
+
+Para corregir el stock cuando lo contado no coincide con lo que dice el sistema, apuntando la diferencia y el motivo.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT3, apartado 5: cálculos de pedidos, albaranes y facturas](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo 17: precios de proveedor en Compras](https://www.odoo.com/documentation/17.0/es/applications/inventory_and_mrp/purchase/products/pricelist.html)
+3. [Odoo 17: inventario físico y ajustes](https://www.odoo.com/documentation/17.0/es/applications/inventory_and_mrp/inventory/warehouses_storage/inventory_management/count_products.html)

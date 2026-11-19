@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import Crud from '../../components/Crud.astro';
 import PlanEmpresa from '../../components/PlanEmpresa.astro';
+import FlujoVenta from '../../components/esquemas/FlujoVenta.astro';
 import { getCollection } from 'astro:content';
 import { asignaturas } from '../../data/asignaturas';
 
@@ -30,6 +31,12 @@ const enlaces = [0, 1, 2, 3, 4].map(i => unidades.find(u => u.data.crud === i)).
       <h2>El plan de empresa, apartado a apartado</h2>
       <p class="entrada">Cada apartado del modelo de plan de empresa y los temas que explican cómo rellenarlo.</p>
       <PlanEmpresa />
+    </>)}
+
+    {a.slug === 'sge' && (<>
+      <h2>Una venta de principio a fin</h2>
+      <p class="entrada">El hilo de la asignatura: cómo pasa una venta por los módulos de un ERP. La UT1 explica la idea y la UT2 monta en Odoo los datos maestros, las compras y el almacén.</p>
+      <FlujoVenta />
     </>)}
 
     <h2>Unidades</h2>
