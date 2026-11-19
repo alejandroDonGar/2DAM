@@ -1,0 +1,442 @@
+---
+titulo: La empresa y su entorno
+etiqueta: UT1
+orden: 1
+entrada: Qué es una empresa vista como sistema, qué la rodea y qué la hace distinta de otra con los mismos elementos. Cierra con las herramientas para analizar una empresa canaria, PESTEL, Porter y el REF.
+cuando: septiembre (entregas el 29)
+ejercicios: tarea 1.1 (clasificar CodeIsla) y reto TenerifeCode
+---
+import EmpresaSistema from '../../../components/esquemas/EmpresaSistema.astro';
+import Entorno from '../../../components/esquemas/Entorno.astro';
+import Porter from '../../../components/esquemas/Porter.astro';
+import IcebergCultura from '../../../components/esquemas/IcebergCultura.astro';
+import IdentidadImagen from '../../../components/esquemas/IdentidadImagen.astro';
+import PasosRSE from '../../../components/esquemas/PasosRSE.astro';
+
+## La empresa como sistema
+
+### Qué se ve
+
+Hasta ahora la empresa se había estudiado sobre todo como algo económico, un negocio que busca beneficio. En esta unidad se mira de otra forma: como un sistema con partes que dependen unas de otras y que vive en contacto con lo que tiene alrededor. El tema empieza por esas partes y por cómo se reparten el trabajo.
+
+### Conceptos
+
+La idea viene de la <mark>teoría general de sistemas</mark> del biólogo Ludwig von Bertalanffy, que buscaba principios válidos para cualquier ciencia. Aplicada a la empresa, la define como un conjunto de elementos que dependen unos de otros, ordenados por una estructura y unas funciones, que persiguen un objetivo común e intercambian cosas con el entorno.
+
+<EmpresaSistema />
+
+De esa definición salen dos ideas. La primera es que, si una parte falla, las demás lo notan. La segunda es la <mark>sinergia</mark>: al trabajar juntos, los elementos consiguen algo que ninguno lograría por separado. Un equipo de desarrollo saca adelante más que cinco programadores trabajando cada uno por su lado.
+
+La empresa es un sistema artificial, porque la crean las personas; físico, porque tiene personas, locales y máquinas reales; y abierto, porque recibe recursos del exterior y le devuelve productos.
+
+Toda empresa tiene tres <mark>elementos</mark>, igual que todas las mesas tienen patas, tablero y tornillos aunque ninguna sea igual a otra:
+
+| Elemento | Qué incluye |
+|---|---|
+| Social | Las personas: administradores (solo en sociedades), propietarios del capital, directivos y trabajadores. Cada grupo busca algo distinto: gestionar, obtener beneficio, cumplir objetivos o cobrar un buen salario |
+| Técnico | Los conocimientos (el *know-how*) y los bienes. Los bienes duraderos se usan durante años, como un ordenador o un local; los no duraderos se gastan pronto, como el tóner o las mercancías del almacén |
+| Organización | El orden que se da a todo lo anterior. Depende de la actividad, del tamaño y del entorno |
+
+Para cumplir su objetivo, la empresa se divide en <mark>subsistemas funcionales</mark>, que en una empresa grande se llaman departamentos. En una pequeña, una sola persona puede llevar varios. No hay una lista obligatoria, pero la clásica tiene cinco:
+
+| Subsistema | De qué se ocupa |
+|---|---|
+| Comercial o marketing | Investigar el mercado, diseñar el producto, fijar el precio, vender y comunicar |
+| Financiero | Conseguir dinero y usarlo bien: tesorería, préstamos, inversiones y documentos contables |
+| Producción u operaciones | Fabricar el producto o definir cómo se presta el servicio: procesos, almacén y control de calidad |
+| Recursos humanos | Selección, contratos, nóminas, formación y clima laboral |
+| I+D+i | Investigar e innovar. Solo lo tienen como departamento propio las empresas que viven de la tecnología |
+
+### Casos y ejemplos
+
+El material del Campus acompaña todo el tema con dos personas que quieren montar una tienda de informática y que han trabajado en tres organizaciones muy distintas: unos grandes almacenes (GA), una asociación de voluntariado (ASO) y una empresa de telecomunicaciones (ETE). Sirven para clasificar ejemplos de cada concepto:
+
+| Situación | A qué corresponde |
+|---|---|
+| Una persona trabaja ocho horas en la empresa de telecomunicaciones | Elemento social: trabajador |
+| Alguien compra acciones para cobrar un 1 % del beneficio | Elemento social: propietario del capital |
+| Los equipos para instalar redes | Elemento técnico: bien duradero |
+| El botiquín de primeros auxilios | Elemento técnico: bien no duradero |
+| Coordinar al personal de distintas áreas | Organización |
+| Pedir un préstamo al banco | Subsistema financiero |
+| Fijar el precio de un servicio | Subsistema comercial |
+| Preparar las nóminas | Recursos humanos |
+
+### Errores típicos
+
+- **Decir que la empresa es «abierta, abstracta y física».** No puede ser abstracta y física a la vez. La combinación correcta es artificial, física y abierta.
+- **Poner administradores en cualquier empresa.** Solo existen en las sociedades. Un autónomo no tiene administrador.
+- **Confundir subsistema con departamento.** El subsistema es la función; el departamento es cómo se organiza cuando la empresa es grande. En una microempresa la función existe aunque no haya departamento.
+- **Pensar que toda empresa tiene I+D+i.** Innovar puede cualquiera, pero como departamento solo lo tienen las de base tecnológica.
+
+### Prácticas de clase
+
+- **Autoevaluaciones del Campus.** Clasificar situaciones en elementos y subsistemas a partir del caso de GA, ASO y ETE.
+
+### Repaso rápido
+
+<details>
+<summary>¿Por qué la empresa es un sistema abierto?</summary>
+
+Porque intercambia continuamente con el entorno: recibe trabajo, capital y materiales, y entrega bienes y servicios.
+
+</details>
+<details>
+<summary>Un portátil de la empresa y el tóner de la impresora, ¿son el mismo tipo de bien?</summary>
+
+No. El portátil es un bien duradero, porque se usa durante años. El tóner es no duradero, porque se gasta pronto.
+
+</details>
+<details>
+<summary>¿Qué es la sinergia?</summary>
+
+Lo que consiguen los elementos al trabajar juntos y que ninguno conseguiría por separado.
+
+</details>
+
+### Fuentes
+
+1. Contenidos EIE02 «La empresa y su entorno», en el Campus del centro (acceso con sesión).
+2. [Ludwig von Bertalanffy, en la Enciclopedia Británica](https://www.britannica.com/biography/Ludwig-von-Bertalanffy)
+
+## El entorno: PESTEL y Porter
+
+### Qué se ve
+
+Una empresa no decide sola su suerte. La economía, las leyes, la competencia o un proveedor que se retrasa le afectan aunque no formen parte de ella. Este tema separa lo que la empresa no puede controlar de lo que sí puede influir, y presenta la herramienta con la que se analiza cada parte.
+
+### Conceptos
+
+El <mark>entorno</mark> es todo lo que rodea al negocio sin formar parte de él. Se divide en dos niveles:
+
+<Entorno />
+
+El entorno general reúne factores amplios que afectan a todas las empresas y que ninguna controla: la economía, las leyes, la demografía, la cultura, la tecnología o el medio ambiente. El entorno específico es el más cercano, el de los clientes, los proveedores y los competidores de tu sector. Ahí sí hay margen: puedes elegir proveedores o el segmento en el que competir.
+
+El <mark>análisis PESTEL</mark> repasa el entorno general por letras: Político, Económico, Social, Tecnológico, Ecológico y Legal. Para cada letra se buscan hechos concretos y se decide si son una oportunidad o una amenaza para el negocio. Un PESTEL útil no dice «la economía» sino «la inflación encarece los equipos que compramos».
+
+Para el entorno específico se usan las <mark>cinco fuerzas de Porter</mark>. Michael Porter las propuso para explicar por qué unos sectores son más rentables que otros: miden cuánta presión soporta una empresa dentro de su sector.
+
+<Porter />
+
+| Fuerza | Pregunta |
+|---|---|
+| Rivalidad entre competidores | ¿Cuántos hay y con qué agresividad compiten? |
+| Amenaza de nuevos competidores | ¿Es fácil empezar en este sector? |
+| Poder de los clientes | ¿Pueden imponer precios o condiciones? |
+| Poder de los proveedores | ¿Dependo de pocos proveedores que marcan las reglas? |
+| Amenaza de productos sustitutivos | ¿Hay otra forma de cubrir la misma necesidad? |
+
+El análisis sirve para saber dónde está el peligro y prepararse. Que las fuerzas sean altas no obliga a descartar el sector.
+
+### Casos y ejemplos
+
+Clasificar factores del entorno es el primer paso:
+
+| Situación | Factor |
+|---|---|
+| Una tienda de informática cercana baja precios | Específico: competencia |
+| Sube el paro | General: económico |
+| Se retrasa un pedido de monitores | Específico: proveedores |
+| Envejece la población | General: social (demográfico) |
+| Una nueva ley de protección de datos | General: legal |
+| Hay que gestionar los residuos de un aula de informática | General: ecológico |
+
+Un PESTEL para una empresa de software en Canarias podría recoger los fondos europeos y las estrategias de digitalización del Gobierno de Canarias (político), el peso del turismo en la economía de las islas (económico), la llegada de teletrabajadores y nómadas digitales (social), los cables submarinos y el superordenador del ITER en Granadilla (tecnológico), la fragilidad del territorio (ecológico) y el RGPD (legal).
+
+Y las cinco fuerzas para un estudio que hace apps para pymes turísticas:
+
+| Fuerza | Valoración |
+|---|---|
+| Nuevos competidores | Alta: montar un estudio pide poca inversión |
+| Poder de los clientes | Alto si dependes de pocas cadenas hoteleras grandes |
+| Proveedores | Medio: servicios en la nube y tiendas de apps con sus comisiones |
+| Sustitutivos | En aumento: plataformas genéricas, herramientas sin código e IA generativa |
+| Rivalidad | Media: otros estudios y desarrolladores autónomos |
+
+### Errores típicos
+
+- **Poner a los competidores en el PESTEL.** La competencia es entorno específico y va en Porter. El PESTEL es para lo que afecta a todas las empresas.
+- **Listar factores sin decir qué suponen.** Cada factor tiene que acabar en una oportunidad o una amenaza para tu negocio concreto.
+- **Escribir generalidades.** «La tecnología avanza» no aporta nada. «Los clientes ya esperan reservar desde el móvil» sí.
+- **Olvidar los sustitutivos.** No son competidores directos, pero pueden quitarte clientes: una plataforma genérica sustituye a una app a medida.
+
+### Prácticas de clase
+
+- **Tarea 1.1, CodeIsla.** Un estudio de apps para pymes turísticas en Santa Cruz de Tenerife. Había que clasificarlo, analizar las cinco fuerzas (las más fuertes resultaron la entrada de nuevos competidores y el poder de los clientes, con la IA como sustitutivo) y buscar incentivos canarios.
+- **Reto de la UT1, TenerifeCode.** Seis fases sobre una empresa TIC ficticia: sus elementos, el PESTEL de Canarias, el entorno específico (clientes, proveedores, competidores e insularidad), el tejido productivo canario, el REF y una conclusión.
+
+### Repaso rápido
+
+<details>
+<summary>Un proveedor que se retrasa, ¿es entorno general o específico?</summary>
+
+Específico. Afecta a tu negocio en concreto, y puedes actuar cambiando de proveedor.
+
+</details>
+<details>
+<summary>¿Qué significa cada letra de PESTEL?</summary>
+
+Político, Económico, Social, Tecnológico, Ecológico y Legal.
+
+</details>
+<details>
+<summary>¿Qué fuerza de Porter mide si es fácil empezar en el sector?</summary>
+
+La amenaza de nuevos competidores. Cuanto menos cuesta entrar, más alta es.
+
+</details>
+
+### Fuentes
+
+1. Contenidos EIE02, apartado «El entorno», en el Campus del centro.
+2. [Michael E. Porter: «The Five Competitive Forces That Shape Strategy», Harvard Business Review (2008)](https://hbr.org/2008/01/the-five-competitive-forces-that-shape-strategy)
+3. [Instituto Canario de Estadística (ISTAC)](https://www.gobiernodecanarias.org/istac/)
+
+## Cultura, identidad e imagen
+
+### Qué se ve
+
+Dos empresas pueden tener las mismas personas, el mismo tipo de equipos y los mismos departamentos y, aun así, no parecerse en nada. Lo que las distingue es su cultura. Este tema explica de qué está hecha, qué tipos hay y en qué se diferencia lo que una empresa es de lo que la gente cree que es.
+
+### Conceptos
+
+La cultura empresarial empezó a estudiarse en los años ochenta por dos motivos: la globalización obligaba a adaptarse a entornos más cambiantes, y las empresas japonesas estaban siendo más productivas que las estadounidenses y se quería saber por qué.
+
+La <mark>cultura organizacional</mark> es el conjunto de creencias, valores y conductas que comparten las personas de la empresa. Marca cómo se relacionan entre ellas y con el exterior, qué objetivos eligen y cómo los persiguen. Nace de los valores del fundador, cambia sola con el tiempo (gente nueva, cambios en el entorno) y la dirección la va corrigiendo para que no se aleje de la que quiere.
+
+Tiene tres capas, de la más visible a la más escondida:
+
+<IcebergCultura />
+
+Las creencias básicas mandan sobre las otras dos. Douglas McGregor lo explicó con sus <mark>teorías X e Y</mark>. Si la dirección cree que las personas evitan el trabajo (X), dirige con control y castigos. Si cree que trabajar es algo natural y que la gente asume responsabilidades (Y), delega y da autonomía. McGregor describió las dos, pero defendía la Y.
+
+Las culturas se clasifican de dos formas. Por sus objetivos, pueden estar orientadas al poder (jerárquicas y competitivas), a la función (burocráticas, con normas para todo), a la tarea (centradas en resultados y proyectos) o a la persona (centradas en el bienestar y la participación). Por su actitud ante el entorno, pueden ser narcisistas (el entorno les da igual), tribales (solo se relacionan con él si les sirve), exploradoras (se abren para aprovechar oportunidades) o amplificadoras (orientan toda su actividad hacia él).
+
+De la cultura sale la <mark>identidad corporativa</mark>, lo que la empresa es. Tiene una parte de filosofía (misión, visión y valores) y una parte visual (logotipo, colores, tipografía, papelería, uniformes). La <mark>imagen corporativa</mark> es lo que perciben los clientes, los proveedores o la competencia. Lo ideal es que coincidan, pero por el camino hay tres saltos donde algo se puede perder:
+
+<IdentidadImagen />
+
+### Casos y ejemplos
+
+En el caso del Campus, cada organización encaja con un tipo de cultura:
+
+| Organización | Cultura según sus objetivos | Por qué |
+|---|---|---|
+| Grandes almacenes (GA) | Poder | Comisiones, despachos cerrados, departamentos que compiten entre sí y un dueño convencido de que «si no la aprietas, la gente no hace nada» (teoría X) |
+| Asociación (ASO) | Persona | Compañerismo y buen ambiente, aunque algo de caos |
+| Telecomunicaciones (ETE) | Tarea | Objetivos claros, exigencia y trato cordial. Ante el entorno, exploradora |
+| Un ministerio | Función | Normas y procedimientos para todo |
+
+El mismo caso tiene un ejemplo de imagen frente a identidad: desde fuera, los grandes almacenes parecen tener dependientes atentos y los mejores anuncios de la tele; quien ha trabajado dentro sabe que la realidad es otra.
+
+Una filosofía posible para un estudio de apps canario:
+
+- Misión: «Hacemos apps a medida para que las pymes turísticas de Canarias den un servicio digital de calidad».
+- Visión: «Ser el estudio de referencia en digitalización turística de Canarias en 2030».
+- Valores: cercanía, calidad, accesibilidad y sostenibilidad.
+
+La misión habla del presente, la visión del futuro y los valores de cómo se trabaja.
+
+### Errores típicos
+
+- **Confundir valores con creencias básicas.** Los valores se declaran y se conocen. Las creencias básicas son inconscientes: nadie las escribe en un manual.
+- **Usar identidad e imagen como sinónimos.** La identidad la define la empresa; la imagen la forman los demás.
+- **Escribir una misión que sirve para cualquier empresa.** «Satisfacer a nuestros clientes» no dice qué hace la empresa ni para quién.
+- **Escribir «explotadora».** Es una errata del material del Campus. El tipo de cultura es «exploradora».
+
+### Prácticas de clase
+
+- **Autoevaluaciones del Campus.** Clasificar conductas en las tres capas de la cultura y asignar a cada organización del caso su tipo de cultura.
+
+### Repaso rápido
+
+<details>
+<summary>Ordena de más visible a menos visible las tres capas de la cultura.</summary>
+
+Producciones y conductas, valores y creencias básicas.
+
+</details>
+<details>
+<summary>¿Qué diferencia hay entre misión y visión?</summary>
+
+La misión dice qué hace hoy la empresa y para quién. La visión, a dónde quiere llegar.
+
+</details>
+<details>
+<summary>Un dueño controla cada minuto de su plantilla porque cree que sin presión nadie trabaja. ¿Qué teoría de McGregor aplica?</summary>
+
+La teoría X.
+
+</details>
+
+### Fuentes
+
+1. Contenidos EIE02, apartados de cultura, identidad e imagen, en el Campus del centro.
+2. [Teoría X y teoría Y de Douglas McGregor (Wikipedia)](https://es.wikipedia.org/wiki/Teor%C3%ADa_X_y_teor%C3%ADa_Y)
+
+## Responsabilidad social, balance social y ética
+
+### Qué se ve
+
+Una empresa gana dinero vendiendo a la sociedad, así que se espera de ella algo más que cumplir la ley. Este tema trata la responsabilidad social empresarial, el balance social con el que se mide la gestión de la plantilla y la ética que atraviesa todo lo anterior.
+
+### Conceptos
+
+La <mark>responsabilidad social empresarial</mark> (RSE o RSC) es dirigir el negocio teniendo en cuenta lo que su actividad provoca en los trabajadores, los clientes, los proveedores, la comunidad y el medio ambiente. La impulsan el Pacto Mundial de la ONU, las directrices de la OCDE y el Libro Verde de la Unión Europea de 2001. En España existe el Consejo Estatal de RSE.
+
+Tiene cinco características:
+
+| Característica | Qué significa |
+|---|---|
+| Global | No tiene límites geográficos ni tiene por qué estar ligada a tu actividad |
+| Voluntaria | Ninguna ley la impone, aunque las administraciones la premian |
+| Integrada en la gestión | Se planifica y se evalúa como cualquier otra área. Una donación aislada no es RSE |
+| Flexible | Cada empresa la adapta a su tamaño |
+| Generadora de valor | Mejora el negocio por dentro y eso se nota fuera |
+
+Se aplica en cuatro áreas: el lugar de trabajo (seguridad más allá de la ley, conciliación, igualdad, formación), el mercado (accesibilidad, publicidad honesta, proveedores responsables), la acción social (colaborar con la comunidad y pagar los impuestos que corresponden) y el medio ambiente (reducir consumos, reciclar, ecodiseño). Se gestiona en cinco pasos:
+
+<PasosRSE />
+
+El registro suele ser una <mark>memoria de sostenibilidad</mark>, normalmente con la guía GRI. Para una pyme es voluntaria. Para algunas empresas grandes ya no: la Ley 11/2018 obliga a publicar información no financiera, y la directiva europea de información corporativa sobre sostenibilidad (CSRD) amplía esa obligación.
+
+El <mark>balance social</mark> es otra cosa. Es un documento de recursos humanos que mide en números la plantilla y su gestión: tipos de contrato, porcentaje de mujeres y hombres, accidentes, horas de formación, absentismo, rotación o satisfacción. Es voluntario, no tiene un contenido fijo y sirve para detectar problemas y preparar auditorías sociolaborales. No hay que confundirlo con el balance contable, que es financiero y obligatorio.
+
+La <mark>ética</mark> estudia el comportamiento moral. Algo moral es correcto según la sociedad; inmoral, incorrecto; amoral, ajeno a esa valoración. Casi todo lo ético es legal, pero hay conductas legales que no son éticas: no acaban en multa, pero sí en mala reputación. Las conductas contrarias a la ética más citadas son la corrupción (abusar del poder en beneficio propio), el soborno (dar o recibir algo para que alguien actúe de forma deshonesta) y la extorsión (forzar un soborno con amenazas). El décimo principio del Pacto Mundial, añadido en 2004, trata de ellas. Las empresas las combaten con un código ético y, si cotizan en bolsa, con el Código de Buen Gobierno de la CNMV.
+
+### Casos y ejemplos
+
+En el caso del Campus, los grandes almacenes presumían de responsables: bolsas ecológicas, campañas solidarias y una memoria de sostenibilidad en la web. Por dentro ponían pegas a los permisos de lactancia y a las reducciones de jornada. Eso es <mark>greenwashing</mark>, imagen de responsabilidad sin una identidad que la respalde. Falla la característica de «integrada en la gestión».
+
+El mismo caso trae un soborno: un jefe de compras aceptó de un proveedor un sobre con el doble de su sueldo. El código ético de la empresa obligaba a repartir los regalos de proveedores entre todo el departamento, y se le sancionó.
+
+Acciones de RSE posibles para una tienda o un estudio de informática:
+
+| Área | Acción |
+|---|---|
+| Lugar de trabajo | Teletrabajo y horario flexible |
+| Mercado | Apps accesibles según las pautas WCAG |
+| Acción social | Talleres gratuitos para que las personas mayores del barrio aprendan a usar el móvil |
+| Medio ambiente | Alargar la vida de los equipos y entregar los residuos electrónicos a un gestor autorizado |
+
+El material recuerda un dato que explica la última fila: la mayor parte de la energía que consume un ordenador a lo largo de su vida se gasta al fabricarlo, no al usarlo. Por eso alargar su vida útil reduce más el impacto que apagarlo por las noches.
+
+La RSE también puede ser un negocio. Otras empresas contratan servicios tecnológicos para su propia RSE, como la teleasistencia para personas mayores, y una app puede ser ese servicio.
+
+### Errores típicos
+
+- **Decir que la RSE hace a la empresa menos competitiva.** Es al revés: la diferencia y mejora su reputación.
+- **Llamar RSE a una donación puntual.** Si no está integrada en la gestión y no es coherente con cómo se trata a la plantilla, es una acción de imagen.
+- **Afirmar que la memoria de sostenibilidad es obligatoria para todas.** Es voluntaria salvo para las empresas grandes que entran en la Ley 11/2018 y la CSRD.
+- **Confundir balance social y balance contable.** El primero cuenta personas; el segundo, bienes, derechos y deudas.
+- **Decir que el balance social es cualitativo.** Es cuantitativo: se basa en datos.
+
+### Prácticas de clase
+
+- **Tarea 1.1, CodeIsla.** Incluía proponer dos acciones de RSC para el estudio de apps.
+- **Autoevaluaciones del Campus.** Clasificar acciones de RSE por áreas y distinguir conductas éticas, legales e ilegales.
+
+### Repaso rápido
+
+<details>
+<summary>¿Cuáles son las cinco características de la RSE?</summary>
+
+Global, voluntaria, integrada en la gestión, flexible y generadora de valor.
+
+</details>
+<details>
+<summary>¿Puede algo ser legal y no ético?</summary>
+
+Sí. No tiene sanción jurídica, pero sí moral: la empresa pierde reputación, clientes o trabajadores.
+
+</details>
+<details>
+<summary>¿Qué diferencia hay entre soborno y extorsión?</summary>
+
+En el soborno se ofrece algo a cambio de un favor deshonesto. En la extorsión se obliga a alguien a sobornar mediante amenazas.
+
+</details>
+
+### Fuentes
+
+1. Contenidos EIE02, apartados de RSE, balance social y ética, en el Campus del centro.
+2. [Pacto Mundial de Naciones Unidas en España: los diez principios](https://www.pactomundial.org/que-puedes-hacer-tu/diez-principios/)
+3. [Ley 11/2018 de información no financiera y diversidad (BOE)](https://www.boe.es/buscar/act.php?id=BOE-A-2018-17989)
+4. [Estándares GRI para memorias de sostenibilidad](https://www.globalreporting.org/standards/)
+
+## Clasificar una empresa y el REF canario
+
+### Qué se ve
+
+Las tareas de la unidad pedían clasificar una empresa, compararla con otras formas jurídicas y decir qué ventajas fiscales tendría en Canarias. Nada de eso está en el contenido del Campus, así que este tema lo reúne. Es también la base de los apartados de forma jurídica y REF del plan de empresa.
+
+### Conceptos
+
+Una empresa se clasifica con varios criterios a la vez:
+
+| Criterio | Tipos |
+|---|---|
+| Sector | Primario (agricultura, pesca), secundario (industria, construcción) y terciario (servicios). Algunos autores separan un cuaternario para el conocimiento: I+D, TIC y software |
+| Tamaño (criterio de la UE) | Microempresa: menos de 10 personas y hasta 2 millones de euros de facturación o balance. Pequeña: menos de 50 y hasta 10 millones. Mediana: menos de 250 y hasta 50 millones de facturación o 43 de balance. Grande: el resto |
+| Ámbito | Local, regional, nacional o multinacional |
+| Titularidad | Privada, pública o mixta |
+| Forma jurídica | Empresario individual, sociedades mercantiles (SL, SA), economía social (cooperativa, sociedad laboral) y otras como la comunidad de bienes |
+
+La comparación que más se repite es la de autónomo frente a sociedad limitada. El autónomo responde de las deudas con todo su patrimonio, empieza con muy pocos trámites y tributa por IRPF. La SL limita la responsabilidad al capital aportado, necesita escritura ante notario e inscripción en el Registro Mercantil y tributa por el Impuesto sobre Sociedades. Desde la Ley Crea y Crece de 2022, una SL puede constituirse con 1 euro de capital, con algunas cautelas mientras no llegue a 3.000. La UT5 lo amplía.
+
+Canarias tiene un tejido productivo muy concentrado en los servicios, sobre todo turismo y comercio, y formado casi por completo por pymes y autónomos. Sufre problemas propios: la <mark>doble insularidad</mark> (lejos del continente y repartida en islas), la condición de región ultraperiférica de la UE, un mercado interior pequeño y el coste del transporte. Para compensarlo existe el <mark>Régimen Económico y Fiscal</mark> (REF):
+
+| Instrumento | Qué es |
+|---|---|
+| IGIC | El impuesto indirecto canario, que sustituye al IVA. El tipo general es el 7 %, frente al 21 % del IVA, y hay además tipos cero, reducido e incrementados según la operación |
+| AIEM | Un arbitrio sobre ciertos bienes que se importan o se producen en Canarias, pensado para proteger la industria local. Apenas afecta a los servicios digitales |
+| RIC | La Reserva para Inversiones en Canarias. Permite reducir la base del Impuesto sobre Sociedades hasta en el 90 % del beneficio que no se reparte, a condición de reinvertirlo en Canarias en el plazo que marca la ley |
+| ZEC | La Zona Especial Canaria. Las empresas inscritas tributan por Sociedades al 4 %, a cambio de requisitos: ser de nueva creación, tener la dirección en Canarias, invertir un mínimo en activos fijos y crear empleo en los primeros meses |
+
+### Casos y ejemplos
+
+CodeIsla, el estudio de apps de la tarea 1.1, es una empresa del sector terciario (o cuaternario, si se separa el conocimiento), microempresa, de ámbito local y regional y de capital privado.
+
+¿Le conviene la ZEC? En Tenerife y Gran Canaria pide invertir al menos 100.000 euros en activos fijos en los dos primeros años y crear cinco empleos en los seis primeros meses; en las demás islas, 50.000 euros y tres empleos. Un estudio que empieza con dos o tres personas y unos portátiles no llega. El 4 % suena muy bien, pero hasta que crezca no está a su alcance. Lo que sí le afecta desde el primer día es el IGIC al facturar.
+
+### Errores típicos
+
+- **Tratar la RIC o la ZEC como subvenciones.** Son ventajas fiscales: pagas menos impuestos si cumples condiciones, pero nadie te da dinero.
+- **Aplicar la ZEC a cualquier empresa nueva.** Exige inversión, empleo, una actividad permitida y la autorización del Consorcio ZEC.
+- **Poner el 7 % de IGIC a todo sin mirar la operación.** Hay tipos distintos y algunas operaciones están exentas.
+- **Copiar cifras del REF sin contrastarlas.** Los requisitos cambian. La plantilla del plan de empresa pide no atribuir incentivos sin comprobarlos en la fuente oficial.
+
+### Prácticas de clase
+
+- **Tarea 1.1, CodeIsla.** Clasificación del estudio, comparación de dos formas jurídicas e incentivos canarios (ZEC, IGIC y ayudas del Servicio Canario de Empleo).
+- **Reto TenerifeCode.** Las fases de tejido productivo y REF (IGIC, RIC, ZEC y la compensación al transporte de mercancías) y la elección razonada de una SL.
+
+### Repaso rápido
+
+<details>
+<summary>Una empresa con 12 personas y 1,5 millones de facturación, ¿qué tamaño tiene?</summary>
+
+Pequeña. Para ser microempresa tendría que tener menos de 10 personas.
+
+</details>
+<details>
+<summary>¿Qué impuesto sustituye al IVA en Canarias y cuál es su tipo general?</summary>
+
+El IGIC, con un tipo general del 7 %.
+
+</details>
+<details>
+<summary>¿Por qué la ZEC no suele encajar con una microempresa recién creada?</summary>
+
+Porque exige una inversión mínima en activos fijos y crear varios empleos en los primeros meses.
+
+</details>
+
+### Fuentes
+
+1. [Recomendación 2003/361/CE sobre la definición de microempresa, pequeña y mediana empresa (EUR-Lex)](https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32003H0361)
+2. [Ley 18/2022 de creación y crecimiento de empresas (BOE)](https://www.boe.es/buscar/act.php?id=BOE-A-2022-15818)
+3. [Ley 19/1994 de modificación del Régimen Económico y Fiscal de Canarias (BOE)](https://www.boe.es/buscar/act.php?id=BOE-A-1994-15794)
+4. [Consorcio de la Zona Especial Canaria](https://www.zec.org/)
+5. [Agencia Tributaria Canaria](https://www3.gobiernodecanarias.org/tributos/atc/)

@@ -1,0 +1,24 @@
+---
+import Esquema from '../Esquema.astro';
+---
+<Esquema titulo="Las tres capas de la cultura" alto={340}
+  descripcion="Un iceberg. Por encima del agua, las producciones y conductas, que se ven: ropa, despachos, logotipo. Justo bajo el agua, los valores, que se declaran: puntualidad o trabajo en equipo. En el fondo, las creencias básicas, inconscientes: por ejemplo, pensar que la gente es vaga."
+  pie="Lo que se ve de una empresa descansa sobre valores declarados y, más abajo, sobre creencias que nadie se plantea.">
+  <rect x="0" y="110" width="720" height="230" class="agua" />
+  <polygon points="240,110 270,40 330,30 370,70 390,110 460,200 440,300 300,330 160,290 140,190" class="caja" />
+  <path d="M0 110 H720" class="trazo-acento" />
+  <text x="300" y="90" text-anchor="middle" class="t-titulo">Producciones</text>
+  <text x="300" y="186" text-anchor="middle" class="t-titulo">Valores</text>
+  <text x="300" y="276" text-anchor="middle" class="t-titulo">Creencias básicas</text>
+
+  <text x="20" y="80" class="t-acento">Se ve</text>
+  <text x="20" y="186" class="t-suave">Se declara</text>
+  <text x="20" y="276" class="t-suave">No se ve</text>
+
+  <text x="490" y="74" class="t-suave">Ropa, despachos,</text>
+  <text x="490" y="92" class="t-suave">logotipo, celebraciones</text>
+  <text x="490" y="180" class="t-suave">Puntualidad,</text>
+  <text x="490" y="198" class="t-suave">trabajo en equipo</text>
+  <text x="490" y="270" class="t-suave">«La gente es vaga</text>
+  <text x="490" y="288" class="t-suave">por naturaleza»</text>
+</Esquema>

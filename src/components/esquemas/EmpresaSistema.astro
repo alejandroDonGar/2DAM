@@ -1,0 +1,32 @@
+---
+import Esquema from '../Esquema.astro';
+---
+<Esquema titulo="La empresa como sistema" alto={300}
+  descripcion="Dentro del entorno, la empresa recibe entradas (trabajo, capital, materiales e información), las transforma con sus tres elementos (social, técnico y organización) y sus subsistemas, y entrega bienes y servicios."
+  pie="La empresa toma recursos del entorno, los transforma y le devuelve bienes y servicios.">
+  <rect x="10" y="10" width="700" height="280" rx="14" class="trazo discontinuo" />
+  <text x="28" y="36" class="t-suave">Entorno</text>
+
+  <text x="40" y="92" class="t-titulo">Entradas</text>
+  <text x="40" y="120">Trabajo</text>
+  <text x="40" y="142">Capital</text>
+  <text x="40" y="164">Materiales</text>
+  <text x="40" y="186">Información</text>
+  <path d="M150 150 H210" class="trazo con-flecha" />
+
+  <rect x="220" y="56" width="280" height="208" rx="10" class="caja-acento" />
+  <text x="360" y="84" text-anchor="middle" class="t-titulo t-acento">Empresa</text>
+  <rect x="240" y="98" width="240" height="34" rx="6" class="caja" />
+  <text x="360" y="120" text-anchor="middle">Social: las personas</text>
+  <rect x="240" y="138" width="240" height="34" rx="6" class="caja" />
+  <text x="360" y="160" text-anchor="middle">Técnico: bienes y saber</text>
+  <rect x="240" y="178" width="240" height="34" rx="6" class="caja" />
+  <text x="360" y="200" text-anchor="middle">Organización: el orden</text>
+  <text x="360" y="234" text-anchor="middle" class="t-suave">Subsistemas: comercial, financiero,</text>
+  <text x="360" y="252" text-anchor="middle" class="t-suave">producción, RR. HH. e I+D+i</text>
+
+  <path d="M510 150 H570" class="trazo con-flecha" />
+  <text x="585" y="132" class="t-titulo">Salidas</text>
+  <text x="585" y="160">Bienes y</text>
+  <text x="585" y="180">servicios</text>
+</Esquema>

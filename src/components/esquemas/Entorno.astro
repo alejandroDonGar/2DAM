@@ -1,0 +1,28 @@
+---
+import Esquema from '../Esquema.astro';
+const general = [
+  ['Político', 360, 56], ['Económico', 497, 135], ['Social', 497, 293],
+  ['Tecnológico', 360, 372], ['Ecológico', 223, 293], ['Legal', 223, 135],
+];
+---
+<Esquema titulo="Los dos niveles del entorno" alto={420}
+  descripcion="Tres círculos concéntricos. En el centro, la empresa. Alrededor, el entorno específico: clientes, proveedores y competencia. Por fuera, el entorno general con los seis factores PESTEL: político, económico, social, tecnológico, ecológico y legal."
+  pie="Lo más cercano se puede influir en parte. Lo de fuera viene dado y afecta a todas las empresas.">
+  <circle cx="360" cy="210" r="195" class="trazo discontinuo" />
+  <circle cx="360" cy="210" r="120" class="caja" />
+  <circle cx="360" cy="210" r="48" class="caja-acento" />
+  <text x="360" y="215" text-anchor="middle" class="t-titulo t-acento">Empresa</text>
+  <text x="360" y="132" text-anchor="middle">Clientes</text>
+  <text x="300" y="276" text-anchor="middle">Proveedores</text>
+  <text x="420" y="276" text-anchor="middle">Competencia</text>
+  {general.map(([t, x, y]) => <text x={x} y={y} text-anchor="middle">{t}</text>)}
+
+  <path d="M578 52 H608" class="trazo discontinuo" />
+  <text x="616" y="57">General</text>
+  <text x="578" y="77" class="t-suave">no se controla:</text>
+  <text x="578" y="95" class="t-suave">se analiza con PESTEL</text>
+  <rect x="578" y="122" width="30" height="14" rx="3" class="caja" />
+  <text x="616" y="134">Específico</text>
+  <text x="578" y="156" class="t-suave">se influye en parte:</text>
+  <text x="578" y="174" class="t-suave">se analiza con Porter</text>
+</Esquema>

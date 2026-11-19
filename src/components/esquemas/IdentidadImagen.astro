@@ -1,0 +1,24 @@
+---
+import Esquema from '../Esquema.astro';
+const cajas = [['Lo que la empresa', 'es'], ['Lo que cree', 'que es'], ['Lo que', 'transmite'], ['Lo que percibe', 'el público']];
+const preguntas = ['¿Se conoce?', '¿Lo comunica?', '¿Lo entienden?'];
+---
+<Esquema titulo="De la identidad a la imagen" alto={170}
+  descripcion="Cuatro pasos en fila: lo que la empresa es, lo que cree que es, lo que transmite y lo que percibe el público. El primero es la identidad y el último la imagen. Entre cada paso hay una pregunta donde algo se puede perder: si se conoce, si lo comunica bien y si lo entienden."
+  pie="La imagen solo coincide con la identidad si no se pierde nada en ninguno de los tres saltos.">
+  <text x="85" y="28" text-anchor="middle" class="t-acento">Identidad</text>
+  <text x="625" y="28" text-anchor="middle" class="t-acento">Imagen</text>
+  {cajas.map(([a, b], i) => (
+    <g>
+      <rect x={10 + i * 180} y="40" width="150" height="64" rx="8" class={i === 0 || i === 3 ? 'caja-acento' : 'caja'} />
+      <text x={85 + i * 180} y="68" text-anchor="middle">{a}</text>
+      <text x={85 + i * 180} y="88" text-anchor="middle">{b}</text>
+    </g>
+  ))}
+  {preguntas.map((p, i) => (
+    <g>
+      <path d={`M${162 + i * 180} 72 H${186 + i * 180}`} class="trazo con-flecha" />
+      <text x={175 + i * 180} y="136" text-anchor="middle" class="t-suave">{p}</text>
+    </g>
+  ))}
+</Esquema>

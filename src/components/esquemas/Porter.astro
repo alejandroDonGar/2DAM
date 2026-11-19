@@ -1,0 +1,31 @@
+---
+import Esquema from '../Esquema.astro';
+---
+<Esquema titulo="Las cinco fuerzas de Porter" alto={360}
+  descripcion="En el centro, la rivalidad entre competidores. Cuatro fuerzas presionan hacia ella: desde arriba, la amenaza de nuevos competidores; desde abajo, la de productos sustitutivos; a la izquierda, el poder de los proveedores; a la derecha, el de los clientes."
+  pie="Cuanto más fuertes son las cuatro presiones exteriores, menos margen queda en el sector.">
+  <rect x="260" y="20" width="200" height="60" rx="8" class="caja" />
+  <text x="360" y="46" text-anchor="middle">Amenaza de nuevos</text>
+  <text x="360" y="66" text-anchor="middle">competidores</text>
+
+  <rect x="30" y="145" width="180" height="70" rx="8" class="caja" />
+  <text x="120" y="175" text-anchor="middle">Poder de los</text>
+  <text x="120" y="195" text-anchor="middle">proveedores</text>
+
+  <rect x="260" y="145" width="200" height="70" rx="8" class="caja-acento" />
+  <text x="360" y="175" text-anchor="middle" class="t-titulo t-acento">Rivalidad entre</text>
+  <text x="360" y="195" text-anchor="middle" class="t-titulo t-acento">competidores</text>
+
+  <rect x="510" y="145" width="180" height="70" rx="8" class="caja" />
+  <text x="600" y="175" text-anchor="middle">Poder de los</text>
+  <text x="600" y="195" text-anchor="middle">clientes</text>
+
+  <rect x="260" y="280" width="200" height="60" rx="8" class="caja" />
+  <text x="360" y="306" text-anchor="middle">Amenaza de productos</text>
+  <text x="360" y="326" text-anchor="middle">sustitutivos</text>
+
+  <path d="M360 82 V140" class="trazo con-flecha" />
+  <path d="M360 278 V220" class="trazo con-flecha" />
+  <path d="M212 180 H255" class="trazo con-flecha" />
+  <path d="M508 180 H465" class="trazo con-flecha" />
+</Esquema>

@@ -1,0 +1,16 @@
+---
+import Esquema from '../Esquema.astro';
+const pasos = [['Planificar', 'objetivo y recursos'], ['Ejecutar', 'las acciones'], ['Evaluar', 'los resultados'], ['Registrar', 'la memoria'], ['Comunicar', 'darlo a conocer']];
+---
+<Esquema titulo="Cómo se gestiona la RSE" alto={130}
+  descripcion="Cinco pasos en orden: planificar el objetivo y los recursos, ejecutar las acciones, evaluar los resultados, registrarlos en la memoria de sostenibilidad y comunicarlos."
+  pie="La RSE se gestiona como cualquier otra área: con un plan, una evaluación y un informe.">
+  {pasos.map(([p, d], i) => (
+    <g>
+      <rect x={9 + i * 146} y="24" width="118" height="54" rx="8" class="caja" />
+      <text x={68 + i * 146} y="56" text-anchor="middle">{i + 1}. {p}</text>
+      <text x={68 + i * 146} y="104" text-anchor="middle" class="t-suave">{d}</text>
+      {i < 4 && <path d={`M${129 + i * 146} 51 H${151 + i * 146}`} class="trazo con-flecha" />}
+    </g>
+  ))}
+</Esquema>
