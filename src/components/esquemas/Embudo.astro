@@ -1,0 +1,28 @@
+---
+import Esquema from '../Esquema.astro';
+const anchos = [420, 340, 260, 180, 120, 80];
+const fases = [
+  ['Conocer', '1.000 visitas a la web'],
+  ['Pedir información', '40 piden información (4 %)'],
+  ['Probar', '12 prueban la demostración'],
+  ['Pagar', '4 contratan'],
+  ['Renovar', '3 renuevan al año siguiente'],
+];
+const cx = 240;
+---
+<Esquema titulo="El embudo de captación" alto={310}
+  descripcion="Un embudo de cinco tramos que se estrechan: conocer, pedir información, probar, pagar y renovar. Ejemplo inventado: de 1.000 visitas, 40 piden información, 12 prueban, 4 contratan y 3 renuevan. Si se gastaron 120 euros en anuncios, cada cliente costó 30 euros."
+  pie="Medir cada tramo dice dónde se pierden los clientes. Los números son un ejemplo inventado.">
+  {fases.map(([f, n], i) => {
+    const y = 20 + i * 50, a = anchos[i] / 2, b = anchos[i + 1] / 2;
+    return (
+      <g>
+        <polygon points={`${cx - a},${y} ${cx + a},${y} ${cx + b},${y + 44} ${cx - b},${y + 44}`} class="caja" />
+        <text x={cx} y={y + 27} text-anchor="middle">{f}</text>
+        <path d={`M${cx + a + 12} ${y + 22} H476`} class="trazo discontinuo" />
+        <text x="486" y={y + 27}>{n}</text>
+      </g>
+    );
+  })}
+  <text x="10" y="300" class="t-acento">Coste de captar un cliente: 120 € en anuncios ÷ 4 clientes = 30 €</text>
+</Esquema>

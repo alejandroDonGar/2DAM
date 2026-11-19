@@ -1,0 +1,20 @@
+---
+import Esquema from '../Esquema.astro';
+---
+<Esquema titulo="Del total de la población al mercado real" alto={300}
+  descripcion="Cuatro rectángulos, uno dentro de otro. El mayor es la población total; dentro, el mercado potencial; dentro, el mercado objetivo o target; y en el centro, el mercado real, los que ya compran. A la derecha, un ejemplo con comercios de Tenerife."
+  pie="Cada nivel es más pequeño que el anterior. Para estimar ventas importa el último, no el primero.">
+  <rect x="10" y="10" width="460" height="280" rx="12" class="trazo discontinuo" />
+  <text x="26" y="38" class="t-titulo">Población total</text>
+  <rect x="30" y="68" width="400" height="202" rx="10" class="caja" />
+  <text x="46" y="96" class="t-titulo">Mercado potencial</text>
+  <rect x="50" y="126" width="320" height="124" rx="8" class="caja" />
+  <text x="66" y="154" class="t-titulo">Mercado objetivo</text>
+  <rect x="70" y="180" width="220" height="54" rx="8" class="caja-acento" />
+  <text x="180" y="213" text-anchor="middle" class="t-titulo t-acento">Mercado real</text>
+
+  <text x="490" y="38" class="t-suave">Todos los comercios de Tenerife</text>
+  <text x="490" y="96" class="t-suave">Los que podrían vender por internet</text>
+  <text x="490" y="154" class="t-suave">Tiendas de moda del norte: el target</text>
+  <text x="490" y="213" class="t-suave">Las que ya pagan un servicio así</text>
+</Esquema>

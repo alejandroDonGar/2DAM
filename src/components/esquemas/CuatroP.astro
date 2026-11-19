@@ -1,0 +1,24 @@
+---
+import Esquema from '../Esquema.astro';
+const p = [
+  { x: 110, y: 40, t: 'Producto', d: 'qué ofrecemos' },
+  { x: 410, y: 40, t: 'Precio', d: 'cuánto cobramos' },
+  { x: 110, y: 190, t: 'Distribución', d: 'cómo llega al cliente' },
+  { x: 410, y: 190, t: 'Comunicación', d: 'cómo lo damos a conocer' },
+];
+---
+<Esquema titulo="Las cuatro P del marketing mix" alto={300}
+  descripcion="En el centro, el cliente objetivo. Alrededor, cuatro decisiones que se toman pensando en él: producto, qué ofrecemos; precio, cuánto cobramos; distribución, cómo llega; y comunicación, cómo lo damos a conocer."
+  pie="Las cuatro decisiones miran al mismo cliente, y por eso tienen que encajar entre sí.">
+  <path d="M310 100 L322 122 M410 100 L398 122 M310 200 L322 178 M410 200 L398 178" class="trazo" />
+  <circle cx="360" cy="150" r="52" class="caja-acento" />
+  <text x="360" y="146" text-anchor="middle" class="t-titulo t-acento">Cliente</text>
+  <text x="360" y="166" text-anchor="middle" class="t-titulo t-acento">objetivo</text>
+  {p.map((b) => (
+    <g>
+      <rect x={b.x} y={b.y} width="200" height="70" rx="8" class="caja" />
+      <text x={b.x + 100} y={b.y + 30} text-anchor="middle" class="t-titulo">{b.t}</text>
+      <text x={b.x + 100} y={b.y + 52} text-anchor="middle" class="t-suave">{b.d}</text>
+    </g>
+  ))}
+</Esquema>

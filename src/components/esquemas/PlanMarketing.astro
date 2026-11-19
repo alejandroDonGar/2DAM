@@ -1,0 +1,21 @@
+---
+import Esquema from '../Esquema.astro';
+const cols = [
+  ['¿Dónde estamos?', 'Diagnóstico', 'con el estudio de mercado'],
+  ['¿Qué queremos?', 'Misión y objetivos', 'medibles y con fecha'],
+  ['¿Cómo lo lograremos?', 'Marketing mix', 'y presupuesto'],
+];
+---
+<Esquema titulo="Las tres preguntas del plan de marketing" alto={200}
+  descripcion="Tres columnas. ¿Dónde estamos? se responde con el diagnóstico y el estudio de mercado. ¿Qué queremos? con la misión y unos objetivos medibles. ¿Cómo lo lograremos? con el marketing mix y el presupuesto."
+  pie="Cada pregunta tiene su parte del plan, y van en este orden.">
+  {cols.map(([q, e, d], i) => (
+    <g>
+      <text x={125 + i * 235} y="40" text-anchor="middle" class="t-acento">{q}</text>
+      <path d={`M${125 + i * 235} 54 V92`} class="trazo con-flecha" />
+      <rect x={20 + i * 235} y="98" width="210" height="72" rx="8" class="caja" />
+      <text x={125 + i * 235} y="128" text-anchor="middle" class="t-titulo">{e}</text>
+      <text x={125 + i * 235} y="150" text-anchor="middle" class="t-suave">{d}</text>
+    </g>
+  ))}
+</Esquema>

@@ -1,0 +1,19 @@
+---
+import Esquema from '../Esquema.astro';
+const etapas = [['Introducción', 'darse a conocer', 130], ['Crecimiento', 'captar clientes', 265], ['Madurez', 'defender la cuota', 435], ['Declive', 'renovar o retirar', 620]] as const;
+---
+<Esquema titulo="El ciclo de vida del producto" alto={310}
+  descripcion="Una curva de ventas a lo largo del tiempo, dividida en cuatro etapas: introducción, con ventas bajas; crecimiento, cuando suben deprisa; madurez, cuando se estabilizan en lo más alto; y declive, cuando bajan."
+  pie="Cada etapa pide una acción comercial distinta.">
+  <path d="M60 30 V250 H705" class="trazo" />
+  <text x="70" y="40" class="t-suave">Ventas</text>
+  <text x="705" y="242" text-anchor="end" class="t-suave">Tiempo</text>
+  <path d="M200 40 V250 M330 40 V250 M540 40 V250" class="trazo discontinuo" />
+  <path d="M60 244 C120 243 160 225 210 180 C260 130 300 75 380 62 C460 52 520 70 580 120 C620 160 660 205 700 220" class="trazo-acento" />
+  {etapas.map(([t, d, x]) => (
+    <g>
+      <text x={x} y="274" text-anchor="middle">{t}</text>
+      <text x={x} y="294" text-anchor="middle" class="t-suave">{d}</text>
+    </g>
+  ))}
+</Esquema>
