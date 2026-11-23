@@ -1,0 +1,13 @@
+---
+// Puzle de huecos: un bloque de código con marcadores __1__, __2__… que el lector rellena con piezas.
+// Cada pieza indica a qué hueco pertenece (hueco) o, si es falsa, por qué no sirve (porque).
+// Un mismo número puede aparecer varias veces en el código: la pieza rellena todos esos huecos.
+import { REPO_AD } from '../data/asignaturas';
+interface Pieza { t: string; hueco?: number; porque?: string }
+interface Props { archivo: string; ejercicio: string; ruta: string; piezas: Pieza[] }
+const { archivo, ejercicio, ruta, piezas } = Astro.props;
+---
+<figure class="codigo puzle" data-puzle={JSON.stringify(piezas)}>
+  <figcaption><span>{archivo}</span><a href={`${REPO_AD}blob/main/${ruta}`}>{ejercicio}</a></figcaption>
+  <slot />
+</figure>

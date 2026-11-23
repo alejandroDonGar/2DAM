@@ -163,3 +163,151 @@ document.querySelectorAll('figure[data-depurar]').forEach(fig => {
     else lineas.forEach(l => l.classList.remove('dep-actual'));
   });
 });
+
+// Puzle de huecos: cambia los marcadores __n__ del código por casillas y monta la bandeja de piezas.
+document.querySelectorAll('figure[data-puzle]').forEach(fig => {
+  const piezas = JSON.parse(fig.dataset.puzle).map((p, id) => ({ ...p, id }));
+
+  // 1. Marcadores -> casillas (pueden estar dentro de cualquier span de Shiki, incluso en un String)
+  const recorrido = document.createTreeWalker(fig.querySelector('pre'), NodeFilter.SHOW_TEXT);
+  const textos = [];
+  while (recorrido.nextNode()) if (/__\d+__/.test(recorrido.currentNode.nodeValue)) textos.push(recorrido.currentNode);
+  for (const nodo of textos) {
+    nodo.replaceWith(...nodo.nodeValue.split(/(__\d+__)/).map(t => {
+      const m = t.match(/^__(\d+)__$/);
+      if (!m) return document.createTextNode(t);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'pz-hueco';
+      b.dataset.n = m[1];
+      return b;
+    }));
+  }
+  const huecos = [...fig.querySelectorAll('.pz-hueco')];
+  const numeros = [...new Set(huecos.map(h => h.dataset.n))];
+
+  // 2. Bandeja y controles
+  const panel = document.createElement('div');
+  panel.className = 'puzle-panel';
+  panel.innerHTML = `<p class="pz-ayuda">¿Qué va en cada hueco? Toca una pieza y luego el hueco, o arrástrala.</p>
+    <div class="pz-bandeja" role="group" aria-label="Piezas"></div>
+    <div class="pz-controles">
+      <button type="button" data-p="comprobar">Comprobar</button>
+      <button type="button" data-p="solucion">Ver solución</button>
+      <button type="button" data-p="reiniciar">Empezar de nuevo</button>
+    </div>
+    <p class="pz-estado" aria-live="polite"></p>
+    <ul class="pz-porque"></ul>`;
+  fig.append(panel);
+  const [bandeja, estado, porque] = ['.pz-bandeja', '.pz-estado', '.pz-porque'].map(s => panel.querySelector(s));
+
+  const botones = new Map();
+  for (const p of [...piezas].sort(() => Math.random() - .5)) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pz-pieza';
+    b.textContent = p.t;
+    b.draggable = true;
+    b.dataset.id = p.id;
+    bandeja.append(b);
+    botones.set(p.id, b);
+  }
+
+  // 3. Estado: qué pieza hay en cada número y qué está seleccionado
+  let puestas = {}, elegida = null, huecoElegido = null;
+  const limpiarMarcas = () => {
+    huecos.forEach(h => h.classList.remove('bien', 'mal'));
+    estado.textContent = '';
+    porque.replaceChildren();
+  };
+  const pintar = () => {
+    for (const h of huecos) {
+      const p = piezas[puestas[h.dataset.n]];
+      h.textContent = p ? p.t : '';
+      h.classList.toggle('lleno', !!p);
+      h.classList.toggle('elegido', huecoElegido === h.dataset.n);
+      h.setAttribute('aria-label', p ? `Hueco ${h.dataset.n}: ${p.t}. Pulsa para quitarla` : `Hueco ${h.dataset.n}, vacío`);
+    }
+    const usadas = new Set(Object.values(puestas));
+    for (const [id, b] of botones) {
+      b.hidden = usadas.has(id);
+      b.setAttribute('aria-pressed', String(elegida === id));
+    }
+  };
+  const poner = (n, id) => {
+    for (const [k, v] of Object.entries(puestas)) if (v === id) delete puestas[k];
+    puestas[n] = id;
+    elegida = huecoElegido = null;
+    limpiarMarcas();
+    pintar();
+  };
+
+  panel.addEventListener('click', e => {
+    const pieza = e.target.closest('.pz-pieza');
+    if (pieza) {
+      const id = Number(pieza.dataset.id);
+      if (huecoElegido) return poner(huecoElegido, id);
+      elegida = elegida === id ? null : id;
+      return pintar();
+    }
+    const accion = e.target.dataset?.p;
+    if (accion === 'reiniciar') { puestas = {}; elegida = huecoElegido = null; limpiarMarcas(); pintar(); }
+    if (accion === 'solucion') {
+      puestas = {};
+      for (const p of piezas) if (p.hueco) puestas[p.hueco] = p.id;
+      elegida = huecoElegido = null;
+      pintar();
+      corregir(true);
+    }
+    if (accion === 'comprobar') corregir(false);
+  });
+  fig.querySelector('pre').addEventListener('click', e => {
+    const h = e.target.closest('.pz-hueco');
+    if (!h) return;
+    const n = h.dataset.n;
+    if (elegida !== null) return poner(n, elegida);
+    if (puestas[n] !== undefined) { delete puestas[n]; limpiarMarcas(); }
+    else huecoElegido = huecoElegido === n ? null : n;
+    pintar();
+  });
+
+  // Arrastrar y soltar con ratón (en pantallas táctiles se usa el toque)
+  bandeja.addEventListener('dragstart', e => {
+    const pieza = e.target.closest('.pz-pieza');
+    if (pieza) e.dataTransfer.setData('text/plain', pieza.dataset.id);
+  });
+  for (const h of huecos) {
+    h.addEventListener('dragover', e => { e.preventDefault(); h.classList.add('encima'); });
+    h.addEventListener('dragleave', () => h.classList.remove('encima'));
+    h.addEventListener('drop', e => {
+      e.preventDefault();
+      h.classList.remove('encima');
+      const id = e.dataTransfer.getData('text/plain');
+      if (id !== '') poner(h.dataset.n, Number(id));
+    });
+  }
+
+  function corregir(solucion) {
+    limpiarMarcas();
+    for (const h of huecos) {
+      const p = piezas[puestas[h.dataset.n]];
+      if (p) h.classList.add(String(p.hueco) === h.dataset.n ? 'bien' : 'mal');
+    }
+    const aciertos = numeros.filter(n => piezas[puestas[n]]?.hueco === Number(n)).length;
+    const vacios = numeros.filter(n => puestas[n] === undefined).length;
+    // Explicaciones: las falsas colocadas o, al ver la solución, todas las falsas
+    const explicar = solucion ? piezas.filter(p => p.porque)
+      : numeros.map(n => piezas[puestas[n]]).filter(p => p && p.porque);
+    porque.replaceChildren(...explicar.map(p => {
+      const li = document.createElement('li');
+      const c = document.createElement('code');
+      c.textContent = p.t;
+      li.append(c, ` ${p.porque}`);
+      return li;
+    }));
+    if (solucion) estado.textContent = 'Esta es la solución. Debajo, por qué no sirven las otras piezas.';
+    else if (aciertos === numeros.length) estado.textContent = 'Todo correcto.';
+    else estado.textContent = `${aciertos} de ${numeros.length} correctos${vacios ? `, ${vacios} sin rellenar` : ''}.`;
+  }
+  pintar();
+});

@@ -10,6 +10,7 @@ crud: 4
 ---
 import Fragmento from '../../../components/Fragmento.astro';
 import ViajeDato from '../../../components/esquemas/ViajeDato.astro';
+import Puzle from '../../../components/Puzle.astro';
 
 ## De `new` a la inyección de dependencias
 
@@ -374,6 +375,34 @@ private ResponseEntity<ProblemDetail> noExiste(String codigo) {
 
 </Fragmento>
 
+Prueba a montar tú el POST completo. Cada hueco tiene una pieza buena y alguna que parece buena pero no lo es:
+
+<Puzle archivo="PeliculaJdbcController.java" ejercicio="películas JDBC" ruta="practica-peliculas-jdbc-AlejandroDonateGarcia/src/main/java/ies/puesto/peliculas/controller/PeliculaJdbcController.java" piezas={[
+  { t: '@Valid @RequestBody', hueco: 1 },
+  { t: '@RequestBody', porque: 'Convierte el JSON, pero sin @Valid nadie comprueba las reglas y un título en blanco llegaría al servicio.' },
+  { t: '@PathVariable', porque: 'La película viene en el cuerpo de la petición, no en la URL.' },
+  { t: 'creada.isEmpty()', hueco: 2 },
+  { t: 'creada == null', porque: 'El servicio devuelve un Optional, nunca null. Un Optional vacío sigue siendo un objeto, así que esta condición nunca se cumple.' },
+  { t: 'HttpStatus.CONFLICT', hueco: 3 },
+  { t: 'HttpStatus.NOT_FOUND', porque: 'La película no falta, sobra: el código ya existe. Eso es un 409.' },
+  { t: 'HttpStatus.CREATED', hueco: 4 },
+  { t: 'HttpStatus.OK', porque: 'Un 200 no le dice al cliente que se ha creado algo nuevo. El README pide 201.' },
+]}>
+
+```java
+public ResponseEntity<?> crear(__1__ PeliculaRequest peticion) {
+    Optional<Pelicula> creada = service.crear(mapper.aDatosCreacion(peticion));
+    if (__2__) {
+        ProblemDetail problema = ProblemDetail.forStatusAndDetail(__3__,
+                "Ya existe una película con el código " + peticion.codigo());
+        return ResponseEntity.status(__3__).body(problema);
+    }
+    return ResponseEntity.status(__4__).body(mapper.aRespuesta(creada.get()));
+}
+```
+
+</Puzle>
+
 La ruta de CodeLearn resuelve los errores de otra forma: una clase con `@RestControllerAdvice` captura las excepciones de toda la aplicación y las convierte en `ProblemDetail`. El README de películas lo prohíbe a propósito para que sea el controlador quien traduzca el `Optional` vacío o el `false` a 404 y 409. Las dos formas son válidas; la global tiene más sentido cuando hay muchos controladores.
 
 ### Errores típicos
@@ -595,6 +624,55 @@ public boolean insertarSiAusente(Pelicula pelicula) {
 </Fragmento>
 
 En el UPDATE los parámetros van en otro orden: primero los tres datos del `SET` y el código al final, porque es el `?` del `WHERE`.
+
+Dos repasos con huecos. Primero, la búsqueda por código con `JdbcTemplate`:
+
+<Puzle archivo="PeliculaJdbcRepository.java" ejercicio="películas JDBC" ruta="practica-peliculas-jdbc-AlejandroDonateGarcia/src/main/java/ies/puesto/peliculas/repository/jdbc/PeliculaJdbcRepository.java" piezas={[
+  { t: 'query', hueco: 1 },
+  { t: 'queryForObject', porque: 'Si no hay ninguna fila lanza EmptyResultDataAccessException, y el cliente recibiría un 500 en vez de un 404.' },
+  { t: 'update', porque: 'Es para INSERT, UPDATE y DELETE. Devuelve el número de filas afectadas, no las filas.' },
+  { t: 'findFirst', hueco: 2 },
+  { t: 'toList', porque: 'Devuelve una lista, y el método tiene que devolver un Optional.' },
+  { t: 'aPelicula', hueco: 3 },
+  { t: 'aEntity', porque: 'Va al revés: convierte una Pelicula en fila. Aquí ya tenemos la fila y queremos la Pelicula.' },
+]}>
+
+```java
+public Optional<Pelicula> buscarPorCodigo(String identificador) {
+    return jdbc.__1__(SELECT + " WHERE pelicula_codigo = ?", rowMapper, identificador)
+            .stream()
+            .__2__()
+            .map(entityMapper::__3__);
+}
+```
+
+</Puzle>
+
+Y el alta de `api-tareas` con `RETURNING id`:
+
+<Puzle archivo="TareaRepositoryJdbc.java" ejercicio="api-tareas" ruta="api-tareasAlejandroDonateGarcia/src/main/java/aula/tareas/repository/TareaRepositoryJdbc.java" piezas={[
+  { t: 'returning id', hueco: 1 },
+  { t: 'Statement.RETURN_GENERATED_KEYS', porque: 'Es la otra forma de pedir el id, con getGeneratedKeys(). Se pasa a prepareStatement, no va dentro del SQL.' },
+  { t: 'executeQuery', hueco: 2 },
+  { t: 'executeUpdate', porque: 'Devuelve un int con las filas afectadas. Con RETURNING hay un resultado que leer, y eso solo lo da executeQuery.' },
+  { t: 'execute', porque: 'Devuelve un boolean, no un ResultSet. Habría que pedir después el resultado con getResultSet().' },
+  { t: 'next', hueco: 3 },
+  { t: 'first', porque: 'Solo funciona con ResultSet desplazables. El de SQLite es de solo avance y first() lanza una SQLException.' },
+]}>
+
+```java
+String sql = "insert into tareas_jdbc (titulo) values (?) __1__";
+try (Connection c = DriverManager.getConnection(jdbcUrl);
+     PreparedStatement ps = c.prepareStatement(sql)) {
+    ps.setString(1, titulo.strip());
+    try (ResultSet rs = ps.__2__()) {
+        rs.__3__();
+        return new TareaRequest(rs.getLong("id"), titulo.strip());
+    }
+}
+```
+
+</Puzle>
 
 ### Errores típicos
 
