@@ -18,7 +18,7 @@ export const pasosCrud = [
   { nombre: 'Ficheros', detalle: 'CSV, JSON y XML' },
   { nombre: 'JDBC', detalle: 'SQL escrito por mí' },
   { nombre: 'JPA', detalle: 'Hibernate escribe el SQL' },
-  { nombre: 'Spring', detalle: 'En curso' },
+  { nombre: 'Spring', detalle: 'API REST con Spring Boot' },
 ];
 
 export const REPO_AD = 'https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/';

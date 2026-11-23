@@ -1,0 +1,740 @@
+---
+titulo: Spring y Spring Boot
+etiqueta: UT4
+orden: 4
+entrada: El CRUD de siempre convertido en una API REST. Spring crea los objetos y los conecta, Spring Boot arranca el servidor, y nosotros escribimos controladores, servicios y repositorios que responden con JSON y códigos HTTP.
+cuando: desde el 10 nov. (en curso)
+ejercicios: api-tareas y API de películas con JDBC
+ruta: { texto: Spring y Spring Boot en CodeLearn, url: "https://codelearnacademy.github.io/spring/" }
+crud: 4
+---
+import Fragmento from '../../../components/Fragmento.astro';
+import ViajeDato from '../../../components/esquemas/ViajeDato.astro';
+
+## De `new` a la inyección de dependencias
+
+### Qué se ve
+
+Antes de tocar Spring hay que entender qué problema viene a resolver. Este tema compara un servicio que crea él mismo su repositorio con otro que lo recibe desde fuera, y separa tres ideas que suelen mezclarse: inversión de control, inyección de dependencias y el principio de inversión de dependencias.
+
+### Conceptos
+
+En la UT2, cada clase que necesitaba un DAO hacía `new ProductoDao(conexion)`. Funciona, pero deja a la clase <mark>acoplada</mark> a una implementación concreta: si mañana el DAO cambia de constructor o queremos otro distinto para las pruebas, hay que tocar todas las clases que lo crean.
+
+La <mark>inversión de control</mark> (IoC) consiste en que la clase deja de decidir cómo se construyen sus colaboradores. Otro código, normalmente un framework, crea los objetos y decide cuándo llamar a cada uno.
+
+La <mark>inyección de dependencias</mark> (DI) es la forma concreta de hacerlo que usa Spring: la clase declara lo que necesita, casi siempre como parámetros del constructor, y alguien de fuera se lo pasa ya construido.
+
+El tercer nombre, el <mark>principio de inversión de dependencias</mark> (la D de SOLID), va de diseño y no de quién crea los objetos: las clases de alto nivel deben depender de interfaces y no de implementaciones. Se pueden cumplir por separado. Un servicio que recibe `TareaRepositoryCsv` por constructor tiene inyección, pero sigue atado al CSV. Si recibe `ITareaRepository`, cumple también el principio.
+
+### Código paso a paso
+
+En `api-tareas` quedó comentada la versión de antes junto a la de Spring. La primera crea el repositorio con `new`. La segunda lo pide en el constructor y no sabe quién se lo da:
+
+<Fragmento archivo="TareaServiceCsv.java" ejercicio="api-tareas" ruta="api-tareasAlejandroDonateGarcia/src/main/java/aula/tareas/service/TareaServiceCsv.java">
+
+```java
+//El pasado
+/**
+public TareaService() {
+    this.repository = new TareaRepository();
+}
+ **/
+
+//Spring: inyecta el repositorio por constructor; @Qualifier elige cuál de los 4
+public TareaServiceCsv(@Qualifier("repositoryCsv") ITareaRepository repository) {
+    this.repository = repository;
+}
+```
+
+</Fragmento>
+
+El atributo es `final` y del tipo de la interfaz. El servicio no importa ninguna clase de CSV, así que cambiar de almacenamiento no le afecta.
+
+### Errores típicos
+
+- **Creer que Maven inyecta dependencias.** Maven descarga librerías y las pone en el classpath. Quien crea los objetos y los conecta es Spring, cuando arranca la aplicación.
+- **Inyectar la clase concreta.** Funciona, pero se pierde la ventaja de poder cambiar de implementación o pasar un mock en las pruebas.
+- **Llamar `new` a una clase que gestiona Spring.** Ese objeto queda fuera del contenedor: sus dependencias no se inyectan y los atributos se quedan a `null`.
+
+### Prácticas de clase
+
+- **api-tareas.** El servicio pasó de crear su repositorio a recibirlo por constructor. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/api-tareasAlejandroDonateGarcia)
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué diferencia hay entre IoC y DI?</summary>
+
+IoC es la idea general: el control de crear y llamar a los objetos pasa a otro código. DI es una forma concreta de aplicarla, pasando las dependencias por el constructor o por un setter.
+
+</details>
+<details>
+<summary>Un servicio recibe `TareaRepositoryJson` por constructor. ¿Cumple el principio de inversión de dependencias?</summary>
+
+No. Tiene inyección, pero depende de una implementación. Para cumplirlo tendría que recibir la interfaz `ITareaRepository`.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, lecciones 2 a 5: acoplamiento, IoC, DI y DIP](https://codelearnacademy.github.io/spring/leccion2/)
+2. [Martin Fowler: «Inversion of Control Containers and the Dependency Injection pattern»](https://martinfowler.com/articles/injection.html)
+3. [Documentación de Spring Framework: el contenedor IoC](https://docs.spring.io/spring-framework/reference/core/beans/introduction.html)
+
+## Spring y Spring Boot
+
+### Qué se ve
+
+Qué pone cada uno de los dos nombres, qué versiones usamos y qué hace Spring Boot por su cuenta al arrancar: elegir dependencias compatibles, configurar lo que encuentra en el classpath y leer `application.properties`.
+
+### Conceptos
+
+<mark>Spring Framework</mark> es el núcleo: el contenedor que crea y conecta objetos, más módulos para web (Spring MVC), acceso a datos (Spring JDBC) y pruebas. <mark>Spring Boot</mark> se monta encima y quita el trabajo de configurarlo: trae versiones compatibles entre sí, un Tomcat embebido y configuración automática.
+
+Los dos proyectos de la unidad usan **Spring Boot 4.1** sobre **Spring Framework 7** y **Java 21**. Spring Boot 4 trae algunos cambios que se notan en el `pom.xml`: el starter web se llama `spring-boot-starter-webmvc` y las pruebas de controladores necesitan `spring-boot-starter-webmvc-test`.
+
+El `pom.xml` hereda de `spring-boot-starter-parent`, que actúa como <mark>BOM</mark> (*bill of materials*): fija la versión de cada librería de Spring y de muchas de terceros, así que en las dependencias no hace falta poner versión. Las dependencias que se añaden son <mark>starters</mark>, paquetes que agrupan todo lo necesario para una función: `starter-webmvc` trae Spring MVC, Jackson y Tomcat; `starter-validation` trae Hibernate Validator; `starter-jdbc` trae `JdbcTemplate` y el pool HikariCP.
+
+La clase con `main` lleva `@SpringBootApplication`, que reúne tres cosas: es una clase de configuración, activa la <mark>autoconfiguración</mark> y escanea componentes desde su paquete hacia abajo. La autoconfiguración mira qué hay en el classpath y actúa: si encuentra el driver de SQLite y una URL en las propiedades, crea un `DataSource`; si encuentra Spring MVC, arranca Tomcat en el puerto 8080.
+
+Los valores que cambian entre entornos van en `src/main/resources/application.properties`. Los <mark>perfiles</mark> permiten activar beans o propiedades solo en ciertos casos: una clase con `@Profile("jdbc")` solo existe si ese perfil está activo.
+
+### Código paso a paso
+
+La configuración de la práctica de películas. La URL es relativa a la carpeta desde la que se arranca, y el perfil por defecto es `jdbc` para que `mvn spring-boot:run` funcione sin parámetros:
+
+<Fragmento archivo="application.properties" ejercicio="películas JDBC" ruta="practica-peliculas-jdbc-AlejandroDonateGarcia/src/main/resources/application.properties">
+
+```properties
+# Ruta relativa: arrancar siempre desde la carpeta del pom.xml
+spring.datasource.url=jdbc:sqlite:data/peliculas.sqlite3
+spring.datasource.driver-class-name=org.sqlite.JDBC
+# SQLite solo admite un escritor a la vez: una conexion en el pool
+spring.datasource.hikari.maximum-pool-size=1
+# La tabla ya existe: Spring no crea el esquema
+spring.sql.init.mode=never
+# Perfil por defecto jdbc
+spring.profiles.default=jdbc
+```
+
+</Fragmento>
+
+`spring.profiles.default` solo se aplica si no se elige otro perfil al arrancar. Con `-Dspring-boot.run.profiles=otro` se sustituye.
+
+### Errores típicos
+
+- **Nombre del fichero mal escrito.** En `api-tareas` se creó `aplication.properties`, con una sola «p». Spring Boot solo busca `application.properties`, así que lo ignoró sin avisar.
+- **Activar un perfil que nadie elige.** Si el controlador y el repositorio llevan `@Profile("jdbc")` y se arranca sin perfil, el servicio no encuentra repositorio y la aplicación no levanta.
+- **Mezclar versiones.** Poner a mano la versión de una librería que ya gestiona el BOM puede traer una incompatible.
+
+### Prácticas de clase
+
+- **api-tareas.** Spring Boot 4.1.2 con webmvc, validation, springdoc, Commons CSV y el driver de SQLite. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/api-tareasAlejandroDonateGarcia)
+- **Películas JDBC.** El mismo stack con `starter-jdbc` y el perfil `jdbc`. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/practica-peliculas-jdbc-AlejandroDonateGarcia)
+
+### Repaso rápido
+
+<details>
+<summary>¿Por qué las dependencias de Spring del `pom.xml` no llevan versión?</summary>
+
+Porque las fija `spring-boot-starter-parent`, que hace de BOM. Así todas son compatibles entre sí.
+
+</details>
+<details>
+<summary>¿Qué tres cosas activa `@SpringBootApplication`?</summary>
+
+Marca la clase como configuración, activa la autoconfiguración y escanea componentes desde su paquete.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, lecciones 6 a 17: Spring, Spring Boot, versiones, BOM y starters](https://codelearnacademy.github.io/spring/leccion6/)
+2. [CodeLearn, lecciones 26 a 32: Spring Boot, autoconfiguración, propiedades y perfiles](https://codelearnacademy.github.io/spring/leccion26/)
+3. [Notas de la versión de Spring Boot 4.0](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Release-Notes)
+4. [Documentación de Spring Boot: perfiles](https://docs.spring.io/spring-boot/reference/features/profiles.html)
+
+## El contenedor y los beans
+
+### Qué se ve
+
+Cómo encuentra Spring las clases que debe crear, cómo decide qué pasar a cada constructor y qué hacer cuando hay varias implementaciones de la misma interfaz.
+
+### Conceptos
+
+El contenedor de Spring es el <mark>ApplicationContext</mark>. Al arrancar crea los objetos de la aplicación, que se llaman <mark>beans</mark>, los guarda y los entrega a quien los pida. Por defecto cada bean es único (*singleton*): todos los controladores que piden el mismo servicio reciben el mismo objeto.
+
+Spring sabe qué clases son beans por sus anotaciones. `@Component` es la general; `@Service`, `@Repository` y `@RestController` son variantes que además dicen a qué capa pertenece la clase. El <mark>escaneo de componentes</mark> busca estas clases empezando en el paquete de la clase con `@SpringBootApplication`, y solo hacia abajo.
+
+Para crear un bean, Spring mira su constructor. Si tiene uno, le pasa un bean de cada tipo que pida. Cuando hay más de un bean del tipo pedido, no sabe cuál elegir y falla. Hay dos salidas: marcar uno con `@Primary` o decir el nombre exacto con `@Qualifier("nombre")` en el parámetro.
+
+### Código paso a paso
+
+En `api-tareas` hay cuatro repositorios que implementan `ITareaRepository`: memoria, CSV, JSON y JDBC. Cada uno se registra con un nombre:
+
+<Fragmento archivo="TareaRepositoryJdbc.java" ejercicio="api-tareas" ruta="api-tareasAlejandroDonateGarcia/src/main/java/aula/tareas/repository/TareaRepositoryJdbc.java">
+
+```java
+@Repository("repositoryJdbc")
+public class TareaRepositoryJdbc implements ITareaRepository {
+```
+
+</Fragmento>
+
+Cada servicio pide el suyo por nombre, y cada controlador pide su servicio igual:
+
+<Fragmento archivo="TareaControllerJdbc.java" ejercicio="api-tareas" ruta="api-tareasAlejandroDonateGarcia/src/main/java/aula/tareas/controller/TareaControllerJdbc.java">
+
+```java
+public TareaControllerJdbc(@Qualifier("tareaServiceJdbc") ITareaService serviceJdbc) {
+    this.serviceJdbc = serviceJdbc;
+}
+```
+
+</Fragmento>
+
+En la práctica de películas solo hay una implementación del repositorio, así que no hace falta `@Qualifier`: el `@Profile("jdbc")` decide si existe o no.
+
+### Errores típicos
+
+- **Clase fuera del paquete raíz.** Si `PeliculasApplication` está en `ies.puesto.peliculas` y una clase quedó en `com.example.peliculas`, el escaneo no la ve y Spring dice que no encuentra un bean de ese tipo.
+- **Dos implementaciones sin `@Qualifier`.** El arranque falla con un mensaje que dice que esperaba un bean y encontró varios.
+- **Inyectar con `@Autowired` en el atributo.** Funciona, pero el atributo no puede ser `final` y en las pruebas no se puede pasar un mock sin Spring. La inyección por constructor evita los dos problemas.
+
+### Prácticas de clase
+
+- **api-tareas.** Cuatro repositorios y tres servicios conectados con `@Qualifier`. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/api-tareasAlejandroDonateGarcia)
+- **Películas JDBC.** Los mappers son `@Component` y se inyectan por constructor en cada capa. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/practica-peliculas-jdbc-AlejandroDonateGarcia)
+
+### Repaso rápido
+
+<details>
+<summary>¿Cuántos objetos `TareaServiceJson` crea Spring si tres clases lo piden?</summary>
+
+Uno. Los beans son singleton por defecto y las tres reciben el mismo objeto.
+
+</details>
+<details>
+<summary>¿Qué pasa con una clase anotada con `@Service` que está en un paquete por encima del de la aplicación?</summary>
+
+Que el escaneo no la encuentra. Busca desde el paquete de `@SpringBootApplication` hacia abajo.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, lecciones 18 a 25: ApplicationContext, beans, escaneo, inyección por constructor y `@Qualifier`](https://codelearnacademy.github.io/spring/leccion18/)
+2. [Documentación de Spring Framework: inyección de dependencias](https://docs.spring.io/spring-framework/reference/core/beans/dependencies/factory-collaborators.html)
+3. [Documentación de Spring Framework: `@Qualifier` y `@Primary`](https://docs.spring.io/spring-framework/reference/core/beans/annotation-config/autowired-qualifiers.html)
+
+## Una petición HTTP de principio a fin
+
+### Qué se ve
+
+Qué hace Spring cuando llega una petición a Tomcat, cómo elige el método del controlador y cómo convierte el JSON del cuerpo en un objeto Java y el resultado en JSON otra vez.
+
+### Conceptos
+
+Tomcat recibe la petición y se la pasa al `DispatcherServlet` de Spring MVC. Este mira el método HTTP y la ruta, busca el método del controlador que encaja y lo llama. Lo que devuelve el método se convierte en JSON con Jackson.
+
+Un <mark>controlador REST</mark> es una clase con `@RestController`. A diferencia de `@Controller`, que devuelve el nombre de una vista HTML, aquí lo que devuelve cada método es directamente el cuerpo de la respuesta. `@RequestMapping("/api/v1/jdbc/peliculas")` en la clase fija la ruta base, y cada método añade lo suyo:
+
+| Anotación | Método HTTP | Uso en el CRUD |
+|---|---|---|
+| `@GetMapping` | GET | leer la lista o un elemento |
+| `@PostMapping` | POST | crear |
+| `@PutMapping` | PUT | sustituir un elemento entero |
+| `@PatchMapping` | PATCH | cambiar solo algunos campos |
+| `@DeleteMapping` | DELETE | borrar |
+
+Los datos llegan por tres sitios. `@PathVariable` saca un trozo de la ruta, como el `{codigo}` de `/peliculas/{codigo}`. `@RequestParam` lee un parámetro de consulta, como `?anio=2001`. `@RequestBody` convierte el cuerpo JSON en un objeto: Jackson busca en el JSON una propiedad por cada componente del `record` y lo construye.
+
+### Código paso a paso
+
+El POST de la práctica de películas. Pulsa los pasos para seguir la petición desde que entra hasta que sale:
+
+<Fragmento archivo="PeliculaJdbcController.java" ejercicio="películas JDBC" ruta="practica-peliculas-jdbc-AlejandroDonateGarcia/src/main/java/ies/puesto/peliculas/controller/PeliculaJdbcController.java" depurar={[
+  { l: 1, v: { peticion: 'PeliculaRequest[codigo=PEL003, titulo=Ponyo, anioEstreno=2008, duracionMinutos=101]' }, t: 'Llega POST /api/v1/jdbc/peliculas con un JSON. Jackson crea el record y @Valid comprueba sus reglas. Todas se cumplen, así que Spring llama al método.' },
+  { l: 2, v: { datos: 'DatosCreacionPelicula[referenciaSolicitada=PEL003, nombreSolicitado=Ponyo, …]' }, t: 'PeliculaApiMapper cambia los nombres de la API por los del servicio y se lo pasa a service.crear.' },
+  { l: 2, v: { pelicula: 'Pelicula{identificador=PEL003, nombre=Ponyo, 2008, 101}', SQL: 'INSERT INTO peliculas (…) VALUES (?, ?, ?, ?) ON CONFLICT(pelicula_codigo) DO NOTHING' }, t: 'El servicio construye la Pelicula con PeliculaDominioMapper y llama a insertarSiAusente. El repositorio la pasa a PeliculaEntity y lanza el INSERT.' },
+  { l: 2, v: { filas: '1', creada: 'Optional[Pelicula{PEL003, Ponyo, 2008, 101}]' }, t: 'SQLite inserta una fila, update devuelve 1 y el repositorio responde true. El servicio devuelve la misma Pelicula envuelta en un Optional.' },
+  { l: 3, t: 'El Optional tiene valor, así que no entra en el if del 409.' },
+  { l: 8, v: { 'return': '201 Created · {"codigo":"PEL003","titulo":"Ponyo","anioEstreno":2008,"duracionMinutos":101}' }, t: 'PeliculaApiMapper construye la respuesta y Jackson la escribe como JSON. Si se repite la misma petición, el INSERT afecta a 0 filas, el Optional llega vacío y sale por la línea 6 con un 409.' },
+]}>
+
+```java
+public ResponseEntity<?> crear(@Valid @RequestBody PeliculaRequest peticion) {
+    Optional<Pelicula> creada = service.crear(mapper.aDatosCreacion(peticion));
+    if (creada.isEmpty()) {
+        ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
+                "Ya existe una película con el código " + peticion.codigo());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problema);
+    }
+    return ResponseEntity.status(HttpStatus.CREATED).body(mapper.aRespuesta(creada.get()));
+}
+```
+
+</Fragmento>
+
+El PUT se parece, con una diferencia: el código viene en la URL y el resto en el cuerpo. Por eso `PeliculaEdicionRequest` no tiene código, y el servicio construye la película con el de la ruta.
+
+### Errores típicos
+
+- **Olvidar `@RequestBody`.** Spring intenta rellenar el objeto con parámetros de la URL y todos los campos llegan a `null`.
+- **Nombres del JSON distintos de los del record.** Si el cliente envía `anio` y el record espera `anioEstreno`, Jackson deja ese campo a `null` sin dar error. La validación con `@NotNull` lo detecta.
+- **Probar desde PowerShell 5.1 con comillas en `--data`.** `curl.exe` recibe el JSON sin comillas y Spring responde 400 o la petición ni sale. Es más fiable guardar el cuerpo en un fichero y usar `--data "@cuerpo.json"`.
+
+### Prácticas de clase
+
+- **api-tareas.** Tres controladores (CSV, JSON y JDBC) con las cinco operaciones del CRUD. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/api-tareasAlejandroDonateGarcia)
+- **Películas JDBC.** El controlador `PeliculaJdbcController` con las firmas exactas que pide el README. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/practica-peliculas-jdbc-AlejandroDonateGarcia)
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué diferencia hay entre PUT y PATCH?</summary>
+
+PUT sustituye el recurso entero: hay que enviar todos los campos. PATCH cambia solo los que se envían.
+
+</details>
+<details>
+<summary>¿Por qué `@RestController` y no `@Controller`?</summary>
+
+Porque `@RestController` escribe lo que devuelve el método como cuerpo de la respuesta. `@Controller` lo interpretaría como el nombre de una vista.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, lecciones 33 a 40 y 110 a 112: la petición HTTP, mapeos, verbos, rutas y JSON](https://codelearnacademy.github.io/spring/leccion33/)
+2. [Documentación de Spring Framework: controladores anotados](https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller.html)
+3. [MDN: métodos de petición HTTP](https://developer.mozilla.org/es/docs/Web/HTTP/Reference/Methods)
+
+## Respuestas, validación y errores
+
+### Qué se ve
+
+Cómo elegir el código de estado de cada respuesta, cómo rechazar datos incorrectos antes de que lleguen al servicio y cómo devolver un error con un formato estándar.
+
+### Conceptos
+
+El código de estado le dice al cliente qué ha pasado sin que tenga que leer el cuerpo. En el CRUD se usan casi siempre los mismos:
+
+| Código | Cuándo |
+|---|---|
+| 200 OK | lectura o actualización correcta |
+| 201 Created | se ha creado el recurso; suele llevar la cabecera `Location` |
+| 204 No Content | borrado correcto, sin cuerpo |
+| 400 Bad Request | la petición está mal: JSON roto, campo inválido, código con mal formato |
+| 404 Not Found | el recurso no existe |
+| 409 Conflict | choca con el estado actual, por ejemplo un código repetido |
+| 500 Internal Server Error | fallo inesperado del servidor |
+
+`ResponseEntity` permite elegir estado, cabeceras y cuerpo. Tiene atajos para los casos de siempre: `ok(cuerpo)`, `created(uri)`, `noContent()`, `notFound()` y `ofNullable(valor)`, que da 200 si hay valor y 404 si es `null`.
+
+La <mark>validación</mark> usa las anotaciones de Jakarta Bean Validation sobre los campos del record: `@NotNull`, `@NotBlank`, `@Size(max = 120)`, `@Min`, `@Max` y `@Pattern`. Con `@Valid` delante de `@RequestBody`, Spring las comprueba antes de llamar al método y responde 400 si alguna falla. Desde Spring 6.1, las anotaciones en un `@PathVariable` también se comprueban solas y dan 400.
+
+Para el cuerpo de los errores existe un formato estándar, el <mark>ProblemDetail</mark> del RFC 9457: un JSON con `type`, `title`, `status`, `detail` e `instance`, servido como `application/problem+json`.
+
+### Código paso a paso
+
+En `api-tareas` el GET por id devuelve 200 o 404 en una línea, porque el repositorio devuelve `null` cuando no encuentra la tarea:
+
+<Fragmento archivo="TareaControllerCsv.java" ejercicio="api-tareas" ruta="api-tareasAlejandroDonateGarcia/src/main/java/aula/tareas/controller/TareaControllerCsv.java">
+
+```java
+@GetMapping("/{id}")
+public ResponseEntity<TareaRequest> buscar(@PathVariable long id) {
+    return ResponseEntity.ofNullable(servicio.buscar(id));
+}
+
+@PostMapping
+public ResponseEntity<TareaRequest> crear(@Valid @RequestBody NuevaTarea peticion) {
+    TareaRequest tarea = servicio.crear(peticion.titulo());
+    return ResponseEntity.created(URI.create("/api/csv/tareas/" + tarea.id())).body(tarea);
+}
+
+public record NuevaTarea(@NotBlank String titulo) {}
+```
+
+</Fragmento>
+
+En películas el servicio devuelve `Optional`, y el controlador construye un `ProblemDetail` que nombra el código buscado:
+
+<Fragmento archivo="PeliculaJdbcController.java" ejercicio="películas JDBC" ruta="practica-peliculas-jdbc-AlejandroDonateGarcia/src/main/java/ies/puesto/peliculas/controller/PeliculaJdbcController.java">
+
+```java
+private ResponseEntity<ProblemDetail> noExiste(String codigo) {
+    ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND,
+            "No existe ninguna película con el código " + codigo);
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problema);
+}
+```
+
+</Fragmento>
+
+La ruta de CodeLearn resuelve los errores de otra forma: una clase con `@RestControllerAdvice` captura las excepciones de toda la aplicación y las convierte en `ProblemDetail`. El README de películas lo prohíbe a propósito para que sea el controlador quien traduzca el `Optional` vacío o el `false` a 404 y 409. Las dos formas son válidas; la global tiene más sentido cuando hay muchos controladores.
+
+### Errores típicos
+
+- **`@Validated` en la clase del controlador.** Cambia cómo se validan los `@PathVariable`: en vez de dar 400, lanzan una `ConstraintViolationException` que, sin un manejador global, acaba en 500.
+- **`int` en lugar de `Integer` en la petición.** Si falta el campo, Jackson pone 0 y `@NotNull` no puede detectarlo. Con `Integer` llega `null` y la validación salta.
+- **Devolver 200 al crear.** El cliente no sabe que se ha creado nada nuevo ni dónde está. Lo correcto es 201 con `Location`.
+- **Usar `queryForObject` para buscar por id.** Si no hay fila lanza una excepción y el cliente recibe un 500 en vez de un 404.
+
+### Prácticas de clase
+
+- **api-tareas.** `ofNullable`, `created` con `Location` y `noContent`; el título en blanco da 400. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/api-tareasAlejandroDonateGarcia)
+- **Películas JDBC.** Validación completa de las peticiones, `@Pattern` en la ruta y `ProblemDetail` para 404 y 409. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/practica-peliculas-jdbc-AlejandroDonateGarcia)
+
+### Repaso rápido
+
+<details>
+<summary>¿Quién genera el 400 cuando el título está en blanco?</summary>
+
+Spring, al aplicar `@Valid` antes de llamar al método. El controlador no llega a ejecutarse.
+
+</details>
+<details>
+<summary>¿Qué código corresponde a crear una película con un código que ya existe?</summary>
+
+409 Conflict. La petición está bien formada, pero choca con un dato que ya está guardado.
+
+</details>
+<details>
+<summary>¿Por qué el año es `Integer` en la petición e `int` en el resto de capas?</summary>
+
+En la petición hace falta poder distinguir «no viene» de «vale 0». Una vez validada, el valor ya existe seguro y basta con `int`.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, lecciones 42 a 45: códigos HTTP, `ResponseEntity`, `ProblemDetail` y validación](https://codelearnacademy.github.io/spring/leccion42/)
+2. [RFC 9457: Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc9457)
+3. [Documentación de Spring Framework: respuestas de error](https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html)
+4. [Documentación de Spring Framework: validación de métodos en controladores](https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-validation.html)
+
+## Capas, DTOs y mappers
+
+### Qué se ve
+
+Por qué la aplicación se parte en controlador, servicio y repositorio, qué puede hacer cada capa y por qué la práctica de películas obliga a que cada una llame al mismo dato de forma distinta.
+
+### Conceptos
+
+Cada capa tiene una responsabilidad:
+
+- El **controlador** habla HTTP: lee la petición, la valida y elige el código de estado. No sabe nada de SQL.
+- El **servicio** toma las decisiones del caso de uso: si se puede crear, qué devolver si no existe. No conoce `ResponseEntity` ni el JSON.
+- El **repositorio** guarda y lee datos. Solo sabe de SQL y de filas.
+
+Entre capas viajan objetos distintos. Un <mark>DTO</mark> (*data transfer object*) es un objeto pensado para transportar datos de una frontera, como el JSON de la API. La práctica de películas lleva la idea al extremo: cuatro representaciones del mismo dato, cada una con nombres propios, y un mapper en cada frontera que copia los valores con constructores.
+
+<ViajeDato />
+
+Que los nombres no coincidan a propósito tiene una ventaja: si mañana el JSON llama `nombre` al título, solo cambia `PeliculaRequest`, `PeliculaResponse` y `PeliculaApiMapper`. El resto del código no se entera. También impide usar herramientas que copian por nombre, como `BeanUtils.copyProperties`, que aquí no copiarían nada.
+
+Las reglas de dependencia se refuerzan con la visibilidad de Java. `PeliculaEntity`, `PeliculaRowMapper` y `PeliculaEntityMapper` no son `public`, así que fuera del paquete `repository.jdbc` ni siquiera compilan. Spring los inyecta igual, porque crea los beans por reflexión.
+
+### Código paso a paso
+
+El mapper de la frontera entre dominio y fila. Solo copia valores, sin validar ni decidir nada:
+
+<Fragmento archivo="PeliculaEntityMapper.java" ejercicio="películas JDBC" ruta="practica-peliculas-jdbc-AlejandroDonateGarcia/src/main/java/ies/puesto/peliculas/repository/jdbc/PeliculaEntityMapper.java">
+
+```java
+@Component
+class PeliculaEntityMapper {
+
+    PeliculaEntity aEntity(Pelicula pelicula) {
+        return new PeliculaEntity(
+                pelicula.getIdentificador(), pelicula.getNombre(),
+                pelicula.getAnioLanzamiento(), pelicula.getMinutosProyeccion());
+    }
+
+    Pelicula aPelicula(PeliculaEntity entity) {
+        return new Pelicula(
+                entity.getCodigoFila(), entity.getTituloFila(),
+                entity.getAnioFila(), entity.getMinutosFila());
+    }
+}
+```
+
+</Fragmento>
+
+En la edición el identificador no viene en el cuerpo, así que el mapper del servicio lo recibe aparte:
+
+<Fragmento archivo="PeliculaDominioMapper.java" ejercicio="películas JDBC" ruta="practica-peliculas-jdbc-AlejandroDonateGarcia/src/main/java/ies/puesto/peliculas/service/mapper/PeliculaDominioMapper.java">
+
+```java
+public Pelicula aPelicula(String identificador, DatosEdicionPelicula datos) {
+    return new Pelicula(
+            identificador, datos.nombreSolicitado(),
+            datos.anioSolicitado(), datos.minutosSolicitados());
+}
+```
+
+</Fragmento>
+
+`Pelicula` y `PeliculaEntity` son clases con atributos `private final` y sin setters. Para cambiar una película se construye otra entera, que es justo lo que hace un PUT.
+
+En `api-tareas` la separación es más ligera: el mismo `record TareaRequest(long id, String titulo)` viaja desde el controlador hasta el repositorio. Para buscar por id, la indicación de clase era crear un constructor con solo el id en la entidad y el mapper que lo use. En películas no hace falta, porque el contrato pasa el código como `String`.
+
+### Errores típicos
+
+- **El servicio importa clases de `controller.api`.** Queda atado a la web y ya no se puede reutilizar desde otro sitio. Recibe `DatosCreacionPelicula` y devuelve `Pelicula`.
+- **Validar en el mapper.** Los mappers solo transfieren valores. La validación es de la API y las decisiones, del servicio.
+- **Releer después de escribir.** El servicio ya tiene la `Pelicula` que ha mandado guardar; si el repositorio devuelve `true`, puede devolverla tal cual.
+- **Poner el código del cuerpo en el PUT.** Si la URL dice `PEL001` y el cuerpo `PEL002`, ¿cuál manda? Sin código en el cuerpo no hay duda.
+
+### Prácticas de clase
+
+- **Películas JDBC.** Cuatro tipos por capa, cuatro mappers y entidades con visibilidad de paquete. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/practica-peliculas-jdbc-AlejandroDonateGarcia)
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué mapper interviene en un DELETE?</summary>
+
+Ninguno. Solo viaja el código, de la URL al servicio y del servicio al repositorio.
+
+</details>
+<details>
+<summary>¿Cómo se llama el título en cada capa de la práctica de películas?</summary>
+
+`titulo` en el JSON, `nombreSolicitado` en el servicio, `nombre` en el dominio, `tituloFila` en la entidad y `titulo_texto` en la tabla.
+
+</details>
+<details>
+<summary>¿Por qué Spring puede inyectar una clase que no es `public`?</summary>
+
+Porque crea los beans por reflexión, que no respeta la visibilidad de paquete. La restricción solo afecta al código que escribimos nosotros.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, lección 41: DTOs](https://codelearnacademy.github.io/spring/leccion41/)
+2. [CodeLearn, lecciones 53 a 58: Controller, Service y Repository, e interfaces entre capas](https://codelearnacademy.github.io/spring/leccion53/)
+3. [Martin Fowler: «Data Transfer Object»](https://martinfowler.com/eaaCatalog/dataTransferObject.html)
+
+## Persistencia dentro de Spring
+
+### Qué se ve
+
+El mismo CRUD contra SQLite escrito de dos maneras dentro de Spring: con JDBC puro, como en la UT2, y con `JdbcTemplate`, que quita la parte repetitiva sin esconder el SQL.
+
+### Conceptos
+
+En `api-tareas` el repositorio JDBC hace todo a mano: abre la conexión con `DriverManager`, prepara la sentencia, asigna los `?`, recorre el `ResultSet` y cierra con try-with-resources. Es el código de la UT2 metido en un `@Repository`.
+
+<mark>JdbcTemplate</mark> es la clase de Spring JDBC que hace la parte que se repite: pide la conexión al `DataSource` que configuró Spring Boot, la cierra, convierte las `SQLException` en excepciones de Spring y recorre el resultado. Nosotros solo ponemos el SQL, los parámetros y un <mark>RowMapper</mark>, que dice cómo pasar una fila a un objeto.
+
+Hay tres niveles de acceso a datos en Spring, de más a menos SQL escrito:
+
+| Herramienta | Qué escribimos | Unidad |
+|---|---|---|
+| Spring JDBC (`JdbcTemplate`) | todo el SQL y el `RowMapper` | UT4 |
+| JPA con `EntityManager` | entidades y JPQL | UT3 |
+| Spring Data JPA | una interfaz; las consultas sencillas se generan por el nombre del método | próximas lecciones |
+
+### Código paso a paso
+
+En `api-tareas`, el INSERT pide el id generado con `RETURNING id`. SQLite lo admite desde la versión 3.35 y devuelve el resultado como si fuera un SELECT, así que se usa `executeQuery`:
+
+<Fragmento archivo="TareaRepositoryJdbc.java" ejercicio="api-tareas" ruta="api-tareasAlejandroDonateGarcia/src/main/java/aula/tareas/repository/TareaRepositoryJdbc.java">
+
+```java
+@Override
+public TareaRequest create(String titulo) {
+    // RETURNING id: el INSERT devuelve el id que genera SQLite (AUTOINCREMENT)
+    // como si fuera un SELECT, por eso se usa executeQuery en vez de executeUpdate
+    String sql = "insert into tareas_jdbc (titulo) values (?) returning id";
+    try (Connection c = DriverManager.getConnection(jdbcUrl);
+         PreparedStatement ps = c.prepareStatement(sql)) {
+        ps.setString(1, titulo.strip());
+        try (ResultSet rs = ps.executeQuery()) {
+            rs.next();
+            return new TareaRequest(rs.getLong("id"), titulo.strip());
+        }
+    } catch (SQLException e) {
+        throw new RuntimeException(e);
+    }
+}
+```
+
+</Fragmento>
+
+En películas la clave no la genera la base, la manda el cliente. El INSERT usa `ON CONFLICT ... DO NOTHING` para no fallar si el código ya existe, y el número de filas afectadas dice si se creó o no:
+
+<Fragmento archivo="PeliculaJdbcRepository.java" ejercicio="películas JDBC" ruta="practica-peliculas-jdbc-AlejandroDonateGarcia/src/main/java/ies/puesto/peliculas/repository/jdbc/PeliculaJdbcRepository.java">
+
+```java
+@Override
+public Optional<Pelicula> buscarPorCodigo(String identificador) {
+    // query + findFirst en vez de queryForObject, que lanza excepción si no hay fila
+    return jdbc.query(SELECT + " WHERE pelicula_codigo = ?", rowMapper, identificador)
+            .stream()
+            .findFirst()
+            .map(entityMapper::aPelicula);
+}
+
+@Override
+public boolean insertarSiAusente(Pelicula pelicula) {
+    PeliculaEntity entity = entityMapper.aEntity(pelicula);
+    int filas = jdbc.update(
+            "INSERT INTO peliculas (pelicula_codigo, titulo_texto, estreno_anio, duracion_minutos) "
+                    + "VALUES (?, ?, ?, ?) ON CONFLICT(pelicula_codigo) DO NOTHING",
+            entity.getCodigoFila(), entity.getTituloFila(), entity.getAnioFila(), entity.getMinutosFila());
+    return filas == 1;
+}
+```
+
+</Fragmento>
+
+En el UPDATE los parámetros van en otro orden: primero los tres datos del `SET` y el código al final, porque es el `?` del `WHERE`.
+
+### Errores típicos
+
+- **`INSERT OR IGNORE` en lugar de `ON CONFLICT`.** También evita el error, pero ignora cualquier restricción que falle, no solo la de la clave. Un título de 200 caracteres se descartaría sin avisar.
+- **Comparar con `> 0`.** Para una operación sobre una sola clave, `== 1` expresa mejor lo que se espera.
+- **El fichero SQLite no está donde dice la URL.** SQLite crea uno vacío sin tablas y todas las consultas fallan con «no such table». Hay que arrancar desde la carpeta del `pom.xml`.
+- **Varias conexiones escribiendo en SQLite.** Con el pool por defecto pueden aparecer errores de base bloqueada. En las prácticas basta con `maximum-pool-size=1`.
+
+### Prácticas de clase
+
+- **api-tareas.** Repositorio JDBC a mano con `RETURNING id` para el alta. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/api-tareasAlejandroDonateGarcia)
+- **Películas JDBC.** `JdbcTemplate`, `PeliculaRowMapper` y las cinco sentencias del README. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/practica-peliculas-jdbc-AlejandroDonateGarcia)
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué quita `JdbcTemplate` respecto al JDBC de la UT2?</summary>
+
+Abrir y cerrar la conexión, el try-with-resources, recorrer el `ResultSet` y capturar `SQLException`. El SQL lo seguimos escribiendo nosotros.
+
+</details>
+<details>
+<summary>¿Qué devuelve `update` en un INSERT con `ON CONFLICT DO NOTHING` si el código ya existe?</summary>
+
+0, porque no se ha insertado ninguna fila. El repositorio lo traduce a `false` y el controlador a 409.
+
+</details>
+
+### Fuentes
+
+1. [CodeLearn, lección 59: Spring JDBC, JPA y Spring Data JPA](https://codelearnacademy.github.io/spring/leccion59/)
+2. [Documentación de Spring Framework: `JdbcTemplate`](https://docs.spring.io/spring-framework/reference/data-access/jdbc/core.html)
+3. [SQLite: la cláusula RETURNING](https://sqlite.org/lang_returning.html)
+4. [SQLite: UPSERT y `ON CONFLICT`](https://sqlite.org/lang_upsert.html)
+
+## Swagger y pruebas
+
+### Qué se ve
+
+Cómo documentar la API para probarla desde el navegador y cómo comprobar con pruebas automáticas que cada petición devuelve el código que toca.
+
+### Conceptos
+
+<mark>OpenAPI</mark> es un formato estándar para describir una API: rutas, cuerpos y respuestas. La librería springdoc lo genera leyendo los controladores y lo sirve en `/v3/api-docs`. Encima monta <mark>Swagger UI</mark> en `/swagger-ui.html`, una página donde cada operación tiene un botón «Try it out» para lanzar peticiones. Con `@Tag`, `@Operation` y `@ApiResponses` se añade el resumen y los códigos posibles de cada operación.
+
+Para las pruebas se usan tres niveles:
+
+- **Pruebas de mappers**, sin Spring: se crea el mapper con `new` y se comprueba que los cuatro valores llegan bien.
+- **Pruebas de la API con <mark>MockMvc</mark>**: `@WebMvcTest` levanta solo la capa web, sin base de datos. El servicio se sustituye por un mock con `@MockitoBean` y se lanzan peticiones simuladas comprobando el código y el JSON.
+- **Pruebas del repositorio** contra una copia temporal de la base, con `@TempDir` de JUnit, para que cada prueba empiece con los mismos datos y no se toque el fichero original.
+
+### Código paso a paso
+
+Dos pruebas de la tabla de estados de películas. El servicio es un mock, así que se le dice qué devolver:
+
+<Fragmento archivo="PeliculaJdbcControllerTest.java" ejercicio="películas JDBC" ruta="practica-peliculas-jdbc-AlejandroDonateGarcia/src/test/java/ies/puesto/peliculas/controller/PeliculaJdbcControllerTest.java">
+
+```java
+@WebMvcTest(PeliculaJdbcController.class)
+@Import(PeliculaApiMapper.class)
+@ActiveProfiles("jdbc")
+class PeliculaJdbcControllerTest {
+
+    @Autowired
+    private MockMvc mvc;
+
+    @MockitoBean
+    private PeliculaService service;
+
+    @Test
+    void crearDuplicadaDevuelve409() throws Exception {
+        when(service.crear(any())).thenReturn(Optional.empty());
+        mvc.perform(post(URL).contentType(MediaType.APPLICATION_JSON).content(CUERPO_POST))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Ya existe una película con el código PEL003"));
+    }
+
+    @Test
+    void obtenerConCodigoInvalidoDevuelve400() throws Exception {
+        mvc.perform(get(URL + "/XYZ")).andExpect(status().isBadRequest());
+    }
+}
+```
+
+</Fragmento>
+
+Para demostrar que los datos siguen tras reiniciar, la prueba del repositorio inserta una película y la busca con un repositorio nuevo, que abre su propia conexión al mismo fichero:
+
+<Fragmento archivo="PeliculaJdbcRepositoryTest.java" ejercicio="películas JDBC" ruta="practica-peliculas-jdbc-AlejandroDonateGarcia/src/test/java/ies/puesto/peliculas/repository/jdbc/PeliculaJdbcRepositoryTest.java">
+
+```java
+@Test
+void losDatosSiguenTrasReiniciar() {
+    assertTrue(repository.insertarSiAusente(new Pelicula("PEL003", "Ponyo", 2008, 101)));
+
+    Optional<Pelicula> leida = nuevoRepositorio().buscarPorCodigo("PEL003");
+
+    assertTrue(leida.isPresent());
+    assertEquals("Ponyo", leida.get().getNombre());
+}
+```
+
+</Fragmento>
+
+`mvn clean test` lanza las 30 pruebas y deja `data/peliculas.sqlite3` sin cambios, con `PEL001` y `PEL002`.
+
+### Errores típicos
+
+- **`@WebMvcTest` sin el perfil.** Si el controlador lleva `@Profile("jdbc")`, la prueba tiene que activarlo con `@ActiveProfiles("jdbc")` o el controlador no existe y todo da 404.
+- **Probar contra la base real.** Las pruebas cambian datos y dependen del orden. Con una copia por prueba son independientes.
+- **`@MockBean` en Spring Boot 4.** Desapareció; ahora es `@MockitoBean`, de Spring Framework.
+
+### Prácticas de clase
+
+- **api-tareas.** Swagger UI con las 15 operaciones de los tres controladores. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/api-tareasAlejandroDonateGarcia)
+- **Películas JDBC.** 14 pruebas de la API, 9 de mappers y 7 del repositorio. [Ver en GitHub](https://github.com/alejandroDonGar/Acceso-a-Datos-2026---2027/tree/main/practica-peliculas-jdbc-AlejandroDonateGarcia)
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué levanta `@WebMvcTest`?</summary>
+
+Solo la capa web: controladores, Jackson y validación. Ni servicios ni repositorios ni base de datos, que se sustituyen por mocks.
+
+</details>
+<details>
+<summary>¿Dónde está la descripción OpenAPI de la API?</summary>
+
+En `/v3/api-docs`. Swagger UI, en `/swagger-ui.html`, la lee para pintar la página.
+
+</details>
+
+### Lo que viene
+
+La ruta sigue con temas que todavía no hemos hecho en clase: Tomcat embebido y empaquetado en JAR (lecciones 46 a 52), PostgreSQL con Spring Data JPA y transacciones (60 a 67), configuración por entornos (68 a 72), Spring Security (79 a 82) y Docker con CI/CD (88 a 99).
+
+### Fuentes
+
+1. [CodeLearn, lección 75: pruebas de la API de tareas con MockMvc](https://codelearnacademy.github.io/spring/leccion75/)
+2. [CodeLearn, lección 109: Swagger UI y contrato OpenAPI](https://codelearnacademy.github.io/spring/leccion109/)
+3. [Documentación de springdoc-openapi](https://springdoc.org/)
+4. [Documentación de Spring Framework: MockMvc](https://docs.spring.io/spring-framework/reference/testing/mockmvc.html)
+5. [Artículos de Spring y Spring Boot en Medium (@techphile)](https://medium.com/@techphile)
