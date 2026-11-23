@@ -13,7 +13,7 @@ const ancho = 176;
 const hueco = 34;
 const x = (i: number) => 10 + i * (ancho + hueco);
 ---
-<Esquema titulo="El viaje de un dato entre capas" ancho={1000} alto={330}
+<Esquema titulo="El viaje de un dato entre capas" ancho={1040} alto={330}
   descripcion="Cinco cajas de izquierda a derecha, una por representación del mismo dato. JSON de la API: codigo, titulo, anioEstreno, duracionMinutos. Petición al servicio: referenciaSolicitada, nombreSolicitado, anioSolicitado, minutosSolicitados. Dominio: identificador, nombre, anioLanzamiento, minutosProyeccion. Fila en Java: codigoFila, tituloFila, anioFila, minutosFila. Columna SQLite: pelicula_codigo, titulo_texto, estreno_anio, duracion_minutos. Entre cada par de cajas hay una flecha numerada: 1 PeliculaApiMapper, 2 PeliculaDominioMapper, 3 PeliculaEntityMapper, 4 PeliculaRowMapper."
   pie="Cada capa llama al dato de una forma distinta, así que ninguna puede usar el objeto de otra sin pasar por un mapper. Al volver, PeliculaRowMapper lee la fila, PeliculaEntityMapper crea la Pelicula y PeliculaApiMapper construye la respuesta.">
   {capas.map((c, i) => (
