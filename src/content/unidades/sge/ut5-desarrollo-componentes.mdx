@@ -1,0 +1,419 @@
+---
+titulo: Desarrollo de componentes en Odoo
+etiqueta: UT5
+orden: 5
+entrada: Cómo se construye un módulo de Odoo 17 desde cero, con su manifiesto, un modelo propio, los permisos, las vistas, el menú y unos botones que cambian el estado de cada registro.
+cuando: noviembre
+ejercicios: A2 guía de gestión de tareas
+ruta: { texto: Temario del profesor, url: "https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/" }
+---
+import OdooPantalla from '../../../components/odoo/OdooPantalla.astro';
+import OdooLista from '../../../components/odoo/OdooLista.astro';
+import OdooFicha from '../../../components/odoo/OdooFicha.astro';
+import Puzle from '../../../components/Puzle.astro';
+
+## Anatomía de un módulo
+
+### Qué se ve
+
+En la UT3 se modificó un módulo que ya existía heredando sus vistas. Aquí se crea uno entero, `gestion_tareas`, para dar de alta tareas con responsable y fecha límite y seguir su estado. Este primer tema es solo el esqueleto: qué archivos necesita una carpeta para que Odoo la reconozca como módulo.
+
+### Conceptos
+
+Odoo 17 tiene tres capas: el navegador muestra las vistas, el servidor en Python ejecuta la lógica y PostgreSQL guarda los datos. Un <mark>módulo</mark> añade piezas a las tres a la vez. Es una carpeta dentro de alguna ruta del `addons_path`; en nuestra instalación con Docker, la carpeta `./addons` del proyecto está montada en `/mnt/extra-addons`, y esa ruta ya está en el `odoo.conf`.
+
+Para empezar bastan dos archivos:
+
+| Archivo | Para qué sirve |
+|---|---|
+| `__init__.py` | Odoo carga cada módulo como un paquete de Python. Al principio puede estar vacío |
+| `__manifest__.py` | Un diccionario con el nombre, la versión, las dependencias, los archivos que se cargan y la licencia |
+
+En el manifiesto, `version` empieza por `17.0` porque es para Odoo 17, `depends` lista los módulos necesarios (aquí solo `base`) y `data` los XML y CSV que se cargan al instalar, en ese orden. La `license` es obligatoria. Con `application = True` el módulo aparece como una aplicación más y su botón dice «Activar» en vez de «Instalar», aunque hace lo mismo.
+
+Odoo solo recorre las carpetas de módulos al arrancar, y solo da de alta los nuevos cuando se pulsa <mark>Actualizar lista de aplicaciones</mark>, una opción que solo se ve con el modo desarrollador activado. Conviene distinguir tres acciones que se repiten durante todo el desarrollo:
+
+| Cambio | Qué hay que hacer |
+|---|---|
+| Carpeta de módulo nueva | Reiniciar Odoo y actualizar la lista de aplicaciones |
+| Código Python nuevo o cambiado | Reiniciar Odoo y actualizar el módulo |
+| Solo XML o CSV | Actualizar el módulo (los XML se guardan en la base de datos al instalar) |
+
+### Casos y ejemplos
+
+El manifiesto del módulo, con `data` todavía vacía:
+
+```python
+{
+    'name': 'Gestión de Tareas',
+    'version': '17.0.1.0.0',
+    'category': 'Productivity',
+    'summary': 'Módulo didáctico de gestión de tareas',
+    'depends': ['base'],
+    'data': [],
+    'license': 'LGPL-3',
+    'installable': True,
+    'application': True,
+}
+```
+
+Al terminar, el módulo completo tiene esta forma. Cada carpeta se irá llenando en los temas siguientes:
+
+```text
+addons/gestion_tareas/
+├── __init__.py                  from . import models
+├── __manifest__.py
+├── models/
+│   ├── __init__.py              from . import gestion_tareas
+│   └── gestion_tareas.py        el modelo
+├── security/
+│   └── ir.model.access.csv      los permisos
+└── views/
+    ├── gestion_tareas_views.xml lista y formulario
+    └── gestion_tareas_menus.xml acción y menú
+```
+
+En la guía del profesor el servicio de Odoo se llama `web`, pero en nuestro `docker-compose.yml` se llama `odoo`, así que el reinicio es `docker compose restart odoo`.
+
+### Errores típicos
+
+- **Buscar el módulo en Aplicaciones sin actualizar la lista.** La carpeta existe, pero Odoo no la ha dado de alta en la base de datos.
+- **No encontrar «Actualizar lista de aplicaciones».** Ese menú solo aparece con el modo desarrollador activado.
+- **Copiar el nombre del servicio de la guía.** `docker compose restart web` falla si en tu `docker-compose.yml` el servicio se llama de otra forma. Míralo con `docker compose ps`.
+- **Olvidar la licencia.** Sin `license` en el manifiesto, Odoo avisa en el log al cargar el módulo.
+- **Pulsar en Odoo justo después de reiniciar.** Sale «Conexión perdida» porque el servidor aún está arrancando. Hay que esperar a que responda y repetir.
+
+### Prácticas de clase
+
+- **A2, guía de gestión de tareas.** Módulo `gestion_tareas` sobre la misma instalación con Docker de la UT2, siguiendo los seis pasos de la guía del profesor y comprobando cada uno en Odoo.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué dos archivos necesita como mínimo un módulo?</summary>
+
+`__init__.py`, para que Python trate la carpeta como paquete, y `__manifest__.py`, con los datos del módulo.
+
+</details>
+<details>
+<summary>¿Por qué hay que actualizar el módulo aunque solo cambie un XML?</summary>
+
+Porque las vistas, menús y permisos se guardan en la base de datos al instalar. Reiniciar no los vuelve a leer; actualizar sí.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT5, apartados 1 y 3: arquitectura y herramientas](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo 17: manifiesto de un módulo](https://www.odoo.com/documentation/17.0/developer/reference/backend/module.html)
+3. [Odoo 17: tutorial «Server framework 101», capítulo 2](https://www.odoo.com/documentation/17.0/developer/tutorials/server_framework_101/02_newapp.html)
+
+## El modelo y los permisos
+
+### Qué se ve
+
+El segundo y el tercer paso de la guía: la clase de Python que define qué datos tiene una tarea, y la regla de acceso sin la cual nadie salvo el administrador podría abrirlas.
+
+### Conceptos
+
+Un <mark>modelo</mark> es una clase que hereda de `models.Model`. Al instalar el módulo, el <mark>ORM</mark> de Odoo crea a partir de ella una tabla en PostgreSQL, con una columna por campo, sin escribir SQL. Odoo identifica el modelo por `_name` y no por el nombre de la clase: `gestion.tareas.tarea` se convierte en la tabla `gestion_tareas_tarea`, cambiando los puntos por guiones bajos. `_description` es el nombre que se ve en las pantallas técnicas.
+
+Los campos se declaran con `fields`:
+
+| Campo | Tipo | En la base de datos |
+|---|---|---|
+| `name` | `Char`, con `required=True` | Texto corto obligatorio. Odoo usa `name` para mostrar el registro en otros sitios |
+| `description` | `Text` | Texto largo |
+| `date_deadline` | `Date` | Fecha sin hora |
+| `user_id` | `Many2one('res.users')` | Clave foránea al usuario responsable |
+
+Además, Odoo añade solo los <mark>campos de auditoría</mark> (`id`, `create_uid`, `create_date`, `write_uid`, `write_date`), los mismos que se usaron en la UT3 para mostrar quién creó un presupuesto.
+
+Para que Python cargue el modelo hay una cadena de imports: el `__init__.py` principal importa la carpeta `models`, y `models/__init__.py` importa el archivo del modelo. Si falta un eslabón, el modelo no existe para Odoo.
+
+El acceso a cada modelo se controla con registros de <mark>ir.model.access</mark>. Un modelo sin ninguna regla da error de permisos a cualquier usuario normal. Con el administrador no se nota porque es superusuario, y por eso el fallo suele aparecer tarde. La regla se escribe en `security/ir.model.access.csv` y se añade a `data` en el manifiesto.
+
+### Casos y ejemplos
+
+El CSV con una regla para los usuarios internos:
+
+```text
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_gestion_tareas_tarea,gestion.tareas.tarea.user,model_gestion_tareas_tarea,base.group_user,1,1,1,1
+```
+
+`model_id:id` apunta al identificador externo que Odoo crea para cada modelo: `model_` seguido del `_name` con guiones bajos. El `:id` indica que es una referencia y no un texto. `base.group_user` son los usuarios internos, y las cuatro últimas columnas son leer, escribir, crear y borrar.
+
+Prueba a completar el modelo:
+
+<Puzle archivo="models/gestion_tareas.py" ejercicio="A2 gestión de tareas" piezas={[
+  { t: "'gestion.tareas.tarea'", hueco: 1 },
+  { t: "'GestionTareasTarea'", porque: 'Ese es el nombre de la clase. Odoo identifica el modelo por _name, y por convención va en minúsculas y con puntos.' },
+  { t: 'required=True', hueco: 2 },
+  { t: 'readonly=True', porque: 'No obliga a rellenarlo: impide escribirlo desde la vista, así que no se podría poner el título.' },
+  { t: 'Many2one', hueco: 3 },
+  { t: 'One2many', porque: 'Es el lado contrario: una lista de registros que apuntan aquí. Cada tarea tiene un solo responsable, y eso es un Many2one.' },
+  { t: 'Char', porque: 'Guardaría el nombre como texto suelto, sin relación con el usuario real.' },
+]}>
+
+```python
+from odoo import fields, models
+
+class GestionTareasTarea(models.Model):
+    _name = __1__
+    _description = 'Tarea de Gestión de Tareas'
+
+    name = fields.Char(string='Título', __2__)
+    description = fields.Text(string='Descripción')
+    date_deadline = fields.Date(string='Fecha límite')
+    user_id = fields.__3__('res.users', string='Responsable')
+```
+
+</Puzle>
+
+Para comprobarlo sin vistas todavía, el modelo aparece en **Ajustes > Técnico > Modelos** con sus cuatro campos y los de auditoría, y la regla en **Ajustes > Técnico > Seguridad > Permisos de acceso**:
+
+<OdooPantalla app="Ajustes" menus={['Técnico']} migas={['Permisos de acceso']} pie="La regla cargada desde el CSV, para el grupo de usuarios internos.">
+<OdooLista columnas={['Nombre', 'Modelo', 'Grupo', 'Leer', 'Escribir', 'Crear', 'Eliminar']}
+  filas={[['gestion.tareas.tarea.user', 'Tarea de Gestión de Tareas', 'Usuario interno', { t: 'Sí', estado: 'si' }, { t: 'Sí', estado: 'si' }, { t: 'Sí', estado: 'si' }, { t: 'Sí', estado: 'si' }]]} />
+</OdooPantalla>
+
+### Errores típicos
+
+- **Romper la cadena de imports.** Si el `__init__.py` principal no importa `models`, el archivo del modelo nunca se ejecuta y Odoo no crea la tabla.
+- **Dar por bueno el módulo porque funciona con admin.** El administrador se salta los permisos. Prueba con un usuario normal o revisa que la regla existe.
+- **Poner `gestion.tareas.tarea` en `model_id:id`.** Esa columna espera el identificador externo, `model_gestion_tareas_tarea`.
+- **No añadir el CSV a `data`.** El archivo está en la carpeta, pero Odoo solo carga lo que lista el manifiesto.
+- **Olvidar `_description`.** Funciona, pero Odoo deja un aviso en el log por cada modelo sin ella.
+
+### Prácticas de clase
+
+- **A2, pasos 2 y 3.** Modelo `gestion.tareas.tarea` con cuatro campos, comprobado en Técnico > Modelos, y una regla de acceso para `base.group_user` con los cuatro permisos.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué tabla crea el modelo `gestion.tareas.tarea`?</summary>
+
+`gestion_tareas_tarea`: el `_name` con los puntos cambiados por guiones bajos.
+
+</details>
+<details>
+<summary>¿Qué pasa si un modelo no tiene ninguna regla en `ir.model.access`?</summary>
+
+Que los usuarios normales reciben un error de permisos al abrirlo. Solo el superusuario puede usarlo.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT5, apartados 2 y 4: el lenguaje del modelo y la seguridad](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo 17: referencia del ORM, campos](https://www.odoo.com/documentation/17.0/developer/reference/backend/orm.html#fields)
+3. [Odoo 17: control de acceso](https://www.odoo.com/documentation/17.0/developer/reference/backend/security.html)
+
+## Vistas, acción y menú
+
+### Qué se ve
+
+Los pasos 4 y 5: cómo se ven las tareas y cómo llega el usuario hasta ellas. Con el modelo y los permisos ya hay datos, pero todavía no hay ninguna pantalla que los muestre.
+
+### Conceptos
+
+Una <mark>vista</mark> es un registro de `ir.ui.view` que se carga desde XML. Su campo `arch` describe la pantalla. El módulo define dos:
+
+- La **lista** (`<tree>` en Odoo 17), con las columnas título, responsable y fecha límite.
+- El **formulario** (`<form>`), donde `<sheet>` da el aspecto de hoja y `<group>` coloca cada campo con su etiqueta a la izquierda. La descripción va aquí y no en la lista, donde ocuparía demasiado.
+
+Las vistas existen, pero nada lleva hasta ellas. Para eso hacen falta dos piezas más. La <mark>acción de ventana</mark> (`ir.actions.act_window`) dice qué modelo abrir y en qué orden de vistas, y el <mark>menú</mark> (`<menuitem>`) es la entrada que se pulsa. Un menú sin `parent` es de nivel raíz y aparece como una aplicación en el menú principal; uno con `action` es el que abre la pantalla.
+
+El orden de `data` en el manifiesto importa, porque cada archivo puede usar lo que define el anterior: primero la seguridad, luego las vistas y al final los menús, que usan la acción.
+
+```python
+'data': [
+    'security/ir.model.access.csv',
+    'views/gestion_tareas_views.xml',
+    'views/gestion_tareas_menus.xml',
+],
+```
+
+### Casos y ejemplos
+
+Prueba a montar el archivo de menús:
+
+<Puzle archivo="views/gestion_tareas_menus.xml" ejercicio="A2 gestión de tareas" piezas={[
+  { t: 'ir.actions.act_window', hueco: 1 },
+  { t: 'ir.ui.view', porque: 'Eso crea una vista, no una acción. El menú necesita algo que lanzar, y eso es una acción de ventana.' },
+  { t: 'tree,form', hueco: 2 },
+  { t: 'form,tree', porque: 'Al entrar se abriría un formulario vacío en vez de la lista de tareas.' },
+  { t: 'menu_gestion_tareas_root', hueco: 3 },
+  { t: 'action_gestion_tareas_tarea', hueco: 4 },
+  { t: 'view_gestion_tareas_tarea_tree', porque: 'Un menú lanza una acción, no una vista. La acción ya sabe qué vistas usar por su tipo.' },
+]}>
+
+```xml
+<record id="action_gestion_tareas_tarea"
+        model="__1__">
+    <field name="name">Tareas</field>
+    <field name="res_model">gestion.tareas.tarea</field>
+    <field name="view_mode">__2__</field>
+</record>
+
+<menuitem id="menu_gestion_tareas_root" name="Gestión de Tareas"/>
+
+<menuitem id="menu_gestion_tareas_tarea" name="Tareas"
+          parent="__3__"
+          action="__4__"
+          sequence="10"/>
+```
+
+</Puzle>
+
+Después de actualizar el módulo, «Gestión de Tareas» aparece junto a Ventas o Compra. Al entrar se abre la lista:
+
+<OdooPantalla app="Gestión de Tareas" menus={['Tareas']} migas={['Tareas']} botones={['Nuevo']} pie="La lista que define la vista tree, con la primera tarea de prueba.">
+<OdooLista columnas={['Título', 'Responsable', 'Fecha límite']} filas={[['Mi primera tarea', 'Administrator', '30/11/2026']]} />
+</OdooPantalla>
+
+### Errores típicos
+
+- **Esperar ver el módulo con solo las vistas.** Sin acción y menú no hay forma de llegar a ellas desde la interfaz. Se pueden comprobar en Técnico > Interfaz de usuario > Vistas.
+- **Cargar los menús antes que las vistas.** Si `gestion_tareas_menus.xml` va antes en `data`, la acción hace referencia a algo que aún no existe.
+- **Escribir `list` en Odoo 17.** La etiqueta de la lista en esta versión es `<tree>` y el `view_mode` es `tree,form`. `list` llega en Odoo 18.
+- **Poner acción al menú raíz.** No es un error, pero lo habitual es que el raíz solo agrupe y los submenús abran las pantallas.
+
+### Prácticas de clase
+
+- **A2, pasos 4 y 5.** Vistas de lista y formulario, la acción `tree,form` y un menú raíz con el submenú Tareas. Probado creando una tarea con responsable, fecha y descripción.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué diferencia hay entre una vista y una acción de ventana?</summary>
+
+La vista dice cómo se ve el modelo. La acción dice qué modelo abrir y con qué tipos de vista, y es lo que lanza el menú.
+
+</details>
+<details>
+<summary>¿Por qué el orden de `data` importa?</summary>
+
+Porque cada archivo puede usar identificadores definidos en los anteriores. Los menús usan la acción y la acción usa las vistas.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT3, apartado 3: interfaces de entrada de datos, menús y acciones](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo 17: tutorial «Server framework 101», capítulos 5 y 6](https://www.odoo.com/documentation/17.0/developer/tutorials/server_framework_101/05_firstui.html)
+3. [Odoo 17: referencia de vistas](https://www.odoo.com/documentation/17.0/developer/reference/user_interface/view_records.html)
+
+## Estado y botones
+
+### Qué se ve
+
+El último paso: cada tarea pasa por pendiente, en progreso y hecha, con un botón para avanzar y la misma barra de estado que tiene un pedido de venta.
+
+### Conceptos
+
+Un campo <mark>Selection</mark> es una lista de pares: el valor que se guarda en la base de datos y el texto que se muestra. Con `default='pendiente'`, las tareas nuevas empiezan pendientes, y al añadir la columna también recibe ese valor la que ya existía. `required=True` impide que el estado quede vacío, lo que dejaría sin botón visible.
+
+Los botones llaman a <mark>métodos del modelo</mark>. Dentro de un método, `self` es un recordset con los registros sobre los que se ha pulsado, y asignarle un valor (`self.state = 'hecha'`) hace que el ORM ejecute el `UPDATE`.
+
+En la vista se usan cuatro piezas:
+
+| Pieza | Qué hace |
+|---|---|
+| `<header>` | La franja de arriba del formulario, encima de la hoja |
+| `<button type="object" name="…">` | Llama al método del modelo que indica `name` |
+| `invisible="state != 'pendiente'"` | Muestra el botón solo en un estado. En Odoo 17 sustituye al antiguo `attrs` |
+| `widget="statusbar"` | Pinta el campo como la barra de pasos de la derecha |
+
+En la lista, `decoration-info` y `decoration-success` colorean las filas según una condición: azul para las tareas en progreso y verde para las hechas.
+
+### Casos y ejemplos
+
+Los tres métodos del modelo:
+
+```python
+state = fields.Selection(
+    [('pendiente', 'Pendiente'), ('en_progreso', 'En progreso'), ('hecha', 'Hecha')],
+    string='Estado', default='pendiente', required=True,
+)
+
+def action_iniciar(self):
+    self.state = 'en_progreso'
+
+def action_finalizar(self):
+    self.state = 'hecha'
+
+def action_reiniciar(self):
+    self.state = 'pendiente'
+```
+
+Prueba a completar la cabecera del formulario. Solo se muestra el primer botón; los otros dos siguen el mismo patrón:
+
+<Puzle archivo="views/gestion_tareas_views.xml" ejercicio="A2 gestión de tareas" piezas={[
+  { t: 'action_iniciar', hueco: 1 },
+  { t: 'object', hueco: 2 },
+  { t: 'action', porque: 'type="action" espera el identificador de una acción de ventana, no el nombre de un método del modelo.' },
+  { t: 'invisible', hueco: 3 },
+  { t: 'attrs', porque: 'Odoo 17 ya no admite attrs: la vista da error al cargarse. Las condiciones van directamente en invisible, readonly o required.' },
+  { t: 'readonly', porque: 'Los botones no se escriben. El botón seguiría viéndose en todos los estados.' },
+  { t: 'statusbar', hueco: 4 },
+  { t: 'selection', porque: 'Pintaría un desplegable para elegir el estado a mano, sin pasar por los botones.' },
+]}>
+
+```xml
+<header>
+    <button name="__1__" type="__2__" string="Iniciar"
+            class="oe_highlight" __3__="state != 'pendiente'"/>
+    <field name="state" widget="__4__"
+           statusbar_visible="pendiente,en_progreso,hecha"/>
+</header>
+```
+
+</Puzle>
+
+Así queda una tarea en progreso: solo se ve Finalizar, y la barra marca el paso actual.
+
+<OdooPantalla app="Gestión de Tareas" menus={['Tareas']} migas={['Tareas', 'Mi primera tarea']} botones={['Finalizar']} estados={['Pendiente', 'En progreso', 'Hecha']} activo={1} pie="El formulario con la cabecera: un botón por estado y la barra de pasos.">
+<OdooFicha titulo="Mi primera tarea" campos={[['Responsable', 'Administrator'], ['Fecha límite', '30/11/2026'], ['Descripción', 'Probar el ciclo de estados']]} />
+</OdooPantalla>
+
+Y la lista con los colores, con una tarea en cada estado:
+
+<OdooPantalla app="Gestión de Tareas" menus={['Tareas']} migas={['Tareas']} botones={['Nuevo']} pie="La hecha en verde, la que está en progreso en azul y la pendiente sin color.">
+<OdooLista columnas={['Título', 'Responsable', 'Fecha límite', 'Estado']}
+  filas={[['Mi primera tarea', 'Administrator', '30/11/2026', { t: 'Hecha', estado: 'si' }], ['Preparar el inventario', 'Administrator', '05/12/2026', { t: 'En progreso', estado: 'no' }], ['Revisar las copias', 'Administrator', '10/12/2026', 'Pendiente']]} />
+</OdooPantalla>
+
+### Errores típicos
+
+- **Usar `attrs` copiado de un tutorial antiguo.** En Odoo 17 la vista falla al cargarse. La condición va directamente en `invisible`.
+- **Dejar `state` sin `required`.** Una tarea con el estado vacío no cumple ninguna condición de los botones y se queda sin ninguno.
+- **Pensar que el botón no funciona porque la barra no cambia.** En la práctica, tras pulsar Iniciar el botón cambió pero la barra siguió en el paso anterior hasta recargar con F5. El dato sí estaba guardado.
+- **Cambiar solo el XML después de añadir el campo.** El campo nuevo es código Python: hay que reiniciar Odoo además de actualizar el módulo.
+
+### Prácticas de clase
+
+- **A2, paso 6.** Campo `state` con tres valores, los métodos `action_iniciar`, `action_finalizar` y `action_reiniciar`, la cabecera con un botón visible por estado y la barra de pasos, y los colores en la lista. Cuatro incidencias documentadas: el nombre del servicio, el menú oculto sin modo desarrollador, la conexión perdida al reiniciar y la barra que no se repinta.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué es `self` dentro de `action_iniciar`?</summary>
+
+Un recordset con los registros sobre los que se ha pulsado el botón. Al asignarle un valor, el ORM guarda el cambio en la base de datos.
+
+</details>
+<details>
+<summary>¿Qué sustituye a `attrs` en Odoo 17?</summary>
+
+Los atributos `invisible`, `readonly` y `required` con la condición escrita directamente, por ejemplo `invisible="state != 'pendiente'"`.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT5, apartado 4: inserción, modificación y eliminación de datos](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo 17: tutorial «Server framework 101», capítulo 9: acciones](https://www.odoo.com/documentation/17.0/developer/tutorials/server_framework_101/09_actions.html)
+3. [Odoo 17: atributos de las vistas (`invisible`, `readonly`, `required`)](https://www.odoo.com/documentation/17.0/developer/reference/user_interface/view_architectures.html)

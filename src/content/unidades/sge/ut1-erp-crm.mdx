@@ -10,6 +10,7 @@ ruta: { texto: Temario del profesor, url: "https://dbetancorfp.github.io/sistema
 import FlujoVenta from '../../../components/esquemas/FlujoVenta.astro';
 import ModelosNube from '../../../components/esquemas/ModelosNube.astro';
 import ServidorErp from '../../../components/esquemas/ServidorErp.astro';
+import Puzle from '../../../components/Puzle.astro';
 
 ## Qué es un ERP y cuáles hay
 
@@ -102,6 +103,28 @@ La <mark>inteligencia de negocio</mark> (BI, *Business Intelligence*) reúne las
 ### Casos y ejemplos
 
 En TecnoCanarias, la parte operacional del CRM registraría que una academia ha pedido presupuesto para 20 portátiles, asignaría la oportunidad a un comercial y programaría una llamada de seguimiento. La analítica, a final de trimestre, mostraría que los contratos de mantenimiento se renuevan más cuando el cliente ha usado el servicio técnico en los últimos seis meses. Esa conclusión es BI: un dato que ya estaba en el sistema se convierte en una decisión comercial.
+
+Prueba a clasificar estas tareas de TecnoCanarias. Hay piezas repetidas porque una misma herramienta hace varias cosas:
+
+<Puzle archivo="¿ERP, CRM o BI?" ejercicio="caso TecnoCanarias" piezas={[
+  { t: 'CRM', hueco: 1 },
+  { t: 'ERP', hueco: 2 },
+  { t: 'CRM', hueco: 3 },
+  { t: 'ERP', hueco: 4 },
+  { t: 'BI', hueco: 5 },
+  { t: 'BI', hueco: 6 },
+]}>
+
+```text
+Registrar que una academia pide 20 portátiles        __1__
+Descontar del almacén los portátiles vendidos         __2__
+Programar una llamada de seguimiento al cliente       __3__
+Contabilizar la factura de un proveedor               __4__
+Comparar las ventas de este año con las del anterior  __5__
+Cuadro de mando con las ventas de cada tienda         __6__
+```
+
+</Puzle>
 
 ### Errores típicos
 

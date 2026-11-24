@@ -11,6 +11,7 @@ import TiposInstalacion from '../../../components/esquemas/TiposInstalacion.astr
 import OdooPantalla from '../../../components/odoo/OdooPantalla.astro';
 import OdooLista from '../../../components/odoo/OdooLista.astro';
 import OdooFicha from '../../../components/odoo/OdooFicha.astro';
+import Puzle from '../../../components/Puzle.astro';
 
 ## Monopuesto y cliente/servidor
 
@@ -193,6 +194,31 @@ Después se configuraba la empresa (NIF, idioma, euro), dos impuestos de IVA (21
 </OdooPantalla>
 
 La prueba final era una compra con los dos productos: pedido, descarga del manga, albarán solo para la figura (el producto digital no se envía), stock de 50 a 49, factura y cobro. El total correcto es 45 × 1,21 + 8 × 1,04 = 54,45 + 8,32 = 62,77 €.
+
+Prueba a completar el servicio de Odoo del compose. Un mismo número aparece dos veces porque lleva la misma pieza:
+
+<Puzle archivo="docker-compose.yml" ejercicio="A3 PixelManga" piezas={[
+  { t: 'odoo:17', hueco: 1 },
+  { t: 'postgres:15', porque: 'Es la imagen de la base de datos, que ya usa el servicio db.' },
+  { t: 'db', hueco: 2 },
+  { t: 'localhost', porque: 'Dentro del contenedor de Odoo, localhost es el propio contenedor. La base de datos se encuentra por el nombre de su servicio.' },
+  { t: '8069:8069', hueco: 3 },
+  { t: '5432:5432', porque: 'Es el puerto de PostgreSQL. Odoo se abre en el 8069, y la base de datos no conviene publicarla fuera.' },
+]}>
+
+```yaml
+  odoo:
+    image: __1__
+    depends_on: [__2__]
+    ports:
+      - "__3__"
+    environment:
+      HOST: __2__
+      USER: odoo
+      PASSWORD: ${DB_PASSWORD}
+```
+
+</Puzle>
 
 ### Errores típicos
 

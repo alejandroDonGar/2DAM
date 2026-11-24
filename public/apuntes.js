@@ -287,13 +287,16 @@ document.querySelectorAll('figure[data-puzle]').forEach(fig => {
     });
   }
 
+  // Se compara el texto: dos piezas iguales (p. ej. «ERP» y «ERP») valen para cualquiera de sus huecos.
+  const vale = (n, p) => !!p && piezas.some(q => q.hueco === Number(n) && q.t === p.t);
+
   function corregir(solucion) {
     limpiarMarcas();
     for (const h of huecos) {
       const p = piezas[puestas[h.dataset.n]];
-      if (p) h.classList.add(String(p.hueco) === h.dataset.n ? 'bien' : 'mal');
+      if (p) h.classList.add(vale(h.dataset.n, p) ? 'bien' : 'mal');
     }
-    const aciertos = numeros.filter(n => piezas[puestas[n]]?.hueco === Number(n)).length;
+    const aciertos = numeros.filter(n => vale(n, piezas[puestas[n]])).length;
     const vacios = numeros.filter(n => puestas[n] === undefined).length;
     // Explicaciones: las falsas colocadas o, al ver la solución, todas las falsas
     const explicar = solucion ? piezas.filter(p => p.porque)

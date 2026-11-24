@@ -1,0 +1,329 @@
+---
+titulo: Operaciones de gestión
+etiqueta: UT3
+orden: 3
+entrada: El ciclo económico completo en Odoo 17, con facturas a clientes y a proveedores, el banco y la caja con sus saldos iniciales, cobros y pagos, correcciones de stock e informes de facturación.
+cuando: noviembre
+ejercicios: A3 facturas y bancos
+ruta: { texto: Temario del profesor, url: "https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/" }
+---
+import OdooPantalla from '../../../components/odoo/OdooPantalla.astro';
+import OdooLista from '../../../components/odoo/OdooLista.astro';
+import OdooFicha from '../../../components/odoo/OdooFicha.astro';
+import Puzle from '../../../components/Puzle.astro';
+
+## Del pedido a la factura
+
+### Qué se ve
+
+En la UT2 se dieron de alta clientes, productos y almacén, y se hizo una compra completa. Esta unidad cierra el ciclo con el dinero. El primer tema sigue un presupuesto ya enviado hasta que se convierte en una factura publicada, con un producto almacenable y un servicio en las mismas líneas.
+
+### Conceptos
+
+Una venta en Odoo pasa por varios documentos, y cada uno lo crea el anterior:
+
+| Documento | Cuándo aparece | Qué cambia |
+|---|---|---|
+| Presupuesto | Al crearlo en Ventas | Nada, es una oferta |
+| Pedido de venta | Al pulsar Confirmar | Odoo crea el albarán de salida |
+| Albarán (entrega) | Al validarlo | Salen las unidades del almacén. Los servicios no aparecen |
+| Factura en borrador | Al pulsar Crear factura | Hereda las líneas, la condición de pago y las notas |
+| Factura publicada | Al confirmarla | Recibe número (INV/2026/00001) y genera el asiento contable |
+
+La <mark>política de facturación</mark> de cada producto decide qué cantidad se factura. Con «Cantidades entregadas», una factura creada antes de validar la entrega sale solo con el servicio. Con «Cantidades pedidas» sale completa de todas formas. Los productos de la práctica estaban en la segunda, pero se siguió el orden del enunciado: primero entregar y después facturar.
+
+El asistente de **Crear factura** ofrece tres opciones: <mark>factura normal</mark>, que factura todo lo pendiente, y dos de anticipo, en porcentaje o por un importe fijo.
+
+Al enviar la factura con **Enviar e imprimir** venía marcada la casilla de <mark>Facturae</mark>, el formato español de factura electrónica. Necesita el certificado digital de la empresa, y mientras está marcada no se genera ni el PDF ni el correo.
+
+### Casos y ejemplos
+
+El pedido de partida tenía 8 monitores y una configuración de red, con pago inmediato. Ya confirmado y entregado, la columna Entregado marca los 8 monitores:
+
+<OdooPantalla app="Ventas" menus={['Pedidos', 'Para facturar', 'Productos']} migas={['Pedidos', 'S00002']} botones={['Crear factura', 'Enviar por correo']} estados={['Presupuesto', 'Presupuesto enviado', 'Pedido de venta']} activo={2} pie="El pedido confirmado y entregado. El servicio no tiene cantidad entregada porque no pasa por el almacén.">
+<OdooFicha titulo="S00002" campos={[['Cliente', 'Hotel Playa Dorada S.A.'], ['Condiciones de pago', 'Pago inmediato']]} pestanas={['Líneas del pedido', 'Otra información']}>
+<OdooLista columnas={['Producto', 'Cantidad', 'Entregado', 'Facturado', 'Subtotal']} derecha={[1, 2, 3, 4]}
+  filas={[['Monitor 24"', '8', '8', '0', '1.112,00 €'], ['Configuración de red y WiFi', '1', '0', '0', '60,00 €']]} />
+</OdooFicha>
+</OdooPantalla>
+
+Prueba a ordenar los estados por los que pasa la venta:
+
+<Puzle archivo="Flujo de una venta" ejercicio="A3 facturas y bancos" piezas={[
+  { t: 'Pedido de venta', hueco: 1 },
+  { t: 'Albarán hecho', hueco: 2 },
+  { t: 'Factura en borrador', hueco: 3 },
+  { t: 'Factura publicada', hueco: 4 },
+  { t: 'Pedido de compra', porque: 'Eso pertenece a Compra. En Ventas, un presupuesto confirmado se convierte en pedido de venta.' },
+  { t: 'Asiento de apertura', porque: 'Se crea al poner los saldos iniciales de las cuentas, no al vender.' },
+]}>
+
+```text
+Presupuesto enviado
+  └─ Confirmar ─────────────▶ __1__
+       └─ Entrega, Validar ──▶ __2__
+            └─ Crear factura ─▶ __3__
+                 └─ Confirmar ─▶ __4__
+                      └─ Registrar pago ─▶ Pagada
+```
+
+</Puzle>
+
+### Errores típicos
+
+- **Facturar antes de entregar con «Cantidades entregadas».** La factura sale solo con los servicios, y los productos quedan pendientes de facturar.
+- **Dejar marcada la casilla de Facturae.** Sin certificado digital no se genera nada. Desmárcala en cada envío.
+- **Elegir un anticipo cuando se quería todo.** Las opciones de porcentaje o importe fijo dejan el resto del pedido pendiente.
+- **Buscar el número de factura en el borrador.** El número solo se asigna al confirmar.
+
+### Prácticas de clase
+
+- **A3, apartado 5.1.** Presupuesto S00002 con 8 monitores y un servicio: confirmación, entrega WH/OUT/00002, factura normal INV/2026/00001 de 1.418,12 €, PDF, envío por correo a Mailpit y vista previa del portal del cliente.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué documento crea Odoo al confirmar un presupuesto con productos almacenables?</summary>
+
+El albarán de salida. La factura se crea después, a mano, con Crear factura.
+
+</details>
+<details>
+<summary>¿Cuándo recibe número una factura?</summary>
+
+Al confirmarla. En borrador no tiene número ni genera asiento contable.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT3, apartado 5: compras y ventas](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo 17: política de facturación](https://www.odoo.com/documentation/17.0/es/applications/sales/sales/invoicing/invoicing_policy.html)
+3. [Odoo 17: facturas por adelantado](https://www.odoo.com/documentation/17.0/es/applications/sales/sales/invoicing/down_payment.html)
+
+## Banco, caja y saldos iniciales
+
+### Qué se ve
+
+Antes de cobrar hace falta saber dónde entra el dinero. Este tema configura la cuenta bancaria y la caja, les da un saldo de partida y deja apuntados los saldos mínimos.
+
+### Conceptos
+
+Al instalar Facturación con la localización española, Odoo ya crea dos <mark>diarios de tesorería</mark>: *Banco*, ligado a la cuenta contable 572001, y *Efectivo*, ligado a la 570001. Las dos son del grupo 57 del Plan General Contable. Por eso **Registrar pago** funciona desde el primer día sin dar error, aunque el campo *Cuenta bancaria destinataria* salga vacío. Lo que falta es asociar al diario Banco una cuenta real con su <mark>IBAN</mark>, en la pestaña *Asientos contables* del diario.
+
+Los saldos con los que empieza la empresa se ponen en el <mark>plan contable</mark>, en las columnas *Débito de apertura* y *Crédito de apertura*. Con ellos Odoo genera un asiento de apertura en borrador, fechado el día antes de empezar el ejercicio, que hay que publicar. El asiento tiene que cuadrar: lo que entra en caja y banco sale del capital aportado por los socios. Si no se pone la contrapartida, Odoo cuadra la diferencia contra la 129000, Resultado del ejercicio.
+
+En la versión Community, el plan contable no tiene entrada en el menú. Se llega desde la banda de consejos del *Tablero de contabilidad*.
+
+Odoo no tiene campos para el <mark>saldo mínimo autorizado</mark> (cuánto puede bajar la cuenta, por ejemplo un descubierto pactado) ni para el <mark>mínimo deseado</mark> (por debajo de cuánto conviene no estar). Otros ERP, como Dolibarr, sí los tienen. En la práctica se dejaron en una nota interna de cada diario, y el control se hace a mano comparando con el saldo del tablero.
+
+### Casos y ejemplos
+
+Prueba a cuadrar el asiento de apertura con 500 € en caja y 10.000 € en el banco:
+
+<Puzle archivo="Asiento de apertura" ejercicio="A3 facturas y bancos" piezas={[
+  { t: '500,00', hueco: 1 },
+  { t: '10.000,00', hueco: 2 },
+  { t: '10.500,00', hueco: 3 },
+  { t: '9.500,00', porque: 'El asiento no cuadraría: el haber tiene que sumar lo mismo que el debe, 500 + 10.000.' },
+  { t: '−500,00', porque: 'Los importes de un asiento no llevan signo. Que un saldo sea deudor o acreedor lo dice la columna en la que va.' },
+]}>
+
+```text
+Cuenta                      Debe          Haber
+570001 Efectivo             __1__
+572001 Banco                __2__
+100000 Capital social                     __3__
+```
+
+</Puzle>
+
+Ya publicado, el tablero muestra una tarjeta por diario con su saldo:
+
+<OdooPantalla app="Facturación" menus={['Clientes', 'Proveedores', 'Contabilidad', 'Informes']} migas={['Tablero de contabilidad']} pie="Las tarjetas de Banco y Efectivo después de publicar el asiento de apertura.">
+<OdooLista columnas={['Diario', 'Cuenta', 'Operaciones varias', 'Pagos', 'Saldo']} derecha={[2, 3, 4]}
+  filas={[['Banco (CaixaBank)', '572001', '10.000,00 €', '0,00 €', '10.000,00 €'], ['Efectivo', '570001', '500,00 €', '0,00 €', '500,00 €']]} />
+</OdooPantalla>
+
+### Errores típicos
+
+- **Pensar que faltan las cuentas porque la cuenta destinataria sale vacía.** Los diarios ya existen; falta el IBAN.
+- **Poner los saldos y olvidar publicar el asiento.** Se queda en borrador y las tarjetas del tablero siguen a cero.
+- **No poner la contrapartida.** Odoo cuadra contra Resultado del ejercicio, y el capital social queda sin registrar.
+- **Buscar campos de saldo mínimo en el diario.** No existen en Odoo. Hay que apuntarlos aparte y vigilarlos a mano.
+
+### Prácticas de clase
+
+- **A3, apartado 5.2.** IBAN en el diario Banco, asiento de apertura con 500 € en caja, 10.000 € en el banco y 10.500 € de capital social, y una nota en cada diario con sus saldos mínimos autorizado y deseado.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué dos diarios de tesorería trae Odoo con la localización española?</summary>
+
+Banco, en la cuenta 572001, y Efectivo, en la 570001.
+
+</details>
+<details>
+<summary>¿Qué pasa si el asiento de apertura no cuadra?</summary>
+
+Odoo lleva la diferencia a la cuenta 129000, Resultado del ejercicio.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT3, apartado 5: contabilidad y asientos predefinidos](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo 17: cuentas bancarias](https://www.odoo.com/documentation/17.0/es/applications/finance/accounting/bank.html)
+3. [Odoo 17: plan contable y saldos de apertura](https://www.odoo.com/documentation/17.0/es/applications/finance/accounting/get_started/chart_of_accounts.html)
+
+## Cobros, pagos y compras
+
+### Qué se ve
+
+Con el banco y la caja listos, el resto de la práctica mueve dinero en las dos direcciones: el cobro de la primera factura en caja, una compra por reposición pagada por banco, una factura hecha a mano y un ciclo completo de compra y venta con productos y servicios.
+
+### Conceptos
+
+**Registrar pago** propone el diario Banco y, con el IBAN ya configurado, muestra la cuenta destinataria. Si se cambia a Efectivo, ese campo desaparece porque la caja no lo necesita. Al crear el pago, la factura muestra la banda **PAGADA**.
+
+Las tarjetas del tablero separan dos líneas: *Operaciones varias*, donde está el saldo inicial, y *Pagos*, con los cobros en positivo y los pagos en negativo. El saldo disponible es la suma. Odoo deja los cobros y pagos en una <mark>cuenta transitoria</mark> hasta que se concilian con el extracto del banco; por eso la 570001, mirada sola, sigue mostrando solo el saldo inicial.
+
+En compras, el botón **Reponer** de un producto crea una solicitud de presupuesto al primer proveedor de su pestaña Compra. La cantidad prevista que muestra ya cuenta lo que está pedido y pendiente de recibir. Igual que en ventas, se factura lo recibido. La factura del proveedor necesita además su referencia (el número que puso el proveedor) y la fecha, que es obligatoria para confirmar.
+
+Los <mark>servicios</mark> no pasan por el almacén. En una compra, la recepción solo trae los productos, y la cantidad recibida del servicio se pone a mano en el pedido. Si no se hace, la factura sale sin esa línea.
+
+Una <mark>factura creada desde cero</mark> en Facturación no mueve stock aunque lleve productos almacenables, porque no hay pedido ni albarán detrás. Para vender algo del almacén hay que pasar por Ventas.
+
+Una <mark>merma</mark> (dos ratones rotos al desembalar) se corrige con un ajuste de inventario: se escribe la cantidad contada y Odoo mueve la diferencia a la ubicación virtual de ajustes.
+
+### Casos y ejemplos
+
+Prueba a calcular el saldo del banco después del pago al proveedor y el cobro de la factura hecha a mano:
+
+<Puzle archivo="Tarjeta del diario Banco" ejercicio="A3 facturas y bancos" piezas={[
+  { t: '10.000,00 €', hueco: 1 },
+  { t: '−1.149,50 €', hueco: 2 },
+  { t: '+217,80 €', hueco: 3 },
+  { t: '9.068,30 €', hueco: 4 },
+  { t: '+1.149,50 €', porque: 'Es un pago al proveedor: el dinero sale del banco y va en negativo.' },
+  { t: '10.931,70 €', porque: 'Sale de sumar el pago como si fuera un cobro.' },
+]}>
+
+```text
+Operaciones varias (saldo inicial)       __1__
+Pago a Suministros Macaronesia           __2__
+Cobro a Gestoría Benítez                 __3__
+──────────────────────────────────────────────
+Saldo disponible                         __4__
+```
+
+</Puzle>
+
+Al final de la práctica, las tres facturas de cliente están cobradas:
+
+<OdooPantalla app="Facturación" menus={['Clientes', 'Proveedores', 'Contabilidad', 'Informes']} migas={['Facturas de clientes']} botones={['Nuevo']} pie="Dos cobros por banco y uno en caja, todos con la factura publicada.">
+<OdooLista columnas={['Número', 'Cliente', 'Total', 'Estado', 'Pago']} derecha={[2]}
+  filas={[
+    ['INV/2026/00001', 'Hotel Playa Dorada S.A.', '1.418,12 €', 'Publicado', { t: 'Pagado', estado: 'si' }],
+    ['INV/2026/00002', 'Gestoría Benítez y Asociados S.L.', '217,80 €', 'Publicado', { t: 'Pagado', estado: 'si' }],
+    ['INV/2026/00003', 'Colegio Las Palmeras S.L.', '1.349,15 €', 'Publicado', { t: 'Pagado', estado: 'si' }],
+  ]} />
+</OdooPantalla>
+
+### Errores típicos
+
+- **Cobrar en caja con el diario Banco.** Es el que se propone por defecto. El dinero acaba en la tarjeta equivocada.
+- **No marcar como recibido un servicio comprado.** La recepción no lo trae y la factura del proveedor sale sin esa línea.
+- **Crear la factura de proveedor antes de recibir.** Sale sin líneas, igual que en ventas sin entregar.
+- **Añadir a un pedido de compra un servicio que no es comprable.** No aparece en el buscador, y escribir su nombre crea un producto nuevo por error. Hay que marcar «Puede comprarse» en la ficha.
+- **Facturar productos almacenables desde cero.** La factura sale, pero el stock no baja.
+
+### Prácticas de clase
+
+- **A3, apartados 5.3 a 5.6.** Cobro en caja de INV/2026/00001; reposición de 100 ratones (P00005), recepción, factura de proveedor con su referencia y pago por banco; merma de 2 ratones; factura INV/2026/00002 con dos servicios y condición de 15 días; y un ciclo completo con una compra de productos y un servicio subcontratado y una venta con productos y servicios. Saldos finales: 1.918,12 € en caja y 9.552,30 € en el banco.
+
+### Repaso rápido
+
+<details>
+<summary>¿Por qué la cuenta 570001 sigue mostrando solo el saldo inicial después de cobrar?</summary>
+
+Porque los cobros quedan en una cuenta transitoria hasta conciliarlos con el extracto. El saldo real es el de la tarjeta del tablero.
+
+</details>
+<details>
+<summary>¿Cómo se recibe un servicio en una compra?</summary>
+
+A mano, escribiendo la cantidad recibida en la línea del pedido. La recepción del almacén solo trae los productos.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT3, apartado 5: almacén, stock y trazabilidad](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo 17: registrar pagos](https://www.odoo.com/documentation/17.0/es/applications/finance/accounting/payments.html)
+3. [Odoo 17: control de facturas de proveedor](https://www.odoo.com/documentation/17.0/es/applications/inventory_and_mrp/purchase/manage_deals/control_bills.html)
+
+## Informes y exportación
+
+### Qué se ve
+
+El cierre de la práctica: comprobar que todo cuadra y sacar de Odoo lo facturado a cada cliente y a cada proveedor, en pantalla y en una hoja de cálculo.
+
+### Conceptos
+
+**Facturación > Informes > Análisis de facturas** se abre como gráfico, pero la vista de <mark>tabla dinámica</mark> es más útil para leer cifras. Se pliegan las columnas para dejar solo el total y se agrupan las filas por empresa. Los importes son base imponible, sin IVA, y en las compras salen en negativo porque son gastos. El botón **Descargar xlsx** guarda la tabla tal como se ve.
+
+Cualquier lista de Odoo se puede exportar desde **Acciones > Exportar**: se seleccionan las filas, se elige el formato y los campos. En facturas, el mismo menú tiene *Exportar ZIP*, que descarga los PDF de todas las seleccionadas. Es la misma herramienta que en la UT3-A1 sirvió para exportar los presupuestos a CSV.
+
+Antes de dar la práctica por buena se comprueba cada resultado donde corresponde: las facturas en sus listas, los saldos en el tablero, el stock en el inventario físico y los movimientos en Traslados.
+
+### Casos y ejemplos
+
+Lo facturado a cada cliente, agrupado por empresa:
+
+<OdooPantalla app="Facturación" menus={['Clientes', 'Proveedores', 'Contabilidad', 'Informes']} migas={['Análisis de facturas']} botones={['Descargar xlsx']} pie="Tabla dinámica con los filtros Facturado y Clientes, agrupada por empresa.">
+<OdooLista columnas={['Empresa', 'Base imponible']} derecha={[1]}
+  filas={[['Colegio Las Palmeras S.L.', '1.115,00 €'], ['Gestoría Benítez y Asociados S.L.', '180,00 €'], ['Hotel Playa Dorada S.A.', '1.172,00 €'], ['Total', '2.467,00 €']]} />
+</OdooPantalla>
+
+El stock final se puede comprobar a mano siguiendo cada movimiento de la práctica:
+
+| Producto | Cuenta | Final |
+|---|---|---|
+| Monitores | 11 − 8 + 5 − 3 | 5 |
+| Teclados | 17 − 5 | 12 |
+| Ratones | 40 + 100 − 2 + 10 − 10 | 138 |
+| Cables HDMI | 30 + 20 − 10 | 40 |
+
+### Errores típicos
+
+- **Leer el informe con IVA.** El análisis de facturas muestra la base imponible; el total con IVA está en la lista de facturas.
+- **Sorprenderse por los negativos en compras.** Odoo muestra los gastos con signo menos.
+- **Mezclar datos de otras prácticas.** En la base de datos hay facturas y recepciones de la UT2 que salen en los mismos listados. Hay que identificarlas en lugar de borrarlas.
+- **Exportar «compatible con importación» para un informe.** Esa opción oculta los campos de solo lectura.
+
+### Prácticas de clase
+
+- **A3, apartado 5.7.** Tabla de comprobaciones finales (facturas, saldos, stock y traslados), análisis de facturas de clientes y de proveedores agrupado por empresa, y las exportaciones `Analisis_facturas_proveedores.xlsx` y `Facturas_clientes.xlsx`. Ocho incidencias documentadas, entre ellas la de Facturae y el servicio no comprable, que obligó a restaurar la copia de la base de datos y repetir la práctica.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué vista del análisis de facturas sirve para ver lo facturado a cada cliente?</summary>
+
+La tabla dinámica, con las filas agrupadas por empresa.
+
+</details>
+<details>
+<summary>¿Dónde se comprueba que el stock cuadra?</summary>
+
+En Inventario > Operaciones > Ajustes > Inventario físico, y cada movimiento en Traslados.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT3, apartados 4, 6 y 9: informes, gráficos y extracción de datos](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo 17: vistas de informe y tabla dinámica](https://www.odoo.com/documentation/17.0/es/applications/essentials/reporting.html)
+3. [Odoo 17: exportar e importar datos](https://www.odoo.com/documentation/17.0/es/applications/essentials/export_import_data.html)
