@@ -11,6 +11,7 @@ crud: 2
 import Fragmento from '../../../components/Fragmento.astro';
 import Pasos from '../../../components/Pasos.astro';
 import Paso from '../../../components/Paso.astro';
+import Puzle from '../../../components/Puzle.astro';
 
 ## De ficheros a SQLite
 
@@ -380,6 +381,34 @@ public static double obtenerPrecioMedio() {
 
 </Fragmento>
 
+Prueba a completar el método de la media con los cinco pasos de JDBC:
+
+<Puzle archivo="Consultas.java" ejercicio="codelearn-jdbc-entrega2" ruta="codelearn-jdbc-entrega2/src/main/java/es/codelearn/Consultas.java" piezas={[
+  { t: 'BaseDatos.conectar()', hueco: 1 },
+  { t: 'new Connection(url)', porque: 'Connection es una interfaz y no se puede instanciar. La conexión se pide a DriverManager, que es lo que hace BaseDatos.conectar().' },
+  { t: 'executeQuery', hueco: 2 },
+  { t: 'executeUpdate', porque: 'Es para INSERT, UPDATE y DELETE y devuelve un int. Un SELECT necesita un ResultSet.' },
+  { t: 'resultado.next()', hueco: 3 },
+  { t: 'resultado != null', porque: 'El ResultSet nunca es null, así que el bucle no acabaría, y el cursor seguiría antes de la primera fila.' },
+  { t: '1', hueco: 4 },
+  { t: '0', porque: 'En JDBC las columnas empiezan en 1. getDouble(0) lanza SQLException.' },
+  { t: 'wasNull', hueco: 5 },
+  { t: 'next', porque: 'Avanzaría a una segunda fila que no existe. Para saber si el valor era NULL se pregunta con wasNull() justo después de leerlo.' },
+]}>
+
+```java
+try (Connection connection = __1__;
+    PreparedStatement sentencia = connection.prepareStatement("SELECT AVG(precio) FROM productos")) {
+        ResultSet resultado = sentencia.__2__();
+        while (__3__) {
+            Double precioMedio = resultado.getDouble(__4__);
+            return resultado.__5__() ? 0.0 : precioMedio;
+        }
+}
+```
+
+</Puzle>
+
 ### Errores típicos
 
 - **Leer columnas antes de `next()`.** El cursor empieza antes de la primera fila, así que `rs.getString(1)` sin un `next()` previo lanza `SQLException`.
@@ -504,6 +533,33 @@ String sql = "SELECT * FROM productos WHERE nombre = '" + nombre + "'";
 PreparedStatement ps = con.prepareStatement("SELECT * FROM productos WHERE nombre = ?");
 ps.setString(1, nombre);   // busca un producto que se llame literalmente así
 ```
+
+Fíjate en el orden de los `?` antes de colocar los números:
+
+<Puzle archivo="ProductoDao.java" ejercicio="gestion-java-jdbc-dao" ruta="gestion-java-jdbc-dao/src/main/java/es/ejemplo/gestion/dao/ProductoDao.java" piezas={[
+  { t: '1', hueco: 1 },
+  { t: '2', hueco: 2 },
+  { t: '3', hueco: 3 },
+  { t: '0', porque: 'Los parámetros empiezan en 1, igual que las columnas. setString(0, …) lanza SQLException.' },
+  { t: 'executeUpdate()', hueco: 4 },
+  { t: 'executeQuery()', porque: 'Un UPDATE no devuelve filas. executeUpdate() devuelve cuántas ha cambiado, y eso es lo que se compara con 0.' },
+  { t: 'e', hueco: 5 },
+  { t: 'e.getCause()', porque: 'La SQLException casi nunca tiene causa, así que el error llegaría sin el motivo real. Se pasa la excepción entera.' },
+]}>
+
+```java
+try (Connection connection = this.obtenerConexion();
+    PreparedStatement sentencia = connection.prepareStatement("UPDATE productos SET nombre=?, precio=? WHERE id=?")) {
+    sentencia.setString(__1__, producto.getNombre());
+    sentencia.setDouble(__2__, producto.getPrecio());
+    sentencia.setInt(__3__, producto.getId());
+    return sentencia.__4__ > 0;
+} catch (Exception e) {
+    throw new AplicationException(e.getMessage(), __5__);
+}
+```
+
+</Puzle>
 
 ### Errores típicos
 
@@ -921,6 +977,27 @@ try (Connection c = this.abrir();
 </Paso>
 </Pasos>
 
+La consulta 8 del taller pedía incluir a los clientes sin vehículos. ¿Qué va en cada hueco?
+
+<Puzle archivo="consultas.sql" ejercicio="taller mecánico" ruta="taller-mecanico-alejandroDonateGarcia/consultas.sql" piezas={[
+  { t: 'COUNT(v.matricula)', hueco: 1 },
+  { t: 'COUNT(*)', porque: 'Cuenta también la fila con NULL que añade el LEFT JOIN: un cliente sin vehículos saldría con 1.' },
+  { t: 'LEFT JOIN', hueco: 2 },
+  { t: 'INNER JOIN', porque: 'Solo deja los clientes que tienen algún vehículo, y el enunciado pide también los que tienen 0.' },
+  { t: 'GROUP BY', hueco: 3 },
+  { t: 'HAVING', porque: 'Filtra grupos que ya existen; no los forma. Sin GROUP BY, COUNT junta todas las filas en una.' },
+]}>
+
+```sql
+SELECT c.id_cliente, c.nombre, __1__ AS num_vehiculos
+FROM clientes c
+__2__ vehiculos v ON v.id_cliente = c.id_cliente
+__3__ c.id_cliente, c.nombre
+ORDER BY c.id_cliente;
+```
+
+</Puzle>
+
 ### Errores típicos
 
 - **Creer que la clave foránea ya protege.** En SQLite no hace nada hasta ejecutar `PRAGMA foreign_keys = ON`, y hay que hacerlo en cada conexión. Lo más seguro es activarlo en el único método que abre conexiones.
@@ -1052,6 +1129,32 @@ try (Connection con = abrir(url)) {
     }
 }
 ```
+
+Para practicar la transacción, el ejemplo de cerrar una reparación y apuntar su pieza. No viene de ningún ejercicio:
+
+<Puzle archivo="ReparacionService.java" ejercicio="ejemplo propio" piezas={[
+  { t: 'setAutoCommit(false)', hueco: 1 },
+  { t: 'setAutoCommit(true)', porque: 'Es el modo por defecto: cada sentencia queda confirmada al terminar y el rollback no tendría nada que deshacer.' },
+  { t: 'commit()', hueco: 2 },
+  { t: 'rollback()', hueco: 3 },
+  { t: 'close()', porque: 'Cerrar no deshace nada de forma explícita: qué pasa con lo pendiente depende del driver.' },
+]}>
+
+```java
+try (Connection con = BaseDatos.conectar()) {
+    con.__1__;
+    try {
+        cerrarReparacion(con, idReparacion);
+        apuntarPieza(con, idReparacion, idPieza);
+        con.__2__;
+    } catch (SQLException e) {
+        con.__3__;
+        throw e;
+    }
+}
+```
+
+</Puzle>
 
 ### Errores típicos
 

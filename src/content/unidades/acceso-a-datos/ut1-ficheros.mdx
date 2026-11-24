@@ -11,6 +11,7 @@ crud: 1
 import Fragmento from '../../../components/Fragmento.astro';
 import Pasos from '../../../components/Pasos.astro';
 import Paso from '../../../components/Paso.astro';
+import Puzle from '../../../components/Puzle.astro';
 
 ## Path, Files y texto
 
@@ -268,6 +269,31 @@ public boolean update(Producto producto) throws IOException {
 
 </Paso>
 </Pasos>
+
+Antes de seguir, prueba a montar el bucle de lectura. Hay piezas que compilan pero rompen con el fichero de ejemplo:
+
+<Puzle archivo="CsvCrudDemo.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/CsvCrudDemo.java" piezas={[
+  { t: 'inputFormat.parse(reader)', hueco: 1 },
+  { t: 'reader.readLine().split(",")', porque: 'Parte "Monitor, 27 pulgadas" en dos trozos y además no devuelve un CSVParser, así que el for no compila.' },
+  { t: 'row.get("id")', hueco: 2 },
+  { t: 'row.get(0)', porque: 'Funciona hasta que alguien cambie el orden de las columnas. Leer por nombre es justo lo que permite setHeader().' },
+  { t: 'Double.parseDouble', hueco: 3 },
+  { t: 'Integer.parseInt', porque: 'El precio lleva decimales: Integer.parseInt("49.99") lanza NumberFormatException.' },
+]}>
+
+```java
+try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8);
+     CSVParser parser = __1__) {
+    for (CSVRecord row : parser) {
+        result.add(new Producto(
+                Long.parseLong(__2__),
+                row.get("nombre"),
+                __3__(row.get("precio"))));
+    }
+}
+```
+
+</Puzle>
 
 ### Errores típicos
 
@@ -659,6 +685,32 @@ public class DocumentoPersonas {
 </Paso>
 </Pasos>
 
+Y ahora la lectura del JSON, con las piezas que más se confunden:
+
+<Puzle archivo="JsonRepository.java" ejercicio="catalogo-productos-repositorios" ruta="catalogo-productos-repositorios/src/main/java/com/ejemplo/catalogo/repository/file/JsonRepository.java" piezas={[
+  { t: 'readValue', hueco: 1 },
+  { t: 'writeValue', porque: 'Escribe la lista en el fichero; aquí se quiere leerla.' },
+  { t: 'new TypeReference<List<Producto>>() {}', hueco: 2 },
+  { t: 'List.class', porque: 'Jackson no sabe qué hay dentro de la lista y devuelve LinkedHashMap. El error salta más tarde, al usar los productos.' },
+  { t: 'leidos == null', hueco: 3 },
+  { t: 'leidos.isEmpty()', porque: 'Una lista vacía es un catálogo válido, sin productos. Lo que se quiere detectar es un JSON que dice null.' },
+]}>
+
+```java
+try {
+    List<Producto> leidos = mapper.__1__(getPath().toFile(),
+            __2__);
+    if (__3__) {
+        throw new IllegalArgumentException("El JSON debe contener una lista, no null");
+    }
+    return leidos;
+} catch (IOException e) {
+    throw new UncheckedIOException("No se pudo cargar " + getPath(), e);
+}
+```
+
+</Puzle>
+
 ### Errores típicos
 
 - **Leer una lista con `List.class`.** Jackson devuelve una lista de `LinkedHashMap` en vez de productos, y el error salta más tarde al usarlos. Usa `TypeReference`.
@@ -795,6 +847,28 @@ public class PersonaJsonRepository
 
 </Paso>
 </Pasos>
+
+Con la versión de `Function`, ¿cómo quedaría el repositorio de vehículos?
+
+<Puzle archivo="VehiculoRepository.java" ejercicio="ruta del profesor" piezas={[
+  { t: 'Vehiculo', hueco: 1 },
+  { t: 'String', hueco: 2 },
+  { t: 'long', porque: 'Los genéricos no aceptan tipos primitivos. Y aunque fuera Long, la matrícula es texto.' },
+  { t: 'Vehiculo::matricula', hueco: 3 },
+  { t: 'Vehiculo::id', porque: 'Vehiculo no tiene un componente id: su identificador es la matrícula.' },
+  { t: 'Producto::id', porque: 'Es el extractor del repositorio de productos. El compilador lo rechaza porque T es Vehiculo.' },
+]}>
+
+```java
+public class VehiculoRepository
+        extends AbstractFileRepository<__1__, __2__> {
+    public VehiculoRepository(Path path) {
+        super(path, __3__);
+    }
+}
+```
+
+</Puzle>
 
 ### Errores típicos
 

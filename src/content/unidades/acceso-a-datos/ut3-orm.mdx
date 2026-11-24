@@ -11,6 +11,7 @@ crud: 3
 import Fragmento from '../../../components/Fragmento.astro';
 import Pasos from '../../../components/Pasos.astro';
 import Paso from '../../../components/Paso.astro';
+import Puzle from '../../../components/Puzle.astro';
 
 ## Del mapeo manual al ORM
 
@@ -544,6 +545,37 @@ public int eliminar(ID id) {
 </Paso>
 </Pasos>
 
+Monta el método `escribir` del taller. Ojo con las dos piezas que también parecen confirmar:
+
+<Puzle archivo="AbstractDao.java" ejercicio="taller mecánico (ORM)" ruta="taller-mecanico-AlejandroDonGar-orm/src/main/java/es/ejemplo/taller/dao/AbstractDao.java" piezas={[
+  { t: 'getTransaction()', hueco: 1 },
+  { t: 'begin()', hueco: 2 },
+  { t: 'commit()', hueco: 3 },
+  { t: 'flush()', porque: 'Envía el SQL a la base pero no confirma la transacción. Al cerrar el EntityManager sin commit, los cambios se pierden.' },
+  { t: 'PersistenceException', hueco: 4 },
+  { t: 'Exception', porque: 'Esconde también los errores de programación, como un NullPointerException, y los convierte en un 0.' },
+  { t: 'tx.isActive()', hueco: 5 },
+  { t: 'tx != null', porque: 'tx nunca es null. Si la transacción ya terminó, rollback lanza otra excepción que tapa la original.' },
+]}>
+
+```java
+try (EntityManager em = managerFactory.createEntityManager()) {
+    EntityTransaction tx = em.__1__;
+    try {
+        tx.__2__;
+        int resultado = accion.apply(em);
+        tx.__3__;
+        return resultado;
+    } catch (__4__ e) {
+        if (__5__) tx.rollback();
+        registrar(operacion, e);
+        return 0;
+    }
+}
+```
+
+</Puzle>
+
 ### Errores típicos
 
 - **Escribir sin transacción.** `persist` o `remove` sin `begin`/`commit` no llegan a la base, o lanzan `TransactionRequiredException`.
@@ -697,6 +729,29 @@ public List<EquipoIngresos> tresEquiposMasIngresos() {
 </Paso>
 </Pasos>
 
+La consulta de géneros con más préstamos de bibliogest, con huecos dentro y fuera del JPQL:
+
+<Puzle archivo="LibroDao.java" ejercicio="bibliogest" ruta="bibliogest-alumnado/bibliogest-alumnado/src/main/java/es/ejemplo/biblioteca/dao/LibroDao.java" piezas={[
+  { t: 'PrestamoEntity', hueco: 1 },
+  { t: 'prestamos', porque: 'Es el nombre de la tabla. JPQL trabaja con la entidad y sus atributos.' },
+  { t: ':minimo', hueco: 2 },
+  { t: "'minimo'", porque: 'Entre comillas es un texto fijo, no un parámetro. Compararía count(p) con la palabra «minimo».' },
+  { t: '"minimo"', hueco: 3 },
+  { t: '":minimo"', porque: 'Los dos puntos solo van dentro de la consulta. En setParameter el nombre va sin ellos.' },
+  { t: 'getResultList', hueco: 4 },
+  { t: 'getSingleResult', porque: 'Sale una fila por género. Con más de una lanza NonUniqueResultException, y con ninguna NoResultException.' },
+]}>
+
+```java
+em.createQuery("select l.genero, count(p) from __1__ p join p.libro l "
+        + "group by l.genero having count(p) > __2__ "
+        + "order by count(p) desc", Object[].class)
+        .setParameter(__3__, minimo)
+        .__4__();
+```
+
+</Puzle>
+
 ### Errores típicos
 
 - **Escribir nombres de tabla o columna.** `select * from clientes where id_cliente = 1` no es JPQL. Se usa la entidad y sus atributos: `select c from ClienteEntity c where c.idCliente = 1`.
@@ -849,6 +904,32 @@ public final class AlquilerMapper {
 
 </Paso>
 </Pasos>
+
+En `ReparacionEntity` la columna `matricula` aparece dos veces. Completa las anotaciones:
+
+<Puzle archivo="ReparacionEntity.java" ejercicio="taller mecánico (ORM)" ruta="taller-mecanico-AlejandroDonGar-orm/src/main/java/es/ejemplo/taller/orm/entity/ReparacionEntity.java" piezas={[
+  { t: 'FetchType.LAZY', hueco: 1 },
+  { t: 'FetchType.EAGER', porque: 'Es el valor por defecto de @ManyToOne. Leer una reparación cargaría también el vehículo, su cliente y lo que cuelgue de ellos.' },
+  { t: 'insertable = false, updatable = false', hueco: 2 },
+  { t: 'nullable = false', porque: 'La columna seguiría mapeada dos veces para escribir, y Hibernate se queja de que está duplicada.' },
+  { t: 'mappedBy = "reparacion"', hueco: 3 },
+  { t: 'mappedBy = "piezas"', porque: 'mappedBy nombra el atributo del otro lado, el @ManyToOne de PiezaReparacionEntity, no esta lista.' },
+]}>
+
+```java
+@Column(name = "matricula")
+private String matricula;
+
+@ManyToOne(fetch = __1__)
+@JoinColumn(name = "matricula",
+        __2__)
+private VehiculoEntity vehiculo;
+
+@OneToMany(__3__, fetch = FetchType.LAZY)
+private List<PiezaReparacionEntity> piezas = new ArrayList<>();
+```
+
+</Puzle>
 
 ### Errores típicos
 
