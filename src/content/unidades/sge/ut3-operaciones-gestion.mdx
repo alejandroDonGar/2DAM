@@ -2,9 +2,9 @@
 titulo: Operaciones de gestión
 etiqueta: UT3
 orden: 3
-entrada: El ciclo económico completo en Odoo 17, con facturas a clientes y a proveedores, el banco y la caja con sus saldos iniciales, cobros y pagos, correcciones de stock e informes de facturación.
+entrada: Un módulo que hereda vistas para mostrar quién creó cada presupuesto, comprobado con SQL y CSV, y el ciclo económico completo en Odoo 17, con facturas a clientes y a proveedores, el banco y la caja con sus saldos iniciales, cobros y pagos, correcciones de stock e informes de facturación.
 cuando: noviembre
-ejercicios: A3 facturas y bancos
+ejercicios: A1 modificación de módulos y A3 facturas y bancos
 ruta: { texto: Temario del profesor, url: "https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/" }
 ---
 import OdooPantalla from '../../../components/odoo/OdooPantalla.astro';
@@ -12,11 +12,227 @@ import OdooLista from '../../../components/odoo/OdooLista.astro';
 import OdooFicha from '../../../components/odoo/OdooFicha.astro';
 import Puzle from '../../../components/Puzle.astro';
 
+## Modificar un módulo heredando vistas
+
+### Qué se ve
+
+La primera práctica de la unidad crea un módulo pequeño, `sale_quotation_creator`, que muestra quién creó cada presupuesto en tres sitios: el formulario, la lista y el PDF. No lleva Python ni añade columnas a la base de datos. Solo hereda pantallas que ya existen y les añade un campo que Odoo ya guardaba.
+
+### Conceptos
+
+Todos los modelos de Odoo tienen cuatro <mark>campos de auditoría</mark>: `create_uid` y `create_date` (quién y cuándo creó el registro) y `write_uid` y `write_date` (quién y cuándo lo modificó por última vez). En un presupuesto conviene no confundir dos usuarios:
+
+| Dato | Campo | Qué significa | ¿Se puede cambiar? |
+|---|---|---|---|
+| Creado por | `create_uid` | Quien guardó el presupuesto por primera vez | No, lo rellena Odoo |
+| Comercial | `user_id` | Quien lleva la venta | Sí, se reasigna cuando se quiera |
+
+Las pantallas de Odoo son registros de `ir.ui.view`. La <mark>herencia de vistas</mark> no copia la vista original: crea una vista «parche» que indica dónde insertar algo. Odoo junta la original con sus parches al dibujar la pantalla, así que Ventas queda intacto y, al desinstalar el módulo, todo vuelve a estar como antes. Cada parche tiene tres piezas:
+
+- `inherit_id` dice qué vista se modifica, con el formato `módulo.id_de_la_vista`, por ejemplo `sale.view_order_form`.
+- Un <mark>XPath</mark> localiza el sitio exacto: `//group[@name='order_details']` busca en todo el formulario el grupo llamado así.
+- `position` decide qué se hace allí: `inside` (dentro, al final), `after`, `before`, `replace` o `attributes`.
+
+Los PDF se generan con plantillas <mark>QWeb</mark>, HTML con atributos `t-…` que se rellenan con el registro que se imprime (`doc`). Se heredan igual, con `<template inherit_id="…">` y un XPath. `t-if` dibuja un bloque solo si se cumple una condición, y `t-field` pinta el valor con el formato de Odoo: en un campo relacional como `create_uid`, el nombre del usuario y no su id.
+
+El manifiesto depende de `sale`, porque es quien aporta `sale.order`, sus vistas y el informe. Con `'application': False` el módulo no sale como app propia: para encontrarlo en Aplicaciones hay que quitar ese filtro.
+
+### Casos y ejemplos
+
+La estructura del módulo:
+
+```text
+addons/sale_quotation_creator/
+├── __init__.py               solo comentarios: no hay Python
+├── __manifest__.py           depends: sale
+├── views/
+│   └── sale_order_views.xml  formulario y lista
+└── report/
+    └── sale_order_report.xml PDF del presupuesto
+```
+
+El parche del PDF añade un bloque al final de la fila de datos que hay bajo el título, con las mismas clases de Bootstrap que los bloques de Odoo para que quede alineado:
+
+```xml
+<template id="report_saleorder_document_inherit_quotation_creator"
+          inherit_id="sale.report_saleorder_document">
+    <xpath expr="//div[@id='informations']" position="inside">
+        <div t-if="doc.create_uid" class="col-auto col-3 mw-100 mb-2">
+            <strong>Creado por:</strong><br/>
+            <span class="m-0" t-field="doc.create_uid"/>
+        </div>
+    </xpath>
+</template>
+```
+
+Prueba a completar el parche de la lista, que coloca la columna nueva justo detrás del comercial:
+
+<Puzle archivo="views/sale_order_views.xml" ejercicio="A1 modificación de módulos" piezas={[
+  { t: 'inherit_id', hueco: 1 },
+  { t: 'view_id', porque: 'Es el campo con el que una acción elige qué vista abrir. Para heredar una vista se usa inherit_id.' },
+  { t: 'user_id', hueco: 2 },
+  { t: 'after', hueco: 3 },
+  { t: 'replace', porque: 'Sustituiría la columna del comercial por la nueva, y la lista perdería ese dato.' },
+  { t: 'create_uid', hueco: 4 },
+  { t: 'write_uid', porque: 'Es quien modificó el presupuesto por última vez, no quien lo creó.' },
+]}>
+
+```xml
+<record id="view_quotation_tree_inherit_quotation_creator"
+        model="ir.ui.view">
+    <field name="model">sale.order</field>
+    <field name="__1__"
+           ref="sale.view_quotation_tree_with_onboarding"/>
+    <field name="arch" type="xml">
+        <xpath expr="//field[@name='__2__']"
+               position="__3__">
+            <field name="__4__" string="Creado por" optional="show"/>
+        </xpath>
+    </field>
+</record>
+```
+
+</Puzle>
+
+Con tres presupuestos creados desde sesiones distintas, la lista muestra los dos casos: creador y comercial distintos, o la misma persona:
+
+<OdooPantalla app="Ventas" menus={['Pedidos', 'Para facturar', 'Productos']} migas={['Presupuestos']} botones={['Nuevo']} pie="La columna Creado por, añadida por el módulo justo detrás de Comercial.">
+<OdooLista columnas={['Número', 'Cliente', 'Comercial', 'Creado por', 'Estado']}
+  filas={[['S00001', 'Colegio Las Palmeras S.L.', 'Pablo Díaz', 'Elena Ruiz', 'Presupuesto'], ['S00002', 'Hotel Playa Dorada S.A.', 'Elena Ruiz', 'Administrator', 'Presupuesto'], ['S00003', 'Gestoría Benítez y Asociados S.L.', 'Nuria Gil', 'Nuria Gil', 'Presupuesto']]} />
+</OdooPantalla>
+
+### Errores típicos
+
+- **Escribir un XPath que no encuentra su nodo.** La instalación se detiene con un error. Antes de usarlo, comprueba en el código de Odoo 17 que el grupo, la vista y el campo existen con esos nombres.
+- **Meter carpetas intermedias.** Odoo busca los módulos en el primer nivel de cada ruta de `addons_path`. `addons/mis_modulos/sale_quotation_creator` no se encuentra.
+- **Buscar el módulo con el filtro Aplicaciones.** Con `'application': False` no aparece hasta quitar el filtro.
+- **Reiniciar después de cambiar un XML y esperar ver el cambio.** Las vistas heredadas se guardan en la base de datos. Hay que actualizar el módulo: `docker compose run --rm odoo odoo -d mi_bd -u sale_quotation_creator --stop-after-init`, o el botón Actualizar.
+- **No ver ningún presupuesto en la lista.** El filtro predeterminado «Mis presupuestos» solo muestra aquellos en los que tú eres el comercial.
+
+### Prácticas de clase
+
+- **A1, modificación de módulos.** Módulo `sale_quotation_creator` con cuatro archivos: el campo «Creado por» en solo lectura en el formulario, como columna opcional en la lista y en el PDF con `t-if`. Antes hubo que instalar Ventas, que la base de datos de la UT2 no tenía, y comprobar el montaje `./addons:/mnt/extra-addons:ro` del compose.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué diferencia hay entre `create_uid` y `user_id` en un presupuesto?</summary>
+
+`create_uid` es quien lo creó, lo pone Odoo y no cambia. `user_id` es el comercial, que se puede reasignar.
+
+</details>
+<details>
+<summary>¿Qué pasa con las pantallas de Ventas al desinstalar un módulo que hereda vistas?</summary>
+
+Vuelven a ser las originales, porque el módulo solo añadía parches y no las había copiado.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT3, apartados 1 y 3: definición de campos y personalización de vistas](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Odoo 17: herencia de vistas](https://www.odoo.com/documentation/17.0/developer/reference/user_interface/view_architectures.html#inheritance)
+3. [Odoo 17: plantillas QWeb](https://www.odoo.com/documentation/17.0/developer/reference/frontend/qweb.html)
+
+## Copias, pgAdmin y exportación
+
+### Qué se ve
+
+El resto de la A1: hacer una copia de seguridad antes de tocar nada y, al final, comprobar por otras dos vías que lo que enseña el módulo es lo que hay guardado: una consulta SQL en pgAdmin y una exportación a CSV.
+
+### Conceptos
+
+Hay dos formas de hacer la <mark>copia de seguridad</mark>, y no copian lo mismo:
+
+| Método | Qué copia | Cómo se restaura |
+|---|---|---|
+| Gestor de bases de datos de Odoo (`/web/database/manager`) | Un ZIP con `dump.sql`, `manifest.json` y el filestore (los adjuntos) | Desde el mismo gestor, con la contraseña maestra |
+| `docker compose exec -T db pg_dump -U odoo -Fc mi_bd > copia.dump` | Solo la base de datos | Con `pg_restore` |
+
+La redirección `>` crea el fichero antes de ejecutar el comando, así que un `pg_dump` que falla deja un archivo de 0 bytes que parece una copia y no lo es. Hay que comprobar siempre el tamaño con `ls -lh`.
+
+Para consultar la base de datos sin entrar en el contenedor se añadió <mark>pgAdmin</mark> como un servicio más del compose (imagen `dpage/pgadmin4`, puerto 5050), con las credenciales en el `.env` y el servidor registrado en un `servers.json`. Dentro de la red de Docker, el host de PostgreSQL es el nombre del servicio, `db`, y no `localhost`.
+
+En PostgreSQL, `res.users` hereda de `res.partner` con <mark>_inherits</mark>: el nombre del usuario no está en `res_users` sino en el contacto al que apunta su `partner_id`. Para sacar el nombre del creador de un presupuesto hacen falta dos JOIN: `sale_order → res_users → res_partner`.
+
+Al <mark>exportar</mark> desde una lista (Acciones > Exportar), la casilla «exportación compatible con importación» prepara un archivo que se pueda volver a importar, y por eso oculta los campos de solo lectura como `create_uid`. Para un informe hay que desmarcarla. Con `?debug=1` en la URL se ven los nombres técnicos de cada campo.
+
+### Casos y ejemplos
+
+Prueba a completar la consulta. La misma tabla aparece dos veces con alias distintos para no mezclar al creador con el comercial:
+
+<Puzle archivo="Consulta en pgAdmin" ejercicio="A1 modificación de módulos" piezas={[
+  { t: 'create_uid', hueco: 1 },
+  { t: 'partner_id', hueco: 2 },
+  { t: 'id', porque: 'Compararía el id del usuario con el del contacto, que son números distintos. El enlace entre las dos tablas es partner_id.' },
+  { t: 'LEFT JOIN', hueco: 3 },
+  { t: 'JOIN', porque: 'Un presupuesto sin comercial asignado desaparecería del resultado. create_uid siempre tiene valor, user_id no.' },
+]}>
+
+```sql
+SELECT so.name        AS presupuesto,
+       creador.name   AS creado_por,
+       comercial.name AS comercial
+FROM sale_order so
+JOIN res_users u_cre ON u_cre.id = so.__1__
+JOIN res_partner creador ON creador.id = u_cre.__2__
+__3__ res_users u_com ON u_com.id = so.user_id
+LEFT JOIN res_partner comercial
+       ON comercial.id = u_com.partner_id
+ORDER BY so.name;
+```
+
+</Puzle>
+
+La consulta y el CSV exportado dan lo mismo que la lista del tema anterior:
+
+```text
+"Referencia del pedido","Comercial","Creado por"
+"S00003","Nuria Gil","Nuria Gil"
+"S00002","Elena Ruiz","Administrator"
+"S00001","Pablo Díaz","Elena Ruiz"
+```
+
+En pgAdmin, el estado de los tres sale como `draft`, el valor interno de lo que en pantalla es «Presupuesto».
+
+### Errores típicos
+
+- **Copiar el `pg_dump` del enunciado sin cambiar la base.** Si no existe una base llamada `odoo`, el comando falla y deja un `.dump` vacío.
+- **Buscar `name` en `res_users`.** Da `column "name" does not exist`. El nombre está en `res_partner`.
+- **Conectar pgAdmin a `localhost`.** Desde otro contenedor, `localhost` es el propio contenedor de pgAdmin. El host es `db`.
+- **No encontrar `create_uid` al exportar.** Está marcada la exportación compatible con importación.
+- **Añadir al compose un segundo servicio de Odoo copiado del enunciado.** En clase, un servicio `web` duplicado intentaba usar el mismo puerto 8069 y no encontraba la base de datos. El servicio correcto ya existía con otro nombre.
+
+### Prácticas de clase
+
+- **A1, copia, SQL y CSV.** Copia por los dos métodos, pgAdmin 4 añadido al compose con `servers.json`, consulta con doble JOIN que coincide con la lista y el PDF (criterio a) y exportación `presupuestos_creado_por.csv` sin el modo compatible (criterio d). Ocho incidencias documentadas.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué copia el ZIP del gestor de Odoo que no copia `pg_dump`?</summary>
+
+El filestore, la carpeta con los archivos adjuntos.
+
+</details>
+<details>
+<summary>¿Por qué hacen falta dos JOIN para obtener el nombre del creador de un presupuesto?</summary>
+
+Porque `create_uid` apunta a `res_users`, y el nombre del usuario se guarda en `res_partner`, enlazado por `partner_id`.
+
+</details>
+
+### Fuentes
+
+1. [Temario del profesor, UT3, apartados 2 y 9: consultas con pgAdmin y extracción de datos](https://dbetancorfp.github.io/sistema-de-gestion-empresarial-SSG/)
+2. [Documentación de PostgreSQL 15: pg_dump](https://www.postgresql.org/docs/15/app-pgdump.html)
+3. [pgAdmin 4: despliegue en contenedor](https://www.pgadmin.org/docs/pgadmin4/latest/container_deployment.html)
+
 ## Del pedido a la factura
 
 ### Qué se ve
 
-En la UT2 se dieron de alta clientes, productos y almacén, y se hizo una compra completa. Esta unidad cierra el ciclo con el dinero. El primer tema sigue un presupuesto ya enviado hasta que se convierte en una factura publicada, con un producto almacenable y un servicio en las mismas líneas.
+En la UT2 se dieron de alta clientes, productos y almacén, y se hizo una compra completa. La A3 cierra el ciclo con el dinero. El primer tema sigue un presupuesto ya enviado hasta que se convierte en una factura publicada, con un producto almacenable y un servicio en las mismas líneas.
 
 ### Conceptos
 
@@ -274,7 +490,7 @@ El cierre de la práctica: comprobar que todo cuadra y sacar de Odoo lo facturad
 
 **Facturación > Informes > Análisis de facturas** se abre como gráfico, pero la vista de <mark>tabla dinámica</mark> es más útil para leer cifras. Se pliegan las columnas para dejar solo el total y se agrupan las filas por empresa. Los importes son base imponible, sin IVA, y en las compras salen en negativo porque son gastos. El botón **Descargar xlsx** guarda la tabla tal como se ve.
 
-Cualquier lista de Odoo se puede exportar desde **Acciones > Exportar**: se seleccionan las filas, se elige el formato y los campos. En facturas, el mismo menú tiene *Exportar ZIP*, que descarga los PDF de todas las seleccionadas. Es la misma herramienta que en la UT3-A1 sirvió para exportar los presupuestos a CSV.
+Cualquier lista de Odoo se puede exportar desde **Acciones > Exportar**: se seleccionan las filas, se elige el formato y los campos. En facturas, el mismo menú tiene *Exportar ZIP*, que descarga los PDF de todas las seleccionadas. Es la misma herramienta que en la A1 sirvió para exportar los presupuestos a CSV.
 
 Antes de dar la práctica por buena se comprueba cada resultado donde corresponde: las facturas en sus listas, los saldos en el tablero, el stock en el inventario físico y los movimientos en Traslados.
 
