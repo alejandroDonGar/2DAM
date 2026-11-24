@@ -12,6 +12,7 @@ import PensamientoDiseno from '../../../components/esquemas/PensamientoDiseno.as
 import LeanCiclo from '../../../components/esquemas/LeanCiclo.astro';
 import CanvasModelo from '../../../components/esquemas/CanvasModelo.astro';
 import LinealCircular from '../../../components/esquemas/LinealCircular.astro';
+import Puzle from '../../../components/Puzle.astro';
 
 ## Emprender: modalidades y perfil
 
@@ -208,6 +209,26 @@ Un experimento completo, con sus seis piezas:
 | Métrica | Tiempo y ayuda necesaria para hacer una reserva |
 | Umbral | Cuatro de cinco la completan solos en menos de dos minutos |
 | Decisión | Si fallan por confusión, se revisa el diseño; si no necesitan agenda, se revisa el problema |
+
+Prueba a reconocer cada pieza de este experimento:
+
+<Puzle archivo="Plan de un experimento" ejercicio="ejemplo del tema" piezas={[
+  { t: 'Hipótesis', hueco: 1 },
+  { t: 'Métrica', hueco: 2 },
+  { t: 'Umbral', hueco: 3 },
+  { t: 'Decisión', hueco: 4 },
+  { t: 'PMV', porque: 'El producto mínimo viable es lo que se construye para hacer la prueba, no una de las frases del plan.' },
+]}>
+
+```text
+Los comercios con muchas referencias pierden ventas
+por un stock mal apuntado                                 __1__
+Ventas perdidas por semana, apuntadas durante dos semanas __2__
+Al menos cinco de ocho comercios pierden una a la semana  __3__
+Si no se llega, revisar el segmento antes que la solución __4__
+```
+
+</Puzle>
 
 ### Errores típicos
 

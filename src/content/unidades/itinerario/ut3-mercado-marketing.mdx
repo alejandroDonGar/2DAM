@@ -12,6 +12,7 @@ import CuatroP from '../../../components/esquemas/CuatroP.astro';
 import CicloVida from '../../../components/esquemas/CicloVida.astro';
 import Embudo from '../../../components/esquemas/Embudo.astro';
 import PlanMarketing from '../../../components/esquemas/PlanMarketing.astro';
+import Puzle from '../../../components/Puzle.astro';
 
 ## El mercado, la segmentación y la demanda
 
@@ -112,6 +113,27 @@ Una empresa vende 200 licencias de un programa en un año, y en todo el mercado 
 
 Para una app de reservas, la competencia no son solo otras apps. El teléfono, una libreta y una hoja de cálculo cubren la misma necesidad. Si casi todos los centros siguen con el teléfono, la pregunta es por qué cambiarían, no qué tiene la app de la competencia.
 
+Prueba a ordenar la compra de un portátil nuevo para un centro de formación:
+
+<Puzle archivo="El proceso de compra" ejercicio="ejemplo del tema" piezas={[
+  { t: 'Necesidad', hueco: 1 },
+  { t: 'Información', hueco: 2 },
+  { t: 'Alternativas', hueco: 3 },
+  { t: 'Decisión', hueco: 4 },
+  { t: 'Después', hueco: 5 },
+  { t: 'Prescriptor', porque: 'Es un papel, el de quien influye en la compra, no una fase del proceso.' },
+]}>
+
+```text
+1  __1__   El portátil del aula ya no arranca
+2  __2__   Pregunta a otros centros y mira webs
+3  __3__   Compara tres tiendas por precio y garantía
+4  __4__   Encarga el modelo en la tienda más cercana
+5  __5__   A los seis meses lo recomienda, o no
+```
+
+</Puzle>
+
 ### Errores típicos
 
 - **Decir que no hay competencia.** Casi siempre hay alguien o algo que cubre ya la necesidad, aunque no sea una empresa parecida.
@@ -189,6 +211,28 @@ Una empresa que hace webs para comercios podría plantear así su mix:
 | Comunicación | Anuncios en buscadores para «tienda online Tenerife», demostraciones gratuitas y casos de clientes |
 
 En el embudo del esquema, la conversión de visitas a peticiones es del 4 % (40 de 1.000). Si cada cliente deja menos de 30 euros de margen en su primer año, los anuncios cuestan más de lo que aportan, y hay que mejorar algún tramo o cambiar de canal.
+
+Prueba a repartir las decisiones de la empresa de webs entre las cuatro P. Hay dos de precio y dos de comunicación:
+
+<Puzle archivo="Marketing mix" ejercicio="ejemplo del tema" piezas={[
+  { t: 'Precio', hueco: 1 },
+  { t: 'Distribución', hueco: 2 },
+  { t: 'Producto', hueco: 3 },
+  { t: 'Comunicación', hueco: 4 },
+  { t: 'Comunicación', hueco: 5 },
+  { t: 'Precio', hueco: 6 },
+]}>
+
+```text
+Descuento para los diez primeros clientes      __1__
+Contratación en la web, sin intermediarios     __2__
+Formación incluida con la tienda online        __3__
+Anuncios en buscadores                         __4__
+Demostraciones gratuitas en los comercios      __5__
+Cuota de mantenimiento mensual                 __6__
+```
+
+</Puzle>
 
 ### Errores típicos
 

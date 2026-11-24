@@ -11,6 +11,7 @@ import BalanceInversion from '../../../components/esquemas/BalanceInversion.astr
 import FuentesFinanciacion from '../../../components/esquemas/FuentesFinanciacion.astro';
 import ResultadoCaja from '../../../components/esquemas/ResultadoCaja.astro';
 import UmbralGrafico from '../../../components/esquemas/UmbralGrafico.astro';
+import Puzle from '../../../components/Puzle.astro';
 
 ## El plan de inversiones
 
@@ -133,6 +134,28 @@ Una furgoneta para un servicio técnico que hace reparaciones a domicilio. Con <
 Dos préstamos con el mismo TIN del 6 % pueden costar distinto. Si uno cobra una comisión de apertura del 2 % y el otro no, el primero tendrá una TAE más alta. Comparar solo el TIN lleva a elegir mal.
 
 El material del Campus advierte también de los créditos rápidos: se conceden en minutos y sin garantías, pero con intereses muy altos. Para financiar un negocio son una mala idea.
+
+Prueba a clasificar estas fuentes. La pregunta es siempre la misma: ¿hay que devolverlo?
+
+<Puzle archivo="¿Propia o ajena?" ejercicio="ejemplo del tema" piezas={[
+  { t: 'Propia', hueco: 1 },
+  { t: 'Ajena', hueco: 2 },
+  { t: 'Propia', hueco: 3 },
+  { t: 'Propia', hueco: 4 },
+  { t: 'Ajena', hueco: 5 },
+  { t: 'Ajena', hueco: 6 },
+]}>
+
+```text
+Aportación de los socios al crear la empresa    __1__
+Préstamo del banco a cinco años                 __2__
+Beneficios del año que no se reparten           __3__
+Capitalizar la prestación por desempleo         __4__
+Renting de los ordenadores                      __5__
+Línea de crédito para pagar el día a día        __6__
+```
+
+</Puzle>
 
 ### Errores típicos
 
@@ -353,6 +376,28 @@ Escenarios sobre esa base:
 | Prudente y con costes más altos | 40 clientes y costes fijos de 1.800 € | −200 € |
 
 Otro supuesto del material: una plataforma cobra 60 euros por cliente al mes, con un coste variable de 12 y costes fijos de 2.400. El margen es 48 y el umbral, 2.400 ÷ 48 = 50 clientes. Con 65 clientes gana 65 × 48 − 2.400 = 720 euros. Si baja el precio a 52, el margen queda en 40 y necesita 60 clientes: diez más para cubrir los mismos costes.
+
+Repasa el segundo supuesto colocando cada cifra en su sitio:
+
+<Puzle archivo="Umbral de rentabilidad" ejercicio="supuesto del Campus" piezas={[
+  { t: '60', hueco: 1 },
+  { t: '12', hueco: 2 },
+  { t: '2.400', hueco: 3 },
+  { t: '48', hueco: 4 },
+  { t: '50', hueco: 5 },
+  { t: '40', porque: 'Sale de dividir los costes fijos entre el precio y no entre el margen. Olvida que cada cliente también tiene su coste variable.' },
+]}>
+
+```text
+Precio por cliente               60 €/mes
+Coste variable por cliente       12 €
+Costes fijos                  2.400 €/mes
+
+Margen unitario = __1__ − __2__ = 48 €
+Umbral          = __3__ ÷ __4__ = __5__ clientes
+```
+
+</Puzle>
 
 ### Errores típicos
 
