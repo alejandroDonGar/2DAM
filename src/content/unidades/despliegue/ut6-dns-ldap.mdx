@@ -1,0 +1,190 @@
+---
+titulo: DNS y servicio de directorio
+etiqueta: UT6
+orden: 6
+entrada: Cómo se traduce un nombre de dominio a una IP, qué registros tiene una zona y cómo se comprueba, y cómo un directorio LDAP permite entrar en muchos servicios con una sola cuenta.
+cuando: temario de la web del módulo (entra en las preguntas de ejemplo del examen)
+ejercicios: prácticas guiadas de DNS con BIND9 y de directorio con OpenLDAP
+ruta: { texto: 'UT6 en la web del módulo', url: 'https://dpl-f1facc.gitlab.io/ut06/teoria/dns/' }
+---
+import Secuencia from '../../../components/esquemas/Secuencia.astro';
+import Puzle from '../../../components/Puzle.astro';
+
+## DNS
+
+### Qué se ve
+
+Para qué sirve el DNS, su jerarquía, las consultas recursivas e iterativas, las zonas y sus registros, los tipos de servidor y las herramientas para comprobarlo.
+
+### Conceptos
+
+El <mark>DNS</mark> traduce nombres de dominio a direcciones IP (y al revés). Es jerárquico y está repartido: la raíz (`.`), los dominios de primer nivel o TLD (`.es`, `.com`), los dominios y los subdominios. Usa el puerto 53 (UDP, y TCP para respuestas grandes y transferencias de zona). Antes del DNS existía solo el fichero `/etc/hosts`, que sigue sirviendo para pruebas locales pero no escala.
+
+| Papel | Qué hace |
+|---|---|
+| Cliente (*stub*) | Pregunta al servidor que tiene en `/etc/resolv.conf` |
+| Resolutor recursivo | Busca la respuesta completa por el cliente y la guarda en caché |
+| Servidor raíz | Sabe qué servidores llevan cada TLD |
+| Servidor del TLD | Sabe qué servidores llevan cada dominio |
+| Servidor autoritativo | Tiene la zona y da la respuesta oficial |
+
+En una <mark>consulta recursiva</mark> el cliente pide la respuesta final y el resolutor se encarga de todo. En una **iterativa** cada servidor devuelve una referencia («pregunta a este otro») y quien pregunta sigue. El cliente hace recursivas; el resolutor, iterativas.
+
+<Secuencia titulo="Resolución de www.ejemplo.es"
+  descripcion="Cinco pasos: el cliente pregunta al resolutor, el resolutor pregunta a la raíz, luego al servidor de .es, luego al autoritativo de ejemplo.es, y devuelve la IP al cliente guardándola en caché."
+  pie="Si la respuesta está en caché y no ha caducado su TTL, el resolutor contesta directamente."
+  pasos={[['Cliente', 'pregunta recursiva'], ['Raíz', 'te remite a .es'], ['TLD .es', 'te remite al dominio'], ['Autoritativo', 'da la IP'], ['Respuesta', 'y queda en caché']]} />
+
+Una **zona** es la parte del árbol que administra un servidor; se guarda en un fichero de zona. La **zona directa** va de nombre a IP; la **inversa**, de IP a nombre (bajo `in-addr.arpa`, con los octetos al revés).
+
+| Registro | Función |
+|---|---|
+| SOA | Datos de la zona: servidor principal, correo del responsable, número de serie y tiempos. Es obligatorio y el primero |
+| NS | Servidores autoritativos de la zona |
+| A | Nombre → IPv4 |
+| AAAA | Nombre → IPv6 |
+| CNAME | Alias de otro nombre (no puede convivir con otros registros del mismo nombre) |
+| MX | Servidor de correo, con prioridad (el número menor es el preferido) |
+| PTR | IP → nombre (zona inversa) |
+| TXT | Texto: verificación de dominio, SPF, DKIM |
+
+Tipos de servidor: **maestro** (tiene la zona editable), **esclavo** (copia la zona del maestro cuando sube el número de serie), **caché** (solo resuelve y recuerda) y **reenviador** (pasa las consultas a otro).
+
+### Casos y ejemplos
+
+Zona de ejemplo en BIND9 (`/etc/bind/db.ejemplo.local`):
+
+```text
+$TTL 3600
+$ORIGIN ejemplo.local.
+@     IN SOA  ns1.ejemplo.local. admin.ejemplo.local. (2026112601 3600 900 604800 86400)
+@     IN NS   ns1
+ns1   IN A    192.0.2.10
+www   IN A    192.0.2.20
+blog  IN CNAME www
+@     IN MX 10 correo
+```
+
+| Herramienta | Uso |
+|---|---|
+| `dig @servidor nombre tipo` | Consulta un registro a un servidor concreto |
+| `dig -x IP` | Consulta inversa |
+| `nslookup nombre` / `nslookup IP` | Directa o inversa |
+| `host -t MX dominio` | Consulta rápida por tipo |
+| `named-checkconf` / `named-checkzone` | Validan la configuración y la zona de BIND9 |
+
+Para comprobar un DNS recién instalado en la propia máquina, se pone `nameserver 127.0.0.1` en `/etc/resolv.conf`.
+
+<Puzle archivo="¿Qué registro necesito?" ejercicio="ejemplo del tema" piezas={[
+  { t: 'A', hueco: 1 },
+  { t: 'CNAME', hueco: 2 },
+  { t: 'MX', hueco: 3 },
+  { t: 'AAAA', hueco: 4 },
+  { t: 'TXT', hueco: 5 },
+]}>
+
+```text
+Que www.ejemplo.es lleve a la IPv4 del servidor           __1__
+Que tienda.ejemplo.es sea otro nombre de www              __2__
+Que el correo de @ejemplo.es llegue a su servidor         __3__
+Que www también responda por IPv6                         __4__
+Demostrar al proveedor de correo que el dominio es mío    __5__
+```
+
+</Puzle>
+
+### Errores típicos
+
+- **Olvidar subir el número de serie** al cambiar la zona: los esclavos no se enteran.
+- **Olvidar el punto final** en un nombre absoluto: `ns1.ejemplo.local` sin punto se convierte en `ns1.ejemplo.local.ejemplo.local.`.
+- **Cambios que «no se ven».** Es la caché: hasta que no pasa el TTL, los resolutores dan la respuesta vieja. Antes de un cambio se baja el TTL.
+
+### Prácticas de clase
+
+- Prácticas guiadas de DNS con BIND9 dentro del contenedor del curso. Para el proyecto final, un dominio comprado cuyo registro A apunte a la IP pública del servidor.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué obtiene nslookup si le das una IP?</summary>
+
+El nombre asociado, gracias al registro PTR de la zona inversa.
+
+</details>
+<details>
+<summary>¿Qué diferencia hay entre una consulta recursiva y una iterativa?</summary>
+
+En la recursiva el servidor busca la respuesta completa; en la iterativa solo devuelve una referencia a otro servidor.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: DNS](https://dpl-f1facc.gitlab.io/ut06/teoria/dns/)
+2. [Documentación de BIND 9](https://bind9.readthedocs.io/)
+
+## Servicio de directorio y LDAP
+
+### Qué se ve
+
+Qué es un servicio de directorio, la estructura de un árbol LDAP, las operaciones (sobre todo *bind*), la autenticación centralizada y cómo se protege.
+
+### Conceptos
+
+Un <mark>servicio de directorio</mark> guarda de forma centralizada información sobre usuarios, grupos y equipos, pensado para muchas lecturas rápidas. Responde a dos preguntas: quién soy (autenticación) y qué puedo hacer (autorización). <mark>LDAP</mark> es el protocolo con el que se habla con él (OpenLDAP, Active Directory).
+
+Su gran ventaja es la **autenticación centralizada**: en lugar de tener los usuarios repetidos en el `/etc/passwd` de cada máquina, todas preguntan al directorio. Dar de alta o de baja a alguien es una sola operación, y se inicia sesión con la misma cuenta en muchos equipos y servicios.
+
+| Concepto | Qué es |
+|---|---|
+| Entrada | Cada nodo del árbol: un usuario, un grupo, una unidad organizativa |
+| Atributo | Par clave-valor de una entrada: `uid`, `cn` (nombre común), `mail`, `userPassword` |
+| <mark>DN</mark> | Ruta única de una entrada, de la hoja a la raíz: `uid=ana,ou=usuarios,dc=empresa,dc=local` |
+| RDN | El primer trozo del DN (`uid=ana`) |
+| `objectClass` | Clase que dice qué atributos puede tener (`inetOrgPerson`, `organizationalUnit`) |
+| Base | DN raíz del árbol (`dc=empresa,dc=local`) |
+| Grupo | Entrada que reúne usuarios para darles los mismos permisos |
+| <mark>bind</mark> | Operación de autenticarse ante el directorio con un DN y su contraseña |
+| LDAPS | LDAP cifrado con TLS, puerto 636 (LDAP en claro usa el 389; StartTLS cifra sobre el 389) |
+
+Operaciones: `bind` y `unbind` (abrir y cerrar sesión), `search` (buscar por base, ámbito y filtro, como `(uid=ana)`), `compare`, `add`, `modify`, `delete` y `modrdn` (renombrar o mover).
+
+### Casos y ejemplos
+
+Cómo comprueba una aplicación web la contraseña de un usuario: hace un *bind* como servicio, busca la entrada con `(uid=ana)` para obtener su DN y luego intenta un *bind* con ese DN y la contraseña recibida. Si el directorio lo acepta, la contraseña es buena.
+
+```bash
+ldapsearch -x -H ldap://localhost -b "dc=empresa,dc=local" "(uid=ana)"
+ldapadd -x -D "cn=admin,dc=empresa,dc=local" -W -f usuario.ldif
+```
+
+nginx no habla LDAP directamente: delega con `auth_request` en un pequeño servicio que hace el *bind*. Apache sí tiene un módulo propio (`mod_authnz_ldap`).
+
+### Errores típicos
+
+- **LDAP en claro por el 389 en producción.** Las contraseñas viajan legibles; se usa LDAPS o StartTLS.
+- **Leer el DN al revés.** Empieza por la entrada concreta y acaba en la base.
+
+### Prácticas de clase
+
+- Prácticas guiadas de directorio con OpenLDAP y de autenticación de nginx contra LDAP.
+
+### Repaso rápido
+
+<details>
+<summary>¿Para qué sirve LDAP en un despliegue?</summary>
+
+Para centralizar los usuarios: muchas máquinas y servicios comprueban las credenciales contra el mismo directorio.
+
+</details>
+<details>
+<summary>¿Qué es hacer un bind?</summary>
+
+Autenticarse ante el directorio con un DN y su contraseña.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: servicio de directorio](https://dpl-f1facc.gitlab.io/ut06/teoria/servicio-directorio/)
+2. [Guía de administración de OpenLDAP](https://www.openldap.org/doc/admin26/)

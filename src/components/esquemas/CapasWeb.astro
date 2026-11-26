@@ -1,0 +1,27 @@
+---
+import Esquema from '../Esquema.astro';
+// Las cuatro capas de una aplicación web del curso y lo que viaja entre ellas
+const capas: [string, string, string][] = [
+  ['Cliente', 'Navegador o curl', 'pide la página'],
+  ['Presentación', 'nginx', 'estáticos y proxy'],
+  ['Lógica', 'Gunicorn + app', 'ejecuta el código'],
+  ['Datos', 'PostgreSQL', 'guarda y consulta'],
+];
+const enlaces = ['HTTP/HTTPS', 'proxy_pass', 'SQL'];
+const x = (i: number) => 10 + i * 180;
+---
+<Esquema titulo="Las cuatro capas de una aplicación web" alto={210}
+  descripcion="Cuatro cajas de izquierda a derecha: cliente (navegador o curl), presentación (nginx), lógica (Gunicorn con la aplicación) y datos (PostgreSQL). Entre cliente y nginx viaja HTTP o HTTPS, entre nginx y Gunicorn un proxy_pass y entre la aplicación y PostgreSQL consultas SQL."
+  pie="Si nginx no consigue hablar con Gunicorn en el segundo salto, el cliente recibe un 502 Bad Gateway.">
+  {capas.map(([capa, quien, hace], i) => (
+    <g>
+      <text x={x(i) + 75} y="34" text-anchor="middle" class="t-titulo">{capa}</text>
+      <rect x={x(i)} y="48" width="150" height="74" rx="8" class={i === 1 ? 'caja-acento' : 'caja'} />
+      <text x={x(i) + 75} y="80" text-anchor="middle" class={i === 1 ? 't-acento' : ''}>{quien}</text>
+      <text x={x(i) + 75} y="104" text-anchor="middle" class="t-suave">{hace}</text>
+      {i < 3 && <path d={`M${x(i) + 152} 85 H${x(i + 1) - 4}`} class="trazo con-flecha" />}
+      {i < 3 && <text x={x(i) + 165} y="150" text-anchor="middle" class="t-suave">{enlaces[i]}</text>}
+    </g>
+  ))}
+  <text x="360" y="186" text-anchor="middle" class="t-suave">Solo nginx se publica al exterior (80 y 443); Gunicorn y PostgreSQL escuchan en la red interna.</text>
+</Esquema>

@@ -1,0 +1,28 @@
+---
+import Esquema from '../Esquema.astro';
+// Un proxy inverso reparte por la cabecera Host: mismo puerto público, varias aplicaciones detrás
+const filas = [
+  { host: 'Host: app1.example.com', app: 'contenedor app1', puerto: 'escucha en :8000', y: 30 },
+  { host: 'Host: app2.example.com', app: 'contenedor app2', puerto: 'escucha en :3000', y: 130 },
+];
+---
+<Esquema titulo="Un proxy inverso reparte por la cabecera Host" alto={230}
+  descripcion="Dos peticiones llegan al mismo puerto público del servidor, cada una con una cabecera Host distinta. El proxy inverso, que puede ser nginx o kamal-proxy, las lee y reenvía la primera al contenedor app1, que escucha en el puerto 8000, y la segunda al contenedor app2, que escucha en el 3000."
+  pie="Las dos peticiones entran por el mismo 80/443 de la IP pública. El proxy elige destino por el nombre pedido, igual que nginx con server_name.">
+  {filas.map(f => (
+    <g>
+      <rect x="10" y={f.y} width="210" height="60" rx="8" class="caja" />
+      <text x="115" y={f.y + 27} text-anchor="middle">Petición</text>
+      <text x="115" y={f.y + 47} text-anchor="middle" class="t-suave">{f.host}</text>
+      <path d={`M222 ${f.y + 30} L288 ${f.y < 100 ? 95 : 125}`} class="trazo con-flecha" />
+      <path d={`M442 ${f.y < 100 ? 95 : 125} L506 ${f.y + 30}`} class="trazo con-flecha" />
+      <rect x="510" y={f.y} width="200" height="60" rx="8" class="caja" />
+      <text x="610" y={f.y + 27} text-anchor="middle">{f.app}</text>
+      <text x="610" y={f.y + 47} text-anchor="middle" class="t-suave">{f.puerto}</text>
+    </g>
+  ))}
+  <rect x="290" y="70" width="150" height="80" rx="8" class="caja-acento" />
+  <text x="365" y="104" text-anchor="middle" class="t-acento">Proxy inverso</text>
+  <text x="365" y="126" text-anchor="middle" class="t-suave">nginx o kamal-proxy</text>
+  <text x="365" y="210" text-anchor="middle" class="t-suave">Red interna de Docker: las apps no publican puertos al exterior</text>
+</Esquema>

@@ -1,0 +1,322 @@
+---
+titulo: Arquitecturas web y servidores
+etiqueta: UT2
+orden: 2
+entrada: Qué piezas tiene una aplicación web y cómo se reparten el trabajo. Del cliente a la base de datos pasando por nginx y Gunicorn, el protocolo HTTP y sus versiones, y dónde se puede instalar todo, desde un servidor propio a la nube.
+cuando: octubre
+ejercicios: «NGINX para todos y todos para NGINX» (entregada el 18/10)
+ruta: { texto: 'UT2 en la web del módulo', url: 'https://dpl-f1facc.gitlab.io/ut02/teoria/arquitecturas-web/' }
+---
+import CapasWeb from '../../../components/esquemas/CapasWeb.astro';
+import ModelosNube from '../../../components/esquemas/ModelosNube.astro';
+import Puzle from '../../../components/Puzle.astro';
+
+## Arquitectura web por capas
+
+### Qué se ve
+
+Los componentes de una aplicación web, el modelo cliente-servidor, las capas, la diferencia entre una web estática y una aplicación, y entre un servidor web y uno de aplicaciones.
+
+### Conceptos
+
+Toda aplicación web tiene un **cliente** (navegador, `curl`, una app que consume una API), un **servidor** (el programa y la máquina) y una **red** que los une con TCP/IP y HTTP. En el modelo <mark>cliente-servidor</mark> el cliente siempre pide y el servidor responde. Su punto débil es el cuello de botella: si miles de clientes piden a la vez al mismo servidor, se satura.
+
+Las capas de una aplicación web:
+
+<CapasWeb />
+
+| Capa | Quién | Qué hace |
+|---|---|---|
+| Cliente | Navegador, curl | Pide y muestra |
+| Presentación | nginx, Apache | Recibe todas las peticiones, sirve los estáticos y reenvía lo dinámico |
+| Lógica de negocio | Gunicorn, PHP-FPM, Node.js, Tomcat | Ejecuta el código que genera la respuesta |
+| Datos | PostgreSQL, MySQL, ficheros | Guarda y consulta la información |
+
+Separar en capas permite cambiar una sin tocar las demás: cambiar de gestor de base de datos solo afecta a la capa de datos.
+
+Una <mark>web estática</mark> entrega ficheros ya hechos, iguales para todos (la web de Zensical compilada). Una <mark>aplicación web</mark> ejecuta código en cada petición. Por eso un sitio estático no tiene capa de datos.
+
+| | Servidor web | Servidor de aplicaciones |
+|---|---|---|
+| Contenido | Estático (HTML, CSS, JS, imágenes) | Dinámico, generado por código |
+| Ejecuta lógica | No | Sí |
+| Ejemplos | nginx, Apache, IIS | Gunicorn, PHP-FPM, Node.js, Tomcat |
+| Puertos típicos | 80 y 443 | 8000, 8080… (internos) |
+| Papel | Puerta de entrada y proxy inverso | Motor de la aplicación |
+
+También se distingue **servicio web** (el qué), **agente** (el programa que lo implementa) y **API** (el contrato, normalmente REST con JSON).
+
+### Casos y ejemplos
+
+Arquitecturas modernas que aparecen en el temario: una **CDN** guarda copias del contenido en servidores repartidos por el mundo para servirlo desde el más cercano; **JAMstack** compila la web por adelantado y la sirve desde una CDN, con la parte dinámica en APIs; el **edge computing** ejecuta código en esos servidores cercanos. El hosting estático (GitHub Pages, GitLab Pages, Netlify) solo sirve ficheros.
+
+Un ataque que captura los datos *mientras viajan* entre el navegador y el servidor afecta al flujo de información (la red), no al cliente ni al servidor. Se protege con HTTPS.
+
+### Errores típicos
+
+- **Poner la base de datos delante de la lógica.** PostgreSQL no entiende HTTP; solo recibe SQL de la aplicación.
+- **Creer que nginx ejecuta Python.** Necesita un servidor de aplicaciones detrás.
+
+### Prácticas de clase
+
+- En la entrega de nginx, la parte de Zensical era una web estática servida por nginx; en la UT4, el patrón se repite con Django detrás de Gunicorn.
+
+### Repaso rápido
+
+<details>
+<summary>¿Por qué un sitio estático no tiene capa de datos?</summary>
+
+Porque no consulta nada en cada petición: entrega siempre los mismos ficheros ya compilados.
+
+</details>
+<details>
+<summary>¿Qué limitación tiene el modelo cliente-servidor?</summary>
+
+El cuello de botella: si muchos clientes piden a la vez al mismo servidor, se satura. Se combate con balanceo y CDN.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: arquitecturas web](https://dpl-f1facc.gitlab.io/ut02/teoria/arquitecturas-web/)
+
+## HTTP y HTTPS
+
+### Qué se ve
+
+Cómo es una petición y una respuesta HTTP, los códigos de estado, las versiones del protocolo y qué añade HTTPS.
+
+### Conceptos
+
+<mark>HTTP</mark> es el protocolo de la capa de aplicación con el que hablan el navegador y el servidor. Va sobre TCP: puerto 80 (HTTP) y 443 (HTTPS). Es **sin estado**: cada petición va por su cuenta, y para recordar al usuario se usan cookies o tokens.
+
+Una petición lleva método, ruta, versión y cabeceras (`GET /index.html HTTP/1.1`, `Host: www.ejemplo.local`). La respuesta lleva un código de estado, cabeceras (`Content-Type`) y el cuerpo.
+
+| Código | Significado |
+|---|---|
+| 200 | Correcto |
+| 201 | Creado (un POST que da de alta algo) |
+| 204 | Correcto, sin contenido (un DELETE) |
+| 301 / 302 | Redirección permanente / temporal |
+| 401 | Falta autenticarse o las credenciales no valen |
+| 403 | Identificado, pero sin permiso |
+| 404 | No existe |
+| 409 | Conflicto (por ejemplo, el usuario ya existe) |
+| 500 | Error interno de la aplicación |
+| 502 | El proxy no recibe respuesta válida del servidor de detrás |
+| 504 | El servidor de detrás tarda demasiado |
+
+| Versión | Qué aportó |
+|---|---|
+| HTTP/1.0 | Cabeceras, pero una conexión TCP por petición |
+| HTTP/1.1 | Conexiones persistentes y la cabecera **Host**, que permite varios dominios en la misma IP |
+| HTTP/2 | Muchas peticiones a la vez por una sola conexión (multiplexación) y cabeceras comprimidas; sigue en TCP |
+| HTTP/3 | Cambia TCP por **QUIC sobre UDP**, con TLS integrado; una pérdida no bloquea las demás peticiones |
+
+<mark>HTTPS</mark> es HTTP dentro de TLS. TLS da confidencialidad (cifra), integridad (detecta cambios) y autenticación del servidor (certificado). TLS 1.3 abre la conexión en una sola ida y vuelta y solo admite cifrados modernos. HTTPS protege el canal, no el código: un formulario mal programado sigue siendo vulnerable.
+
+### Casos y ejemplos
+
+```bash
+curl -I http://localhost/                    # solo cabeceras: código y Content-Type
+curl -H "Host: blog.localhost" http://localhost/   # forzar la cabecera Host
+curl -k -I https://localhost/                # -k acepta un certificado autofirmado
+```
+
+### Errores típicos
+
+- **Pensar que HTTPS va sobre UDP.** Solo HTTP/3 usa UDP, a través de QUIC.
+- **Confundir 401 y 403.** El 401 pide identificarse; el 403 dice que, aun identificado, no hay permiso.
+
+### Prácticas de clase
+
+- En las comprobaciones de las entregas se usaba `curl -I` para enseñar el código de estado de cada sitio.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué cabecera de HTTP/1.1 permite tener varios sitios en la misma IP?</summary>
+
+`Host`. El servidor la lee para saber qué sitio sirve.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: HTTP y HTTPS](https://dpl-f1facc.gitlab.io/ut02/teoria/http-https/)
+2. [MDN: visión general de HTTP](https://developer.mozilla.org/es/docs/Web/HTTP/Overview)
+
+## nginx como servidor web
+
+### Qué se ve
+
+Cómo está organizado nginx en Ubuntu, sus procesos, las directivas globales, los comandos básicos y cómo hace de proxy inverso y de balanceador.
+
+### Conceptos
+
+nginx tiene un **proceso maestro** que lee la configuración y varios **workers** que atienden las conexiones con un modelo de eventos (muchas conexiones por worker). En un contenedor sin systemd se arranca en primer plano: `nginx -g 'daemon off;'`.
+
+| Ruta (paquete de Ubuntu) | Qué hay |
+|---|---|
+| `/etc/nginx/nginx.conf` | Configuración global |
+| `/etc/nginx/sites-available/` | Un fichero por sitio |
+| `/etc/nginx/sites-enabled/` | Enlaces simbólicos a los sitios activos |
+| `/var/www/html` | Raíz por defecto |
+| `/var/log/nginx/` | `access.log` y `error.log` |
+
+Directivas globales: `user` (los workers corren como `www-data`), `worker_processes auto` (uno por núcleo), `worker_connections` (conexiones por worker; el máximo aproximado es workers × conexiones).
+
+| Comando | Qué hace |
+|---|---|
+| `nginx -t` | Valida la configuración (siempre antes de recargar) |
+| `nginx -s reload` | Aplica cambios sin cortar conexiones |
+| `nginx -V` | Versión y módulos compilados |
+| `nginx -s stop` | Para nginx |
+
+Como <mark>proxy inverso</mark>, nginx recibe la petición y la reenvía con `proxy_pass` a otro servidor, añadiendo cabeceras para que la app sepa el nombre pedido (`Host`), la IP real (`X-Real-IP`, `X-Forwarded-For`) y si era HTTPS (`X-Forwarded-Proto`). Con un bloque `upstream` reparte entre varios servidores (por turnos, por menos conexiones o por IP).
+
+Frente a Apache: Apache usa un proceso o hilo por conexión y admite `.htaccess` en cada carpeta; nginx es asíncrono, muy bueno con estáticos y toda su configuración está en `/etc/nginx`.
+
+### Casos y ejemplos
+
+En la entrega de nginx había dos sitios en el puerto 80 elegidos por nombre (`docs.localhost` con la web de Zensical, `blog.localhost` con un blog de Jekyll), copiados a `sites-available`, enlazados en `sites-enabled` y comprobados con un script de `curl`.
+
+### Errores típicos
+
+- **`bind() to 0.0.0.0:80 failed`.** Otro proceso ya usa el puerto 80.
+- **Cambiar la configuración y no recargar.** nginx sigue con la vieja hasta `nginx -s reload`.
+- **Ficheros creados como root en un volumen.** Desde el contenedor salen con dueño root; se arregla con `chown`.
+
+### Prácticas de clase
+
+- «NGINX para todos y todos para NGINX» (entregada el 18/10).
+
+### Repaso rápido
+
+<details>
+<summary>¿Por qué en un contenedor se arranca nginx con daemon off?</summary>
+
+Porque un contenedor vive mientras vive su proceso principal. Si nginx se fuera a segundo plano, el contenedor terminaría.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: servidor web nginx](https://dpl-f1facc.gitlab.io/ut02/teoria/servidor-web-nginx/)
+2. [Documentación oficial de nginx](https://nginx.org/en/docs/)
+
+## Servidores de aplicaciones: Gunicorn y PHP-FPM
+
+### Qué se ve
+
+Qué es WSGI, cómo trabaja Gunicorn con sus workers, cómo coopera con nginx, qué hace PHP-FPM y por qué salen los errores 502 y 504.
+
+### Conceptos
+
+<mark>WSGI</mark> (Web Server Gateway Interface) es la norma de Python que define cómo se hablan el servidor y la aplicación: qué objeto expone la aplicación y cómo se le entrega cada petición. Gracias a ella, cualquier aplicación compatible funciona con cualquier servidor compatible.
+
+<mark>Gunicorn</mark> es un servidor WSGI para producción. Un proceso maestro abre el punto de escucha y lanza varios **workers** que ejecutan la aplicación en paralelo; si uno muere, lo repone. Con `--workers 2` hay dos procesos de la misma aplicación compartiendo el mismo puerto.
+
+```bash
+gunicorn --bind 127.0.0.1:8000 --workers 2 app:app        # Flask: módulo app, objeto app
+gunicorn config.wsgi:application --bind 0.0.0.0:8000      # Django, dentro de un contenedor
+```
+
+Puede escuchar en un **puerto TCP** (entre contenedores) o en un **socket UNIX** (`unix:/tmp/app.sock`), un fichero especial que no ocupa puerto y es más rápido, pero obliga a que nginx y Gunicorn estén en la misma máquina.
+
+<mark>PHP-FPM</mark> hace lo mismo para PHP. nginx le pasa las peticiones de los `.php` por FastCGI (`fastcgi_pass`) en lugar de por HTTP.
+
+El servidor de desarrollo de Flask (`flask run`) o el `runserver` de Django sirven para programar, no para producción: atienden una petición cada vez y enseñan información interna.
+
+### Casos y ejemplos
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:8000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+location = /estilos.css { }        # el estático lo sirve nginx desde root
+```
+
+| Síntoma | Causa | Comprobación |
+|---|---|---|
+| 502 Bad Gateway | Gunicorn no está arrancado o `proxy_pass` apunta a otro puerto | `ps aux \| grep gunicorn`, `curl -I http://127.0.0.1:8000/` |
+| 504 Gateway Timeout | Gunicorn está saturado o tarda demasiado | Log de Gunicorn; más workers |
+| `externally-managed-environment` | `pip` global bloqueado en Ubuntu | Usar un entorno virtual |
+| `ModuleNotFoundError: flask` | Gunicorn lanzado con el Python del sistema | Usar `.venv/bin/gunicorn` |
+
+### Errores típicos
+
+- **`--bind 127.0.0.1` dentro de un contenedor.** nginx, desde otro contenedor, no llega. Hay que usar `0.0.0.0`.
+- **Pensar que `--workers 2` son dos servidores distintos.** Es la misma aplicación repetida en dos procesos.
+
+### Prácticas de clase
+
+- Prácticas guiadas de la calculadora en Python con nginx y Gunicorn y de la calculadora en PHP con PHP-FPM.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué significa app:app en el comando de Gunicorn?</summary>
+
+Módulo `app` (el fichero `app.py`) y, dentro, el objeto `app`, que es la aplicación WSGI.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: Gunicorn](https://dpl-f1facc.gitlab.io/ut02/teoria/gunicorn/) y [PHP-FPM](https://dpl-f1facc.gitlab.io/ut02/teoria/php-fpm/)
+2. [Documentación de Gunicorn](https://docs.gunicorn.org/)
+
+## Implantación: servidor propio, nube y contenedores
+
+### Qué se ve
+
+Dónde se puede instalar una aplicación, los modelos de servicio de la nube, la diferencia entre máquina virtual y contenedor y la infraestructura como código con Terraform.
+
+### Conceptos
+
+| Modelo | Qué es |
+|---|---|
+| <mark>On-premise</mark> | Hardware propio en la empresa: control total, pero hay que comprarlo y mantenerlo |
+| Hosting | Se alquila espacio en un servidor ajeno |
+| <mark>Cloud</mark> | Recursos de un proveedor por Internet, bajo demanda, pagando por uso y escalando cuando hace falta |
+| IaaS | El proveedor da máquina virtual, red y disco; tú instalas el sistema y todo lo demás (AWS EC2, Oracle Cloud) |
+| PaaS | Solo subes la aplicación; el proveedor gestiona el sistema y la plataforma (Heroku, App Engine) |
+| SaaS | Usas una aplicación ya hecha (Gmail, Microsoft 365) |
+
+<ModelosNube />
+
+Una <mark>máquina virtual</mark> virtualiza el hardware sobre un hipervisor y lleva su propio sistema operativo completo. Un <mark>contenedor</mark> aísla un proceso con sus dependencias y comparte el núcleo del anfitrión: arranca en segundos y pesa mucho menos.
+
+**Terraform** describe la infraestructura en ficheros de texto (infraestructura como código): se dice el estado final deseado y Terraform calcula qué crear. Su ciclo es `terraform init` → `plan` (enseña qué haría) → `apply` (lo hace) → `destroy` (lo borra todo). Guarda lo creado en el fichero de estado `terraform.tfstate`.
+
+### Casos y ejemplos
+
+En clase se usaron dos máquinas de **Oracle Cloud** (IaaS) para desplegar con Kamal: se entra por SSH, se abren los puertos en las reglas de red de la máquina y se apunta un dominio a su IP pública. Para el proyecto final hará falta una máquina con IP pública y un dominio propio.
+
+Para servir una web en local basta con IP y puerto; para Internet, además, IP estática o DNS dinámico y un nombre de dominio.
+
+### Errores típicos
+
+- **Confundir IaaS con PaaS.** En IaaS el sistema operativo lo gestionas tú; en PaaS no lo ves.
+- **Subir `terraform.tfstate` o claves al repositorio.** Contienen datos sensibles.
+
+### Prácticas de clase
+
+- Práctica guiada de Terraform y AWS; máquinas de Oracle Cloud para el despliegue con Kamal.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué hace terraform plan?</summary>
+
+Enseña los cambios que haría, sin aplicarlos. Los aplica `terraform apply`.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: cloud](https://dpl-f1facc.gitlab.io/ut02/teoria/cloud/)
+2. [Documentación de Terraform](https://developer.hashicorp.com/terraform/docs)

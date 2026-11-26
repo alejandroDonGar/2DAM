@@ -1,0 +1,302 @@
+---
+titulo: Administración de nginx y seguridad
+etiqueta: UT3
+orden: 3
+entrada: Cómo sirve un mismo nginx varios sitios, cómo decide qué hacer con cada URL, cómo se amplía con módulos, cómo se protege una zona con usuario y contraseña y cómo se cifra todo con HTTPS.
+cuando: octubre y noviembre (repaso en clase el 13/11)
+ejercicios: prácticas guiadas de server blocks, HTTPS autofirmado, módulos y autenticación
+ruta: { texto: 'UT3 en la web del módulo', url: 'https://dpl-f1facc.gitlab.io/ut03/teoria/virtual-hosts/' }
+---
+import ProxyInverso from '../../../components/esquemas/ProxyInverso.astro';
+import Secuencia from '../../../components/esquemas/Secuencia.astro';
+import Puzle from '../../../components/Puzle.astro';
+
+## Server blocks: varios sitios en un servidor
+
+### Qué se ve
+
+Qué es un server block, cómo elige nginx el sitio por el nombre pedido, el sitio por defecto y las formas de `server_name`.
+
+### Conceptos
+
+Un <mark>server block</mark> (`server { ... }`) define un sitio dentro de nginx: nombre, puerto, carpeta y logs. Es lo que en Apache se llama *virtual host*. Hay dos formas de distinguir sitios:
+
+- **Por nombre**: varios sitios comparten IP y puerto, y nginx elige según la cabecera `Host` de la petición, comparándola con `server_name`. Es la habitual.
+- **Por puerto**: cada sitio en su puerto (`listen 8080`).
+
+El <mark>sitio por defecto</mark> responde cuando ningún nombre coincide. Se marca con `default_server` en `listen` y solo puede haber uno por IP y puerto.
+
+| Forma de `server_name` | Ejemplo | Prioridad |
+|---|---|---|
+| Nombre exacto | `www.ejemplo.local` | 1 |
+| Comodín al principio | `*.ejemplo.local` | 2 |
+| Comodín al final | `www.*` | 3 |
+| Expresión regular | `~^www\d+\.ejemplo\.local$` | 4 |
+| Sitio por defecto | `listen 80 default_server;` con `server_name _;` | 5 |
+
+<ProxyInverso />
+
+### Casos y ejemplos
+
+```nginx
+server {
+    listen 80;
+    server_name blog.ejemplo.local;
+    root /var/www/blog;
+    index index.html;
+    access_log /var/log/nginx/blog.access.log;
+}
+```
+
+Se activa con `ln -s /etc/nginx/sites-available/blog /etc/nginx/sites-enabled/`, `nginx -t` y `nginx -s reload`. Para probar sin DNS, los nombres se añaden a `/etc/hosts` apuntando a la IP del servidor, o se fuerza la cabecera con `curl -H "Host: blog.ejemplo.local" http://localhost/`.
+
+### Errores típicos
+
+- **Dos `default_server` en el mismo puerto.** `nginx -t` falla con *a duplicate default server*. El de Ubuntu (`sites-enabled/default`) ya lo trae.
+- **`server_name _;` como comodín.** No lo es: es un nombre que nunca coincide.
+
+### Prácticas de clase
+
+- La entrega «NGINX para todos» usaba dos sitios por nombre en el puerto 80.
+
+### Repaso rápido
+
+<details>
+<summary>Dos dominios apuntan a la misma IP y puerto. ¿Cómo elige nginx?</summary>
+
+Por la cabecera `Host`, comparándola con `server_name`. Si no coincide ninguno, sirve el `default_server`.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: server blocks](https://dpl-f1facc.gitlab.io/ut03/teoria/virtual-hosts/)
+2. [nginx: cómo procesa una petición](https://nginx.org/en/docs/http/request_processing.html)
+
+## location, directivas y módulos
+
+### Qué se ve
+
+Los tipos de `location` y su prioridad, `root` frente a `alias`, redirecciones con `return`, módulos compilados y dinámicos y los logs.
+
+### Conceptos
+
+Una <mark>location</mark> aplica una configuración a las URL que encajan con un patrón:
+
+| Sintaxis | Tipo |
+|---|---|
+| `location = /` | Coincidencia exacta |
+| `location /img/` | Prefijo (la más usada) |
+| `location ^~ /static/` | Prefijo que impide mirar las expresiones regulares |
+| `location ~ \.php$` | Expresión regular, distingue mayúsculas |
+| `location ~* \.(jpg\|png)$` | Expresión regular, sin distinguir mayúsculas |
+
+Orden: si hay una exacta, gana. Si no, se recuerda el prefijo más largo; si lleva `^~`, gana; si no, se prueban las expresiones regulares en el orden del fichero y gana la primera que coincide; si ninguna, se usa el prefijo recordado.
+
+`root` **añade** la URL a la ruta (`root /var/www` + `/img/a.png` = `/var/www/img/a.png`); `alias` **sustituye** la parte de la location.
+
+`return 301 https://$host$request_uri;` redirige conservando el nombre y la ruta. `return 403;` prohíbe.
+
+Los <mark>módulos</mark> amplían nginx. Los **compilados** van dentro del binario y se ven con `nginx -V` (SSL, Basic Auth, control por IP, rewrite). Los **dinámicos** son ficheros `.so`: en Ubuntu se instalan como paquetes `libnginx-mod-*` y se cargan con `load_module`, normalmente desde un fichero en `/etc/nginx/modules-enabled/`. En nginx no existe `a2enmod` (eso es Apache).
+
+| Directiva | Función |
+|---|---|
+| `listen` | Puerto (y opcionalmente IP) del sitio |
+| `server_name` | Nombres que atiende el sitio |
+| `default_server` | Sitio que responde si ningún nombre coincide |
+| `root` / `index` | Carpeta del sitio y fichero índice |
+| `location` | Configuración por ruta |
+| `proxy_pass` | Reenvía a un servidor de aplicaciones |
+| `load_module` | Carga un módulo dinámico |
+| `image_filter` | Redimensiona o recorta imágenes al vuelo (módulo dinámico) |
+| `autoindex` | Lista el contenido de una carpeta sin índice |
+| `access_log` / `error_log` | Logs del sitio |
+
+### Casos y ejemplos
+
+Miniaturas al vuelo con el módulo de imágenes:
+
+```nginx
+location /img/ {
+    image_filter resize 300 300;
+    image_filter_jpeg_quality 80;
+}
+```
+
+<Puzle archivo="¿Qué location atiende cada URL?" ejercicio="ejemplo del tema" piezas={[
+  { t: 'location = /', hueco: 1 },
+  { t: 'location ^~ /estatico/', hueco: 2 },
+  { t: 'location ~* \\.(jpg|png)$', hueco: 3 },
+  { t: 'location /', hueco: 4 },
+]}>
+
+```text
+GET /                       __1__
+GET /estatico/logo.png      __2__
+GET /fotos/gato.PNG         __3__
+GET /contacto               __4__
+```
+
+</Puzle>
+
+### Errores típicos
+
+- **Poner una regex general antes que una específica.** Gana la primera que coincide, así que la específica no se aplica nunca.
+- **Instalar un módulo y no recargar.** El `load_module` se lee al arrancar o recargar.
+
+### Prácticas de clase
+
+- Práctica guiada de módulos de nginx con procesado de imágenes.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué diferencia hay entre un módulo compilado y uno dinámico?</summary>
+
+El compilado va dentro del binario y siempre está; el dinámico es un `.so` que se carga con `load_module`.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: administración avanzada de nginx](https://dpl-f1facc.gitlab.io/ut03/teoria/administracion-nginx/)
+2. [nginx: directiva location](https://nginx.org/en/docs/http/ngx_http_core_module.html#location)
+
+## Autenticación y control de acceso
+
+### Qué se ve
+
+La diferencia entre autenticación y autorización, Basic Auth con `htpasswd`, el control por IP con `allow` y `deny`, y por qué hace falta HTTPS.
+
+### Conceptos
+
+<mark>Autenticación</mark> es comprobar quién eres (usuario y contraseña, una clave, un token). <mark>Autorización</mark> es decidir qué puedes hacer una vez identificado. Ser quien dices ser no te da permisos por sí solo. La **autenticación de doble factor** pide dos pruebas de tipo distinto: algo que sabes (contraseña) y algo que tienes (un código del móvil) o que eres (huella).
+
+Si falta autenticarse, la respuesta es **401**; si estás identificado pero sin permiso, **403**.
+
+<mark>Basic Auth</mark> es el mecanismo más simple de HTTP: el servidor responde 401 con `WWW-Authenticate: Basic`, y el navegador vuelve a pedir con `Authorization: Basic` seguido de `usuario:contraseña` en **Base64**. Base64 no es cifrado: se decodifica sin clave. Por eso Basic Auth solo es aceptable dentro de HTTPS.
+
+| Directiva | Función |
+|---|---|
+| `auth_basic "Zona privada";` | Activa Basic Auth con ese mensaje |
+| `auth_basic_user_file /etc/nginx/.htpasswd;` | Fichero de usuarios (contraseñas con hash) |
+| `allow 192.168.1.0/24;` / `deny all;` | Control por IP |
+| `satisfy any;` / `satisfy all;` | Basta con una condición o hacen falta todas |
+
+nginx no usa ficheros `.htaccess` (son de Apache): todo va en la configuración.
+
+### Casos y ejemplos
+
+```bash
+htpasswd -c /etc/nginx/.htpasswd ana       # -c crea el fichero; sin -c añade usuarios
+```
+
+```nginx
+location /privado/ {
+    satisfy any;                 # entra quien venga de la red interna o sepa la contraseña
+    allow 172.17.0.1;
+    deny all;
+    auth_basic "Zona interna";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+}
+```
+
+### Errores típicos
+
+- **Basic Auth sobre HTTP.** La contraseña viaja legible.
+- **Usar `htpasswd -c` dos veces.** La segunda vez borra a los usuarios anteriores.
+
+### Prácticas de clase
+
+- Prácticas guiadas de server blocks con autenticación y de HTTPS con autenticación.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué implica que Basic Auth envíe las credenciales en Base64?</summary>
+
+Que no van cifradas: cualquiera que capture la petición las decodifica. Hay que usarlo con HTTPS.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: autenticación y control de acceso](https://dpl-f1facc.gitlab.io/ut03/teoria/autenticacion-acceso/)
+2. [nginx: módulo auth_basic](https://nginx.org/en/docs/http/ngx_http_auth_basic_module.html)
+
+## HTTPS y certificados
+
+### Qué se ve
+
+Las piezas de TLS, cómo se crea un certificado autofirmado, en qué se diferencia de uno de Let's Encrypt, cómo se configura un sitio HTTPS en nginx y qué son HTTP/2 y HTTP/3.
+
+### Conceptos
+
+TLS usa dos piezas: la **clave privada** (`.key`, nunca sale del servidor) y el **certificado** (`.crt`, con la clave pública, el nombre del dominio y la firma de quien lo emite). Una <mark>autoridad de certificación</mark> (CA) firma certificados después de comprobar que quien lo pide controla el dominio; los navegadores traen una lista de CA de confianza.
+
+<Secuencia titulo="Apertura de una conexión TLS"
+  descripcion="Cuatro pasos: el cliente saluda con sus algoritmos, el servidor responde con su certificado, el cliente lo verifica y se acuerda una clave, y a partir de ahí todo va cifrado."
+  pie="En TLS 1.3 esto ocurre en una sola ida y vuelta."
+  pasos={[['Saludo', 'ClientHello'], ['Certificado', 'ServerHello'], ['Verificar', 'firma de la CA'], ['Cifrado', 'clave de sesión']]} />
+
+| | Autofirmado | Let's Encrypt |
+|---|---|---|
+| Quién lo firma | Uno mismo | Una CA de confianza |
+| Navegador | Avisa de que no es seguro | Lo acepta |
+| Requisitos | Ninguno; sirve en local | Dominio público que la CA pueda comprobar |
+| Uso | Pruebas | Producción |
+| Duración | La que elijas | 90 días, con renovación automática |
+
+Los dos cifran igual de bien y los dos necesitan clave privada. Let's Encrypt es gratuito y automatizado con el protocolo **ACME**; el desafío más habitual (HTTP-01) consiste en publicar un fichero en `/.well-known/acme-challenge/` por el puerto 80. Se pide con `certbot --nginx -d dominio` y se renueva antes de que queden 30 días. Let's Encrypt ha anunciado que irá acortando la duración hasta 45 días en los próximos años.
+
+**HTTP/2** se negocia dentro de TLS (ALPN) y multiplexa peticiones por una conexión; **HTTP/3** usa QUIC sobre UDP y necesita nginx 1.25 o superior.
+
+### Casos y ejemplos
+
+```bash
+openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
+  -keyout www.ejemplo.local.key -out www.ejemplo.local.crt -subj "/CN=www.ejemplo.local"
+```
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name www.ejemplo.local;
+    ssl_certificate     /etc/nginx/ssl/www.ejemplo.local.crt;
+    ssl_certificate_key /etc/nginx/ssl/www.ejemplo.local.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    root /var/www/www.ejemplo.local;
+}
+server {
+    listen 80;
+    server_name www.ejemplo.local;
+    return 301 https://$host$request_uri;    # todo HTTP pasa a HTTPS
+}
+```
+
+Se comprueba con `curl -k -I https://localhost/ -H "Host: www.ejemplo.local"` y `openssl s_client -connect localhost:443 -servername www.ejemplo.local`.
+
+### Errores típicos
+
+- **`curl: (60) SSL certificate problem`.** Es el aviso del autofirmado; en pruebas se usa `-k`.
+- **Pedir un certificado de Let's Encrypt para un nombre local.** La CA no puede comprobar `algo.local`: necesita un dominio público que apunte al servidor y el puerto 80 abierto.
+- **Dejar la clave privada con permisos abiertos.** Se protege con `chmod 400`.
+
+### Prácticas de clase
+
+- Práctica guiada de HTTPS con certificado autofirmado y de HTTP/2 y HTTP/3 en nginx.
+- Con Kamal, el certificado de Let's Encrypt lo pide kamal-proxy solo al poner `ssl: true` (UT4).
+
+### Repaso rápido
+
+<details>
+<summary>¿Por qué el navegador avisa con un certificado autofirmado?</summary>
+
+Porque no lo firma ninguna CA de su lista de confianza, así que no puede comprobar que el servidor sea quien dice.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: HTTPS, certificados y SSL/TLS](https://dpl-f1facc.gitlab.io/ut03/teoria/https-certificados/)
+2. [Let's Encrypt: duración de los certificados](https://letsencrypt.org/docs/cert-lifetimes/) y [tipos de desafío](https://letsencrypt.org/docs/challenge-types/)

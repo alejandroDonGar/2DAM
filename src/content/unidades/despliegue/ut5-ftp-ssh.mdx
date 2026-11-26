@@ -1,0 +1,177 @@
+---
+titulo: Transferencia de archivos y acceso remoto
+etiqueta: UT5
+orden: 5
+entrada: Cómo se suben ficheros a un servidor y cómo se administra a distancia. FTP con sus dos modos y sus versiones seguras, y SSH con claves en lugar de contraseñas, que es también la puerta por la que entra Kamal.
+cuando: octubre (entrega de SSH el 26/10)
+ejercicios: «Configuración del acceso remoto mediante SSH» (solo con clave, entregada el 26/10)
+ruta: { texto: 'UT5 en la web del módulo', url: 'https://dpl-f1facc.gitlab.io/ut05/teoria/ftp/' }
+---
+import Secuencia from '../../../components/esquemas/Secuencia.astro';
+import Puzle from '../../../components/Puzle.astro';
+
+## FTP, FTPS y SFTP
+
+### Qué se ve
+
+Cómo funciona FTP con sus dos canales, los modos activo y pasivo, usuarios y permisos, el acceso anónimo, las versiones seguras y cómo se endurece un servidor FTP.
+
+### Conceptos
+
+<mark>FTP</mark> copia ficheros entre un cliente y un servidor. A diferencia de HTTP, mantiene una **sesión**: el cliente se identifica una vez y hace varias operaciones. Usa dos canales:
+
+- **Control** (puerto 21): órdenes y respuestas (`USER`, `PASS`, `LIST`, `RETR`, `STOR`).
+- **Datos**: los listados y los ficheros que se suben y bajan.
+
+| Modo | Quién abre el canal de datos | Problema |
+|---|---|---|
+| <mark>Activo</mark> | El servidor se conecta al cliente (desde su puerto 20) | Un NAT o cortafuegos en el cliente lo bloquea |
+| <mark>Pasivo</mark> | El cliente se conecta a un puerto alto que le indica el servidor | Hay que abrir ese rango de puertos en el servidor |
+
+El pasivo es el recomendado y el que usan FileZilla y los clientes modernos. El servidor anuncia el puerto con la respuesta `227 Entering Passive Mode`.
+
+Los usuarios FTP son usuarios del sistema y sus permisos son los de Linux. Un **permiso** dice qué puedes hacer (leer, escribir); una **cuota**, cuánto espacio puedes usar. El usuario **anónimo** entra sin cuenta propia, normalmente solo para descargar; en un servidor de despliegue se desactiva.
+
+| Protocolo | Base | Cifrado | Puertos |
+|---|---|---|---|
+| FTP | Propio | Ninguno | 21 + 20 o puerto alto |
+| FTPS explícito | FTP + TLS (`AUTH TLS`) | Sí | 21 |
+| FTPS implícito | FTP + TLS desde el primer byte | Sí | 990 |
+| SFTP | Subsistema de SSH | Sí | 22 |
+| scp | Copia por SSH de una sola orden | Sí | 22 |
+
+FTPS **no es** SFTP: el primero es FTP con TLS; el segundo no es FTP, va dentro de SSH. En despliegues se prefiere SFTP porque aprovecha el SSH que ya hay. En FTPS la conexión segura se negocia con cifrado asimétrico: el cliente cifra con la clave pública del servidor y solo el servidor puede descifrar con su clave privada; después se pasa a una clave simétrica de sesión.
+
+### Casos y ejemplos
+
+Endurecimiento de vsftpd (`/etc/vsftpd.conf`):
+
+```ini
+anonymous_enable=NO          # sin anónimo
+local_enable=YES
+write_enable=YES
+chroot_local_user=YES        # cada usuario encerrado en su carpeta
+userlist_enable=YES
+userlist_deny=NO             # solo entran los de la lista
+pasv_min_port=10240          # rango pasivo acotado
+pasv_max_port=10400
+ssl_enable=YES               # FTPS
+force_local_logins_ssl=YES
+```
+
+Si vsftpd corre en un contenedor, hay que publicar el 21 y el rango pasivo, y guardar los ficheros en un volumen. FileZilla es un **cliente** gráfico (no un protocolo) que habla FTP, FTPS y SFTP.
+
+<Puzle archivo="Respuestas de un servidor FTP" ejercicio="ejemplo del tema" piezas={[
+  { t: 'Modo pasivo anunciado', hueco: 1 },
+  { t: 'Sin permiso sobre la carpeta', hueco: 2 },
+  { t: 'Usuario o contraseña incorrectos', hueco: 3 },
+  { t: 'Raíz del chroot escribible', hueco: 4 },
+]}>
+
+```text
+227 Entering Passive Mode (…)                        __1__
+550 Permission denied al subir                       __2__
+530 Login incorrect                                  __3__
+500 OOPS: refusing to run with writable root         __4__
+```
+
+</Puzle>
+
+### Errores típicos
+
+- **Entrar funciona pero `ls` se cuelga.** Es el modo activo detrás de NAT, o el rango pasivo cerrado en el cortafuegos.
+- **550 al subir.** El usuario no tiene permiso de escritura sobre esa carpeta (permisos de Linux).
+- **Confundir FTPS con SFTP.**
+
+### Prácticas de clase
+
+- Prácticas guiadas de FTP y de FTP seguro (FTPS) con vsftpd.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué viaja por la conexión de datos de FTP?</summary>
+
+Los ficheros que se suben y se bajan, y los listados de directorio. Las órdenes van por la de control.
+
+</details>
+<details>
+<summary>¿Qué puerto usa FTPS implícito?</summary>
+
+El 990. El explícito usa el 21 y pide TLS con `AUTH TLS`.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: FTP, FTPS y SFTP](https://dpl-f1facc.gitlab.io/ut05/teoria/ftp/)
+2. [Manual de vsftpd.conf](https://security.appspot.com/vsftpd/vsftpd_conf.html)
+
+## SSH: acceso remoto con claves
+
+### Qué se ve
+
+Cómo funciona una conexión SSH, las claves pública y privada, la huella del servidor, cómo se configura un servidor solo con clave y cómo se copian ficheros con scp y sftp.
+
+### Conceptos
+
+<mark>SSH</mark> abre una sesión cifrada con otra máquina por el puerto 22. Al conectar, el servidor enseña su **clave de host** y el cliente comprueba la huella (la primera vez pregunta, y la guarda en `~/.ssh/known_hosts`; si cambia, avisa de un posible ataque).
+
+Para entrar sin contraseña se usa un par de claves: la **privada** se queda en el cliente (protegida con *passphrase*) y la **pública** se copia al servidor en `~/.ssh/authorized_keys`. Al conectar, el cliente demuestra que tiene la privada sin enviarla nunca.
+
+<Secuencia titulo="Pasar a entrar solo con clave"
+  descripcion="Cinco pasos: generar el par de claves, copiar la pública al servidor, probar que se entra con la clave, desactivar la contraseña y root en sshd_config, y comprobar y reiniciar."
+  pie="Hasta comprobar que la clave funciona, no se desactiva la contraseña: si no, uno se queda fuera."
+  pasos={[['Generar', 'ssh-keygen -t ed25519'], ['Copiar', 'ssh-copy-id'], ['Probar', 'ssh usuario@servidor'], ['Cerrar', 'sshd_config'], ['Comprobar', 'sshd -t y reinicio']]} />
+
+| Opción de `/etc/ssh/sshd_config` | Valor seguro |
+|---|---|
+| `PasswordAuthentication` | `no` |
+| `PermitRootLogin` | `no` |
+| `PubkeyAuthentication` | `yes` |
+| `KbdInteractiveAuthentication` | `no` |
+
+`sshd -t` comprueba la sintaxis y `sshd -T` enseña la configuración que de verdad se aplica.
+
+| Comando | Qué hace |
+|---|---|
+| `ssh usuario@servidor` | Abre una sesión |
+| `scp fichero usuario@servidor:/ruta/` | Copia un fichero |
+| `sftp usuario@servidor` | Sesión interactiva de transferencia |
+| `~/.ssh/config` | Alias: `ssh produccion` en lugar de usuario, IP y clave |
+
+### Casos y ejemplos
+
+En la entrega de SSH se montaron dos contenedores en una red de Docker, servidor y cliente. Se generó una clave `ed25519` con passphrase, se copió con `ssh-copy-id` tras comparar la huella, se desactivaron la contraseña y el acceso de root y se verificó de dos formas: `ssh -v` solo ofrecía `publickey`, y forzar la contraseña daba `Permission denied (publickey)`.
+
+Kamal entra en los servidores exactamente así: por SSH, con el usuario de `ssh.user` y una clave autorizada.
+
+### Errores típicos
+
+- **Descomentar `PasswordAuthentication yes` sin cambiar el valor.** Sigue permitiendo contraseña; lo delata `sshd -T`.
+- **`systemctl` no existe en el contenedor.** Se usa `service ssh restart`.
+- **Permisos abiertos en `~/.ssh`.** SSH ignora la clave si otros pueden leerla.
+
+### Prácticas de clase
+
+- «Configuración del acceso remoto mediante SSH», con sus ocho errores documentados (entregada el 26/10).
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué clave se copia al servidor?</summary>
+
+La pública, en `~/.ssh/authorized_keys`. La privada nunca sale del cliente.
+
+</details>
+<details>
+<summary>¿Qué diferencia hay entre scp y sftp?</summary>
+
+Los dos van por SSH. `scp` copia de una sola orden; `sftp` abre una sesión interactiva para listar, subir y bajar.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: SSH como servicio](https://dpl-f1facc.gitlab.io/ut05/teoria/ssh/)
+2. [Manual de sshd_config (OpenSSH)](https://man.openbsd.org/sshd_config)

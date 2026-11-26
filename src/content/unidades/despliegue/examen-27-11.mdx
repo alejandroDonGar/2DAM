@@ -1,0 +1,1027 @@
+---
+titulo: Repaso del examen del 27 de noviembre
+etiqueta: Examen
+orden: 0
+entrada: Las preguntas de ejemplo que se dieron en clase, agrupadas por bloques y resueltas una a una (la correcta, por qué, y por qué fallan las demás), y una respuesta modelo para la parte de desarrollo, que pide explicar con palabras propias el despliegue con Kamal.
+cuando: examen el 27/11/2026 (tipo test + desarrollo)
+ejercicios: preguntas de ejemplo de clase y repaso de las seis unidades
+ruta: { texto: 'Preparación de los exámenes (web del módulo)', url: 'https://dpl-f1facc.gitlab.io/evaluacion/preparacion-examen/' }
+---
+import CapasWeb from '../../../components/esquemas/CapasWeb.astro';
+import ProxyInverso from '../../../components/esquemas/ProxyInverso.astro';
+import KamalDespliegue from '../../../components/esquemas/KamalDespliegue.astro';
+import Secuencia from '../../../components/esquemas/Secuencia.astro';
+import Puzle from '../../../components/Puzle.astro';
+
+## Cómo es el examen
+
+### Qué se ve
+
+El examen tiene dos partes. La primera es **tipo test**: preguntas de elegir una opción, de relacionar conceptos con su definición y de ordenar los pasos de un proceso. La segunda es de **desarrollo**: explicar con palabras propias cómo se despliega una aplicación con Kamal y, en general, todo lo visto hasta ahora.
+
+Aunque la web del módulo dice que el primer examen trimestral cubre la UT1 y la UT2, las preguntas de ejemplo de clase tocan las seis unidades (FTP, DNS y LDAP incluidos) y el caso práctico de Kamal con JWT y Alembic. Por eso esta página las repasa todas.
+
+### Conceptos
+
+Cada bloque de abajo corresponde a una o varias unidades. Si una pregunta falla, el enlace del bloque lleva a la unidad donde está explicado con calma:
+
+| Bloque | Unidades |
+|---|---|
+| Arquitectura y servidores | [UT2](../ut2-arquitecturas-servidores/) |
+| nginx, HTTPS y autenticación | [UT3](../ut3-administracion-nginx/) |
+| Contenedores, Kamal y migraciones | [UT4](../ut4-aplicaciones-despliegue/) |
+| Seguridad: autenticación, autorización y JWT | [UT4](../ut4-aplicaciones-despliegue/) y [UT3](../ut3-administracion-nginx/) |
+| FTP, SSH, DNS y LDAP | [UT5](../ut5-ftp-ssh/) y [UT6](../ut6-dns-ldap/) |
+| Git, README e integración continua | [UT1](../ut1-git-documentacion-ci/) |
+
+### Errores típicos
+
+- **Confundir codificar con cifrar.** Base64 (Basic Auth) y base64url (JWT) se deshacen sin ninguna clave. Solo TLS (HTTPS) cifra lo que viaja.
+- **Confundir autenticación con autorización.** La primera comprueba quién eres; la segunda decide qué puedes hacer. Siempre va primero la autenticación.
+- **Creer que `EXPOSE` publica un puerto.** Solo lo documenta. Publicar es `-p` en Docker o el proxy en Kamal.
+- **Creer que `kamal rollback` deshace la migración.** Solo vuelve al contenedor anterior. La base de datos se deshace aparte, con `alembic downgrade` o restaurando la copia.
+
+### Prácticas de clase
+
+- Prácticas entregadas que sirven de repaso: «NGINX para todos» (server blocks por nombre, entregada el 18/10) y «Acceso remoto mediante SSH solo con clave» (entregada el 26/10).
+- Caso práctico del profesor: la API de tareas con FastAPI, JWT, Alembic y Kamal.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué tres preguntas aparecen casi seguro?</summary>
+
+Las que se repitieron en clase: el orden de las capas (cliente → presentación → lógica → datos), por qué sale un 502 (Gunicorn caído o `proxy_pass` mal apuntado) y que Basic Auth y JWT no cifran nada por sí mismos.
+
+</details>
+
+### Fuentes
+
+1. Preguntas de ejemplo dictadas en clase el 24/11/2026 (notas propias).
+2. [Web del módulo: temario de la UT1 a la UT6](https://dpl-f1facc.gitlab.io/)
+
+## Bloque 1: arquitectura y servidores
+
+### Qué se ve
+
+Cómo se reparte una aplicación web en capas, qué diferencia a un servidor web de uno de aplicaciones, qué es WSGI, qué significan los workers de Gunicorn y por qué aparece el 502.
+
+### Conceptos
+
+<CapasWeb />
+
+### Preguntas tipo test
+
+**1. Una aplicación con nginx, Gunicorn y PostgreSQL se organiza por capas. ¿Qué asignación es la correcta?**
+
+- a) Cliente → lógica → presentación → datos
+- b) Cliente → nginx → PostgreSQL → lógica
+- c) Cliente → presentación (nginx) → lógica (Gunicorn) → datos (PostgreSQL)
+- d) Cliente → datos → lógica → presentación
+
+<details>
+<summary>Respuesta</summary>
+
+**c)**. La petición entra por nginx, que es la puerta (presentación). Si es dinámica, la pasa a Gunicorn, que ejecuta el código (lógica). El código consulta PostgreSQL (datos). La respuesta vuelve por el mismo camino.
+
+- a) pone la lógica antes que nginx, pero el cliente nunca habla directamente con Gunicorn.
+- b) pone la base de datos antes que la lógica: PostgreSQL no sabe recibir peticiones HTTP, solo consultas SQL que le manda la aplicación.
+- d) está al revés.
+
+</details>
+
+**2. ¿Qué aporta HTTPS a HTTP?**
+
+- a) Comprime las páginas para que pesen menos
+- b) Cifra la comunicación y permite comprobar la identidad del servidor con un certificado
+- c) Sustituye TCP por UDP
+- d) Hace que la página cargue sin servidor
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. HTTPS es HTTP dentro de una conexión TLS. TLS cifra lo que viaja (nadie en medio puede leerlo) y el certificado demuestra que el servidor es quien dice ser.
+
+- a) La compresión es otra cosa (gzip, brotli) y existe también sin TLS.
+- c) HTTPS sigue yendo sobre TCP. El que usa UDP es HTTP/3, a través de QUIC.
+- d) No tiene sentido: siempre hace falta un servidor.
+
+</details>
+
+**3. ¿Qué diferencia hay entre un servidor web como nginx y un servidor de aplicaciones como Gunicorn?**
+
+- a) Ninguna, son nombres distintos para lo mismo
+- b) nginx sirve ficheros estáticos y hace de proxy; Gunicorn ejecuta el código de la aplicación Python
+- c) nginx ejecuta Python y Gunicorn sirve imágenes
+- d) Gunicorn es la base de datos de nginx
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. nginx entrega HTML, CSS, imágenes y reenvía lo dinámico. No sabe ejecutar Python. Gunicorn carga la aplicación (Flask, Django) y genera la respuesta ejecutando su código. Trabajan juntos: ninguno sustituye al otro.
+
+- a) y c) son falsas por lo anterior.
+- d) Gunicorn no guarda datos; eso es PostgreSQL.
+
+</details>
+
+**4. ¿Qué es WSGI?**
+
+- a) Un contrato entre el servidor y la aplicación Python que define cómo se le entrega cada petición y cómo devuelve la respuesta
+- b) El sistema de PostgreSQL que aplica cambios al esquema
+- c) El módulo de nginx que sirve estáticos
+- d) El formato de plantillas HTML que usa Django
+
+<details>
+<summary>Respuesta</summary>
+
+**a)**. WSGI (Web Server Gateway Interface, PEP 3333) es la norma de Python que dice qué objeto expone la aplicación y cómo la llama el servidor. Gracias a ella, cualquier aplicación compatible funciona con cualquier servidor compatible. En Flask el objeto es `app` (se arranca con `gunicorn app:app`) y en Django `config.wsgi:application`.
+
+- b) Eso serían las migraciones (Alembic en Python).
+- c) nginx sirve estáticos con su núcleo, sin WSGI.
+- d) Las plantillas de Django son su propio lenguaje de plantillas, no WSGI.
+
+</details>
+
+**5. Gunicorn arranca con `--workers 2`. ¿Qué significa?**
+
+- a) Se crean dos servidores nginx que se reparten el tráfico con DNS
+- b) Un proceso maestro lanza dos procesos que ejecutan la aplicación y atienden peticiones a la vez en el mismo puerto
+- c) Se ejecutan dos copias de la aplicación en puertos distintos con configuraciones distintas
+- d) Gunicorn reintenta dos veces cada petición fallida
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. El maestro lee la configuración, abre el punto de escucha y crea los workers. Los dos comparten el mismo puerto (por ejemplo, el 8000), así que pueden servir dos peticiones a la vez. Si uno muere, el maestro lo repone.
+
+- a) Los workers no tienen nada que ver con nginx ni con DNS.
+- c) No hay dos puertos ni dos configuraciones: es la misma aplicación repetida.
+- d) Los reintentos no son función de `--workers`.
+
+</details>
+
+**6. nginx recibe una petición dinámica y devuelve 502 Bad Gateway. ¿Cuál es la causa más habitual?**
+
+- a) Gunicorn no está arrancado o `proxy_pass` apunta a una dirección o puerto equivocados
+- b) El certificado ha caducado
+- c) El cliente no ha enviado la cabecera Host
+- d) El fichero HTML no existe
+
+<details>
+<summary>Respuesta</summary>
+
+**a)**. 502 quiere decir que nginx, actuando de pasarela, no ha recibido una respuesta válida del servidor de detrás. Lo primero que hay que mirar es si Gunicorn está en marcha (`ps aux | grep gunicorn`) y si responde en la dirección de `proxy_pass` (`curl -I http://127.0.0.1:8000/`).
+
+- b) Un certificado caducado da un aviso de seguridad en el navegador, no un 502.
+- c) Sin cabecera Host, nginx usa el sitio por defecto; no da 502.
+- d) Un fichero inexistente es 404. Y si Gunicorn tarda demasiado en contestar, el código es 504 (Gateway Timeout), no 502.
+
+</details>
+
+**7. ¿Qué diferencia hay entre una web estática y una aplicación web?**
+
+- a) La estática usa CSS y la aplicación no
+- b) La estática entrega ficheros ya hechos, iguales para todos; la aplicación ejecuta código que genera la respuesta en cada petición (por ejemplo, consultando una base de datos)
+- c) La estática solo se ve en el ordenador y la aplicación también en el móvil
+- d) No hay diferencia si se sirve con nginx
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Una web hecha con Zensical o Jekyll se compila una vez y nginx entrega el HTML tal cual. Una tienda que muestra los pedidos de cada usuario necesita ejecutar código en cada petición.
+
+- a) y c) describen cosas que valen para las dos.
+- d) nginx puede servir las dos, pero la aplicación necesita además un servidor de aplicaciones.
+
+</details>
+
+**8. ¿En qué capa trabaja el protocolo HTTP?**
+
+- a) En la capa de aplicación, sobre TCP
+- b) En la capa de red, como IP
+- c) En la capa de enlace, con las direcciones MAC
+- d) En la capa de transporte, en lugar de TCP
+
+<details>
+<summary>Respuesta</summary>
+
+**a)**. HTTP es un protocolo de aplicación (capa 7 de OSI). Usa TCP como transporte (puerto 80, o 443 con TLS). HTTP/3 cambia TCP por QUIC sobre UDP, pero sigue siendo de aplicación.
+
+- b), c) y d) confunden HTTP con los protocolos de las capas de debajo.
+
+</details>
+
+**9. Relaciona cada modelo con su definición.**
+
+<Puzle archivo="Modelos de implantación" ejercicio="pregunta de relacionar" piezas={[
+  { t: 'On-premise', hueco: 1 },
+  { t: 'Cloud', hueco: 2 },
+  { t: 'IaaS', hueco: 3 },
+  { t: 'Máquina virtual', hueco: 4 },
+  { t: 'Contenedor', hueco: 5 },
+  { t: 'SaaS', porque: 'SaaS es usar una aplicación ya hecha (como el correo web); ninguna definición habla de eso.' },
+]}>
+
+```text
+Hardware propio en las instalaciones de la empresa, que lo compra y mantiene   __1__
+Recursos de un proveedor por Internet, bajo demanda y pagando por uso          __2__
+El proveedor da máquina virtual, red y disco; tú instalas el sistema y todo    __3__
+Virtualiza el hardware y lleva su propio sistema operativo completo            __4__
+Aísla un proceso con sus dependencias y comparte el núcleo del anfitrión       __5__
+```
+
+</Puzle>
+
+**10. Una empresa quiere cambiar de gestor de base de datos sin tocar el resto. ¿Qué capa cambia?**
+
+- a) La de presentación
+- b) La de lógica
+- c) La de datos
+- d) El navegador
+
+<details>
+<summary>Respuesta</summary>
+
+**c)**. Separar en capas sirve justo para esto: se cambia la que guarda los datos y nginx y la lógica siguen igual (como mucho, cambia el driver de conexión).
+
+</details>
+
+**11. Una web tiene HTTPS, pero su formulario está mal programado y es vulnerable. ¿Qué pasa con esos fallos?**
+
+- a) Desaparecen, porque HTTPS lo protege todo
+- b) Siguen ahí: HTTPS solo protege el canal, no el código de la aplicación
+- c) Se convierten en errores 502
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. TLS cifra lo que viaja entre cliente y servidor. Si el código guarda contraseñas en claro o acepta datos sin validar, eso no cambia por tener candado.
+
+</details>
+
+### Errores típicos
+
+- **Decir que 502 es «el servidor está caído».** Es más preciso: nginx sí funciona, lo que falla es el de detrás. Si nginx estuviera caído, el navegador no podría ni conectar.
+- **Escuchar en 127.0.0.1 dentro de un contenedor.** Desde otro contenedor esa dirección no se alcanza. Dentro de Docker se arranca con `--bind 0.0.0.0:8000`.
+
+### Fuentes
+
+1. [Web del módulo: Gunicorn](https://dpl-f1facc.gitlab.io/ut02/teoria/gunicorn/) y [servidores de aplicaciones](https://dpl-f1facc.gitlab.io/ut04/teoria/servidores-aplicaciones/)
+2. [PEP 3333, la especificación de WSGI](https://peps.python.org/pep-3333/)
+
+## Bloque 2: nginx, HTTPS y autenticación
+
+### Qué se ve
+
+Cómo elige nginx el sitio que sirve, para qué sirve `location`, qué hace cada directiva, qué implica Basic Auth y en qué se diferencian un certificado autofirmado y uno de Let's Encrypt.
+
+### Conceptos
+
+<ProxyInverso />
+
+### Preguntas tipo test
+
+**12. Dos dominios apuntan a la misma IP, puerto 80. ¿Cómo sabe nginx qué sitio servir?**
+
+- a) Por la IP de origen del cliente
+- b) Compara la cabecera Host de la petición con el `server_name` de cada server block; si ninguno coincide, usa el `default_server`
+- c) Sirve siempre el primer fichero de `sites-enabled`, sin mirar nada más
+- d) Pregunta al DNS cuál toca
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Es el alojamiento virtual por nombre. El navegador manda `Host: www.ejemplo.local` en cada petición (la cabecera Host existe desde HTTP/1.1 justo para esto) y nginx busca el `server_name` que coincide: primero el nombre exacto, luego comodines y expresiones regulares, y al final el `default_server`.
+
+- a) La IP del cliente no decide el sitio.
+- c) El primero solo se usa si nadie lleva `default_server` y ningún nombre coincide.
+- d) El DNS ya hizo su trabajo antes: llevar al cliente hasta la IP. nginx no le pregunta nada.
+
+</details>
+
+**13. ¿Para qué sirve `location` en nginx?**
+
+- a) Para indicar la ubicación física del servidor
+- b) Para aplicar una configuración distinta según la ruta de la URL pedida (por ejemplo, `/api/` va al backend y `/img/` se sirve del disco)
+- c) Para elegir el país del certificado
+- d) Para definir el puerto de escucha
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Dentro de un server block, cada `location` atrapa unas URL. Hay coincidencia exacta (`location = /`), por prefijo (`location /img/`), prefijo prioritario (`^~`) y expresiones regulares (`~` y `~*`). Gana la exacta; si no, el prefijo más largo, salvo que una regex coincida antes.
+
+- a) y c) no tienen nada que ver con nginx.
+- d) El puerto se pone con `listen`.
+
+</details>
+
+**14. Basic Auth envía usuario y contraseña en Base64. ¿Qué implica?**
+
+- a) Que la contraseña va cifrada con la clave del servidor
+- b) Que no va cifrada: Base64 se decodifica sin clave, así que cualquiera que capture la petición la lee. Hay que usarlo siempre con HTTPS
+- c) Que el servidor guarda la contraseña en texto plano
+- d) Que el navegador la cifra con su certificado
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Base64 es una forma de escribir bytes con letras, no un cifrado. La cabecera `Authorization: Basic ...` se puede decodificar con `echo ... | base64 -d`. Por eso las prácticas de la UT3 combinan Basic Auth con HTTPS.
+
+- a) y d) suponen un cifrado que no existe.
+- c) El fichero `htpasswd` guarda las contraseñas con hash, no en claro; además, la pregunta trata de cómo viajan, no de cómo se guardan.
+
+</details>
+
+**15. ¿Qué diferencia hay entre un certificado de Let's Encrypt y uno autofirmado?**
+
+- a) El autofirmado cifra con menos bits
+- b) El de Let's Encrypt no necesita clave privada
+- c) El de Let's Encrypt lo firma una autoridad en la que confían los navegadores; el autofirmado lo firma uno mismo y el navegador avisa de que no es de confianza
+- d) El autofirmado es más seguro porque nadie más lo conoce
+
+<details>
+<summary>Respuesta</summary>
+
+**c)**. El cifrado es igual de fuerte en los dos. La diferencia es la confianza: Let's Encrypt es una autoridad de certificación gratuita y automatizada (protocolo ACME) que comprueba que controlas el dominio. Por eso exige un dominio público al que pueda llegar. El autofirmado sirve para pruebas en local (`openssl req -x509 ...`) y con curl se prueba usando `-k`.
+
+- a) La longitud de clave la elige quien genera el certificado, no depende de quién firma.
+- b) Los dos necesitan clave privada; sin ella no hay TLS.
+- d) Que nadie lo conozca es justo el problema: nadie puede comprobarlo.
+
+</details>
+
+**16. Relaciona cada directiva con su función.**
+
+<Puzle archivo="Directivas de nginx" ejercicio="pregunta de relacionar" piezas={[
+  { t: 'default_server', hueco: 1 },
+  { t: 'server_name', hueco: 2 },
+  { t: 'load_module', hueco: 3 },
+  { t: 'image_filter', hueco: 4 },
+  { t: 'proxy_pass', hueco: 5 },
+  { t: 'auth_basic_user_file', hueco: 6 },
+  { t: 'ssl_certificate', hueco: 7 },
+  { t: 'a2enmod', porque: 'Es el comando de Apache para activar módulos. En nginx no existe.' },
+]}>
+
+```text
+Marca el sitio que responde cuando ningún nombre coincide       __1__
+Nombres de dominio que atiende un server block                  __2__
+Carga un módulo dinámico (.so) al arrancar                      __3__
+Redimensiona o recorta imágenes al vuelo (módulo dinámico)      __4__
+Reenvía la petición a un servidor de aplicaciones               __5__
+Fichero htpasswd con los usuarios de Basic Auth                 __6__
+Ruta del certificado del sitio HTTPS                            __7__
+```
+
+</Puzle>
+
+**17. ¿Qué hace una autoridad certificadora (CA)?**
+
+- a) Cifra las páginas del servidor
+- b) Firma certificados después de comprobar que quien los pide controla el dominio
+- c) Guarda las contraseñas de los usuarios
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. La CA no cifra el tráfico; firma. El navegador trae una lista de CA en las que confía y, si el certificado del sitio está firmado por una de ellas, lo acepta.
+
+</details>
+
+### Errores típicos
+
+- **Poner `default_server` en dos sitios del mismo puerto.** `nginx -t` falla con *a duplicate default server*. Hay que quitarlo de uno o borrar el `default` de Ubuntu.
+- **`server_name _;` no es un comodín.** Es un nombre imposible que se usa en el sitio por defecto. El comodín de verdad es `*.ejemplo.local`.
+- **Olvidar `nginx -t` antes de `nginx -s reload`.** Si hay un error de sintaxis, el reload no se aplica y se pierde tiempo.
+
+### Fuentes
+
+1. [Web del módulo: server blocks](https://dpl-f1facc.gitlab.io/ut03/teoria/virtual-hosts/), [administración de nginx](https://dpl-f1facc.gitlab.io/ut03/teoria/administracion-nginx/), [autenticación](https://dpl-f1facc.gitlab.io/ut03/teoria/autenticacion-acceso/) y [HTTPS](https://dpl-f1facc.gitlab.io/ut03/teoria/https-certificados/)
+2. [Documentación de nginx: cómo procesa una petición](https://nginx.org/en/docs/http/request_processing.html)
+3. [Let's Encrypt: tipos de desafío](https://letsencrypt.org/docs/challenge-types/)
+
+## Bloque 3: contenedores, Kamal y migraciones
+
+### Qué se ve
+
+Por qué PostgreSQL necesita un volumen, qué papel tiene cada pieza de un Compose con base de datos, por qué una petición no llega a un contenedor desplegado con Kamal y en qué orden se despliega una migración.
+
+### Conceptos
+
+<Secuencia titulo="Despliegue con migración"
+  descripcion="Cinco pasos en orden: copia de seguridad, probar en staging, migrar producción, desplegar la nueva versión y comprobar el healthcheck."
+  pie="Si algo falla al final, se vuelve atrás por las dos vías: la imagen con kamal rollback y la base de datos con alembic downgrade o la copia."
+  pasos={[['Copia', 'backup de la BD'], ['Staging', 'upgrade y pruebas'], ['Migrar', 'producción, hora valle'], ['Desplegar', 'kamal deploy'], ['Comprobar', '/up responde 200']]} />
+
+### Preguntas tipo test
+
+**18. ¿Por qué PostgreSQL en Docker Compose usa un volumen para los datos?**
+
+- a) Para que la base de datos vaya más rápida
+- b) Para que los datos sobrevivan cuando el contenedor se borra o se recrea (persistencia)
+- c) Para poder abrir el puerto 5432
+- d) Porque la imagen de PostgreSQL no arranca sin él
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Lo que se escribe dentro de un contenedor desaparece con él. El volumen (por ejemplo, `db-data` montado en `/var/lib/postgresql/data`) vive fuera. `docker compose down` lo conserva; `docker compose down -v` lo borra.
+
+- a) La velocidad no es el motivo.
+- c) Los puertos se publican con `ports`, no con volúmenes.
+- d) Arranca sin él, pero pierde los datos al recrearse.
+
+</details>
+
+**19. Relaciona cada elemento del despliegue con su función.**
+
+<Puzle archivo="Compose con PostgreSQL" ejercicio="pregunta de relacionar" piezas={[
+  { t: 'servicio db', hueco: 1 },
+  { t: 'pgAdmin', hueco: 2 },
+  { t: 'init.sql', hueco: 3 },
+  { t: 'POSTGRES_USER y POSTGRES_PASSWORD', hueco: 4 },
+  { t: 'pg_hba.conf', hueco: 5 },
+  { t: 'volumen db-data', hueco: 6 },
+  { t: 'proxy_pass', porque: 'Es de nginx, no de la capa de datos.' },
+]}>
+
+```text
+Contenedor con PostgreSQL, al que la app llega como db:5432            __1__
+Aplicación web para administrar PostgreSQL desde el navegador          __2__
+Script que crea tablas y datos la primera vez que arranca la base      __3__
+Variables que crean el usuario y su contraseña al inicializar          __4__
+Reglas de quién puede conectarse, desde dónde y con qué método         __5__
+Guarda los datos fuera del contenedor para que no se pierdan           __6__
+```
+
+</Puzle>
+
+<details>
+<summary>Por qué cada una</summary>
+
+`init.sql` se monta en `/docker-entrypoint-initdb.d/` y la imagen oficial solo lo ejecuta cuando la carpeta de datos está vacía: si el volumen ya tiene datos, no se repite. En `pg_hba.conf` cada línea es *tipo, base, usuario, dirección, método*; el método recomendado es `scram-sha-256` y `trust` (sin contraseña) solo vale en laboratorio. En Compose no se suele editar a mano: la imagen ya añade una regla para que los demás contenedores entren con contraseña.
+
+</details>
+
+**20. Un Dockerfile termina con `CMD uvicorn app.main:app --port 8000`. Kamal tiene `app_port: 8000`, pero las peticiones no llegan. ¿Qué pasa?**
+
+- a) La imagen no se ejecuta como root
+- b) La aplicación escucha en localhost (127.0.0.1) dentro del contenedor y el proxy, que llega desde otro contenedor, no la alcanza
+- c) Hay que publicar el puerto 8000 con `-p` en el servidor
+- d) Falta la línea `EXPOSE 8000`
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Si no se indica `--host`, uvicorn escucha en 127.0.0.1, que dentro de un contenedor es «solo yo». kamal-proxy está en otro contenedor de la misma red, así que necesita que la app escuche en todas las interfaces: `--host 0.0.0.0`. Es lo que hace el Dockerfile del caso práctico.
+
+- a) No ser root es una buena práctica de seguridad y no impide recibir peticiones.
+- c) Con Kamal no se publica el puerto de la app: el único que publica puertos (80 y 443) es kamal-proxy, que llega a la app por la red interna.
+- d) `EXPOSE` solo documenta el puerto; no abre ni publica nada.
+
+</details>
+
+**21. Ordena el despliegue de una versión que trae una migración de Alembic.**
+
+<Puzle archivo="Despliegue con migración y rollback" ejercicio="pregunta de ordenar" piezas={[
+  { t: 'Copia de seguridad de la base de datos', hueco: 1 },
+  { t: 'Desplegar en staging y aplicar alembic upgrade head', hueco: 2 },
+  { t: 'Probar en staging (tests, /up, endpoints)', hueco: 3 },
+  { t: 'Avisar o poner página de mantenimiento a una hora de poco uso', hueco: 4 },
+  { t: 'Copia de producción y alembic upgrade head en producción', hueco: 5 },
+  { t: 'kamal deploy -d production y comprobar /up', hueco: 6 },
+  { t: 'Si falla: kamal rollback y alembic downgrade (o restaurar la copia)', hueco: 7 },
+  { t: 'Migrar primero producción y luego staging', porque: 'Es al revés: staging existe para probar antes que los usuarios.' },
+]}>
+
+```text
+1. __1__
+2. __2__
+3. __3__
+4. __4__
+5. __5__
+6. __6__
+7. __7__
+```
+
+</Puzle>
+
+**22. ¿Qué diferencia principal hay entre una máquina virtual y un contenedor?**
+
+- a) La máquina virtual lleva su propio sistema operativo completo; el contenedor comparte el núcleo del anfitrión y solo empaqueta la aplicación y sus dependencias
+- b) El contenedor necesita un hipervisor y la máquina virtual no
+- c) Son lo mismo con distinto nombre
+
+<details>
+<summary>Respuesta</summary>
+
+**a)**. Por eso un contenedor arranca en segundos y pesa megas, mientras que una máquina virtual tarda más y pesa gigas. A cambio, la máquina virtual aísla más. La b) está al revés: el hipervisor es de la máquina virtual.
+
+</details>
+
+**23. Tras un comando, `echo $?` muestra 127. ¿Qué significa?**
+
+- a) Que el comando terminó bien
+- b) Que el comando no se encontró
+- c) Que no hay permisos de ejecución
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. `$?` guarda el código de salida del último comando. 0 es éxito y cualquier otro número es un error. 127 es «comando no encontrado» (mal escrito o fuera del `PATH`) y 126, «encontrado pero no ejecutable». Los scripts de despliegue paran en cuanto un paso devuelve algo distinto de 0 (`set -e`).
+
+</details>
+
+### Errores típicos
+
+- **Conectar a `localhost:5432` desde la app o desde pgAdmin.** Dentro de un contenedor, localhost es él mismo. Hay que usar el nombre del servicio: `db`.
+- **Creer que el despliegue migra la base de datos solo.** En el caso práctico, la aplicación comprueba al arrancar que la base está en la última revisión y se niega a arrancar si no. La migración es un paso aparte (`alembic upgrade head` contra el volumen de datos).
+
+### Fuentes
+
+1. [Web del módulo: Docker](https://dpl-f1facc.gitlab.io/ut04/teoria/docker/), [base de datos](https://dpl-f1facc.gitlab.io/ut04/teoria/base-datos/) y [despliegue](https://dpl-f1facc.gitlab.io/ut04/teoria/despliegue/)
+2. [Kamal: rollback](https://kamal-deploy.org/docs/commands/rollback/) y [proxy](https://kamal-deploy.org/docs/configuration/proxy/)
+3. [Alembic: tutorial](https://alembic.sqlalchemy.org/en/latest/tutorial.html)
+
+## Bloque 4: seguridad, autenticación y JWT
+
+### Qué se ve
+
+La diferencia entre autenticación y autorización, el orden completo de registro, login y uso del token en la API de tareas, y qué protege (y qué no) un JWT.
+
+### Conceptos
+
+<Secuencia titulo="Login y uso del token"
+  descripcion="Cinco pasos: el cliente envía usuario y contraseña, el backend verifica el hash, firma un JWT, el cliente lo manda en la cabecera Authorization y el backend comprueba firma y caducidad."
+  pie="La contraseña solo viaja en el login. Después viaja el token, y siempre dentro de HTTPS."
+  pasos={[['Login', 'usuario y contraseña'], ['Verificar', 'hash Argon2'], ['Firmar', 'JWT con sub y exp'], ['Enviar', 'Authorization: Bearer'], ['Comprobar', 'firma y caducidad']]} />
+
+### Preguntas tipo test
+
+**24. Ordena el registro, el login y la comprobación del JWT en la API de FastAPI.**
+
+<Puzle archivo="Registro, login y JWT" ejercicio="pregunta de ordenar" piezas={[
+  { t: 'El usuario envía POST /auth/register con usuario y contraseña', hueco: 1 },
+  { t: 'El backend comprueba que ese usuario no existe ya', hueco: 2 },
+  { t: 'El backend hashea la contraseña (Argon2) y guarda el hash', hueco: 3 },
+  { t: 'El backend responde 201 con id y nombre, sin la contraseña', hueco: 4 },
+  { t: 'El usuario envía POST /auth/token con usuario y contraseña en un formulario', hueco: 5 },
+  { t: 'El backend compara la contraseña con el hash guardado', hueco: 6 },
+  { t: 'El backend firma un JWT y lo devuelve como access_token', hueco: 7 },
+  { t: 'El cliente envía el token en la cabecera Authorization: Bearer', hueco: 8 },
+  { t: 'El backend comprueba firma y caducidad y saca el usuario de sub', hueco: 9 },
+  { t: 'El backend descifra la contraseña guardada para compararla', porque: 'Un hash no se descifra: se vuelve a calcular con la contraseña recibida y se compara.' },
+]}>
+
+```text
+1. __1__
+2. __2__
+3. __3__
+4. __4__
+5. __5__
+6. __6__
+7. __7__
+8. __8__
+9. __9__
+```
+
+</Puzle>
+
+<details>
+<summary>Detalles que pueden preguntar</summary>
+
+- Si el usuario ya existe, el registro responde **409 Conflict**.
+- Si la contraseña no coincide, el login responde **401** con un mensaje genérico (no dice si falló el usuario o la contraseña, para no dar pistas).
+- Sin token, con un token mal formado o caducado, los endpoints de tareas responden **401**.
+- Una tarea de otro usuario responde **404** y no 403, para no revelar que existe. Eso ya es autorización.
+
+</details>
+
+**25. ¿Qué cifra un JWT?**
+
+- a) Todo su contenido, con la clave secreta del servidor
+- b) Nada: la cabecera y el payload van en base64url y cualquiera los lee. La firma solo garantiza que nadie los ha cambiado. Lo que cifra la conexión es HTTPS
+- c) Solo la contraseña del usuario, que va dentro del token
+- d) La dirección IP del cliente
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Un JWT firmado tiene tres partes separadas por puntos: cabecera (`alg`, `typ`), payload (los *claims*, como `sub`, `iat`, `exp`) y firma. Si se pega uno en un depurador de JWT se ve el payload sin necesidad de clave. Por eso en el payload solo va un identificador, normalmente el id del usuario en `sub`, y nunca la contraseña. La firma HS256 se calcula con un secreto del servidor: si alguien cambia el payload, la firma deja de cuadrar y el token se rechaza.
+
+- a) Existe una variante cifrada (JWE), pero la que se usa en clase solo firma.
+- c) La contraseña nunca va en el token.
+- d) La IP no forma parte del token.
+
+</details>
+
+**26. Un empleado inicia sesión, recibe un JWT y ya dentro solo ve Ventas porque su rol no incluye Contabilidad. ¿Qué mecanismos intervienen y en qué orden?**
+
+- a) Primero autorización y después autenticación
+- b) Primero autenticación (comprobar quién es) y después autorización (decidir qué puede ver)
+- c) Solo autenticación
+- d) Doble factor
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. El login con usuario y contraseña es autenticación. Que su rol le deje ver Ventas y no Contabilidad es autorización. Un `admin: true` en el payload serviría para que el backend decida permisos, pero eso es autorización montada encima de una autenticación ya hecha. El doble factor es autenticarse con dos pruebas de tipo distinto (algo que sabes y algo que tienes, como un código del móvil), y aquí no aparece.
+
+</details>
+
+### Errores típicos
+
+- **Pensar que el token se guarda en la base de datos.** En el caso práctico no se guarda: el servidor lo comprueba con la firma. Por eso, si se cambia `JWT_SECRET_KEY`, todos los tokens anteriores dejan de valer.
+- **Confundir 401 y 403.** 401: no te has identificado o el token no vale. 403: te has identificado, pero no tienes permiso.
+
+### Fuentes
+
+1. [RFC 7519, JSON Web Token](https://datatracker.ietf.org/doc/html/rfc7519)
+2. [FastAPI: OAuth2 con contraseña y JWT](https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/)
+
+## Bloque 5: FTP, SSH, DNS y LDAP
+
+### Qué se ve
+
+Los modos de FTP y su relación con el NAT, qué protocolo de transferencia es cada uno, cómo se configura un FTP seguro, qué hace un DNS con una consulta recursiva, los registros DNS y los conceptos básicos de LDAP.
+
+### Conceptos
+
+| Protocolo | Puerto | Cifrado |
+|---|---|---|
+| FTP | 21 (control) + 20 o un puerto alto (datos) | No |
+| FTPS explícito | 21 con `AUTH TLS` | Sí, TLS |
+| FTPS implícito | 990 | Sí, TLS desde el principio |
+| SFTP y scp | 22 (SSH) | Sí, SSH |
+| DNS | 53 (UDP y TCP) | No |
+| LDAP / LDAPS | 389 / 636 | No / sí |
+
+### Preguntas tipo test
+
+**27. Un cliente FTP está detrás de un NAT y no consigue listar el directorio. ¿Qué lo explica?**
+
+- a) Está usando FTPS implícito por el puerto 990
+- b) Está en modo activo: el servidor intenta abrir la conexión de datos hacia el cliente y el NAT la bloquea. En modo pasivo es el cliente el que abre la conexión, y funciona
+- c) El usuario anónimo no requiere credenciales
+- d) El servidor no tiene DNS
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. FTP usa dos conexiones: la de control (21), que siempre abre el cliente, y la de datos, por donde viajan los listados y los ficheros. En modo **activo** la de datos la abre el servidor hacia el cliente, y un NAT o un cortafuegos la corta. Por eso entrar funciona pero `ls` se queda colgado. En modo **pasivo** el servidor dice un puerto alto (respuesta `227 Entering Passive Mode`) y el cliente se conecta a él. FileZilla usa pasivo por defecto.
+
+- a) El puerto 990 es FTPS implícito y no tiene que ver con el NAT.
+- c) Ser anónimo afecta a las credenciales, no a la conexión de datos.
+- d) Ya se ha conectado, así que el DNS no es el problema.
+
+</details>
+
+**28. Relaciona cada protocolo o programa con su función.**
+
+<Puzle archivo="Protocolos de transferencia y correo" ejercicio="pregunta de relacionar" piezas={[
+  { t: 'HTTPS', hueco: 1 },
+  { t: 'FTP', hueco: 2 },
+  { t: 'SFTP', hueco: 3 },
+  { t: 'scp', hueco: 4 },
+  { t: 'SMTP', hueco: 5 },
+  { t: 'FileZilla', hueco: 6 },
+]}>
+
+```text
+Navegación web cifrada con TLS                                  __1__
+Transferencia de ficheros entre equipos, sin cifrar             __2__
+Transferencia interactiva de ficheros dentro de SSH             __3__
+Copia de ficheros de una sola orden por SSH                     __4__
+Envío de correo electrónico entre servidores                    __5__
+Programa cliente gráfico (no es un protocolo) para FTP y SFTP   __6__
+```
+
+</Puzle>
+
+**29. ¿Qué configuración es más segura para un servidor FTP de despliegue?**
+
+- a) Anónimo activado para que suban sin contraseña
+- b) Anónimo desactivado, usuarios encerrados en su carpeta (chroot), solo los usuarios de una lista, cifrado obligatorio (FTPS) o, mejor, SFTP, y un rango de puertos pasivos acotado
+- c) FTP en claro por el 21, que es el estándar
+- d) Modo activo para que el servidor controle las conexiones
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Es el mínimo privilegio aplicado a FTP: `anonymous_enable=NO`, `chroot_local_user=YES`, `userlist_enable=YES` con `userlist_deny=NO`, `ssl_enable=YES` y `pasv_min_port`/`pasv_max_port`. Si ya hay SSH en el servidor, SFTP es lo más recomendado porque no abre otro servicio.
+
+- a) y c) mandan credenciales o datos sin protección.
+- d) El modo activo da problemas con NAT y no añade seguridad.
+
+</details>
+
+**30. ¿Qué hace un servidor DNS cuando recibe una consulta recursiva?**
+
+- a) Entra en bucle hasta saturarse
+- b) Se encarga de buscar la respuesta completa (preguntando a la raíz, al TLD y al servidor autoritativo si no la tiene en caché) y se la devuelve al cliente
+- c) Devuelve solo una pista para que el cliente pregunte a otro
+- d) No usa nunca caché
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. En una consulta recursiva el cliente dice «dame la respuesta final». El resolutor la busca por su cuenta: pregunta a un servidor raíz, que lo manda al del TLD (`.es`), que lo manda al autoritativo del dominio. Guarda el resultado en caché durante el TTL y lo devuelve.
+
+- a) No hay ningún bucle.
+- c) Eso es una consulta iterativa: el servidor devuelve una referencia y quien pregunta sigue buscando.
+- d) Al revés: el resolutor recursivo es justo el que más usa la caché.
+
+</details>
+
+**31. Relaciona cada registro DNS con su función.**
+
+<Puzle archivo="Registros DNS" ejercicio="pregunta de relacionar" piezas={[
+  { t: 'SOA', hueco: 1 },
+  { t: 'NS', hueco: 2 },
+  { t: 'A', hueco: 3 },
+  { t: 'AAAA', hueco: 4 },
+  { t: 'CNAME', hueco: 5 },
+  { t: 'MX', hueco: 6 },
+  { t: 'PTR', hueco: 7 },
+]}>
+
+```text
+Datos de la zona: servidor principal, contacto, número de serie   __1__
+Servidores autoritativos de la zona                               __2__
+Nombre → dirección IPv4                                           __3__
+Nombre → dirección IPv6                                           __4__
+Alias de otro nombre                                              __5__
+Servidor de correo del dominio, con prioridad                     __6__
+Resolución inversa: IP → nombre                                   __7__
+```
+
+</Puzle>
+
+**32. En LDAP, ¿qué es hacer un *bind*?**
+
+- a) Borrar una entrada del árbol
+- b) Autenticarse ante el directorio (con un DN y su contraseña)
+- c) Copiar el directorio a otro servidor
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. LDAP permite iniciar sesión con la misma cuenta en muchas máquinas y servicios porque todos preguntan al mismo directorio. Para comprobar una contraseña, la aplicación hace un bind con el DN del usuario: si el directorio lo acepta, las credenciales son buenas.
+
+</details>
+
+**33. Relaciona cada concepto de LDAP con su significado.**
+
+<Puzle archivo="Conceptos de LDAP" ejercicio="pregunta de relacionar" piezas={[
+  { t: 'LDAP', hueco: 1 },
+  { t: 'DN', hueco: 2 },
+  { t: 'bind', hueco: 3 },
+  { t: 'Grupo', hueco: 4 },
+  { t: 'Usuario', hueco: 5 },
+  { t: 'userPassword', hueco: 6 },
+  { t: 'LDAPS', hueco: 7 },
+]}>
+
+```text
+Protocolo para consultar y modificar un servicio de directorio      __1__
+Ruta única de una entrada: uid=ana,ou=usuarios,dc=empresa,dc=local  __2__
+Operación de autenticarse ante el directorio                        __3__
+Entrada que reúne a varios usuarios para darles los mismos permisos __4__
+Entrada de una persona, con atributos como uid, cn y mail           __5__
+Atributo con la contraseña, guardada con hash                       __6__
+LDAP cifrado con TLS, por el puerto 636                             __7__
+```
+
+</Puzle>
+
+**34. ¿Qué obtiene `nslookup` si le das una IP en vez de un nombre?**
+
+- a) Un error
+- b) El nombre asociado a esa IP (resolución inversa, registro PTR)
+- c) El registro MX
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Es la consulta inversa. Con `dig` se hace con `dig -x IP`.
+
+</details>
+
+### Errores típicos
+
+- **FTPS y SFTP no son lo mismo.** FTPS es FTP con TLS. SFTP no es FTP: es un subsistema de SSH.
+- **Un CNAME no puede convivir con otros registros del mismo nombre.** Por eso el dominio raíz de una zona no puede ser un CNAME (tiene SOA y NS).
+- **El DN se lee de la hoja a la raíz.** `uid=ana,ou=usuarios,dc=empresa,dc=local`: primero la persona, al final la base del árbol.
+
+### Fuentes
+
+1. [Web del módulo: FTP](https://dpl-f1facc.gitlab.io/ut05/teoria/ftp/), [SSH](https://dpl-f1facc.gitlab.io/ut05/teoria/ssh/), [DNS](https://dpl-f1facc.gitlab.io/ut06/teoria/dns/) y [servicio de directorio](https://dpl-f1facc.gitlab.io/ut06/teoria/servicio-directorio/)
+
+## Bloque 6: Git, README e integración continua
+
+### Qué se ve
+
+Los conceptos básicos de Git, qué va en cada sección del README de una práctica y en qué orden se ejecuta un pipeline de integración continua.
+
+### Conceptos
+
+<Secuencia titulo="Pipeline de integración continua"
+  descripcion="Cinco fases en orden: descargar el código, instalar dependencias, comprobar estilo y tipos, ejecutar las pruebas y el análisis de seguridad, y empaquetar y desplegar."
+  pie="Lo barato va primero: si falla el formato, no se pierden minutos en pruebas largas. Si una fase falla, las siguientes no se ejecutan."
+  pasos={[['Código', 'checkout'], ['Dependencias', 'uv sync'], ['Calidad', 'Ruff y mypy'], ['Pruebas', 'pytest y Bandit'], ['Entrega', 'imagen y deploy']]} />
+
+### Preguntas tipo test
+
+**35. Relaciona cada concepto de Git con su función.**
+
+<Puzle archivo="Conceptos de Git" ejercicio="pregunta de relacionar" piezas={[
+  { t: 'commit', hueco: 1 },
+  { t: 'branch', hueco: 2 },
+  { t: 'remote', hueco: 3 },
+  { t: '.gitignore', hueco: 4 },
+  { t: 'git add', hueco: 5 },
+  { t: 'merge', hueco: 6 },
+  { t: 'pull request', hueco: 7 },
+]}>
+
+```text
+Foto del proyecto con autor, fecha y mensaje                     __1__
+Línea de trabajo independiente para un cambio                    __2__
+Copia del repositorio en otro sitio (origin en GitHub)           __3__
+Lista de ficheros que Git no debe versionar (.env, .venv, *.db)  __4__
+Pasa cambios al área de preparación para el próximo commit       __5__
+Une el historial de una rama con otra                            __6__
+Petición para revisar y fusionar una rama en GitHub              __7__
+```
+
+</Puzle>
+
+**36. Relaciona cada sección del README con su contenido.**
+
+<Puzle archivo="Secciones del README" ejercicio="pregunta de relacionar" piezas={[
+  { t: 'Instalación', hueco: 1 },
+  { t: 'Configuración', hueco: 2 },
+  { t: 'Comprobación', hueco: 3 },
+  { t: 'Problemas encontrados y solución', hueco: 4 },
+  { t: 'Enlace al remoto', hueco: 5 },
+]}>
+
+```text
+Pasos y comandos para poner el proyecto en marcha                   __1__
+Ficheros que hay que tocar y variables que hay que definir          __2__
+Comandos que demuestran que funciona, con su salida real            __3__
+Fallos reales que aparecieron y cómo se resolvieron                 __4__
+URL del repositorio en GitHub o GitLab                              __5__
+```
+
+</Puzle>
+
+**37. Ordena las fases de un pipeline de integración continua.**
+
+<Puzle archivo="Orden del pipeline" ejercicio="pregunta de ordenar" piezas={[
+  { t: 'Descargar el código del commit (checkout)', hueco: 1 },
+  { t: 'Instalar las dependencias bloqueadas', hueco: 2 },
+  { t: 'Formato y lint (Ruff)', hueco: 3 },
+  { t: 'Comprobar tipos (mypy)', hueco: 4 },
+  { t: 'Tests unitarios y de integración', hueco: 5 },
+  { t: 'Análisis de seguridad (Bandit, pip-audit, Gitleaks)', hueco: 6 },
+  { t: 'Construir la imagen y desplegar', hueco: 7 },
+  { t: 'Desplegar en producción antes de pasar los tests', porque: 'El despliegue siempre va al final; si un test falla, no se publica.' },
+]}>
+
+```text
+1. __1__
+2. __2__
+3. __3__
+4. __4__
+5. __5__
+6. __6__
+7. __7__
+```
+
+</Puzle>
+
+**38. ¿Qué distingue a un sistema de control de versiones distribuido, como Git?**
+
+- a) Que todo el historial está solo en un servidor central
+- b) Que cada copia local tiene el historial completo, así que se puede trabajar sin conexión y no hay un punto único de fallo
+- c) Que no permite ramas
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. En un sistema centralizado (como CVS o Subversion), si el servidor cae nadie puede hacer commits y se puede perder el historial. En Git cada clon es una copia completa.
+
+</details>
+
+### Errores típicos
+
+- **Hacer commit sin `user.name` y `user.email` del aula virtual.** En las entregas del módulo, una autoría distinta vale un 0.
+- **Entregar el ZIP sin la carpeta `.git`.** Sin ella no se ve el historial de commits y la práctica no se valora.
+
+### Fuentes
+
+1. [Web del módulo: Git](https://dpl-f1facc.gitlab.io/ut01/teoria/git/), [documentación](https://dpl-f1facc.gitlab.io/ut01/teoria/documentacion/) y [CI/CD](https://dpl-f1facc.gitlab.io/ut01/teoria/ci-cd/)
+
+## Pregunta de desarrollo: el despliegue con Kamal
+
+### Qué se ve
+
+La segunda parte pide explicar con palabras propias cómo se despliega una aplicación con Kamal. Abajo hay una respuesta modelo, escrita para poder contarla de memoria, sobre el caso práctico de clase: una API de tareas en FastAPI con SQLite, JWT y Alembic.
+
+### Conceptos
+
+**Qué es Kamal.** Una herramienta que despliega una aplicación empaquetada en una imagen Docker en uno o varios servidores propios, entrando por SSH. No hace falta instalar nada en el servidor a mano: si falta Docker, lo instala. La idea es pasar de «funciona en mi ordenador» a «funciona en el servidor, con HTTPS, y publico una versión nueva con un solo comando y sin cortar el servicio».
+
+**Las piezas.**
+
+| Pieza | Para qué sirve |
+|---|---|
+| `Dockerfile` | Receta de la imagen: Python, dependencias, código y migraciones, usuario sin privilegios, `EXPOSE 8000` y arranque con uvicorn en `0.0.0.0:8000` |
+| Registro de imágenes | Almacén donde se sube la imagen (ghcr.io en el ejemplo) para que el servidor la descargue |
+| `config/deploy.yml` | Lo común: nombre del servicio, imagen, registro, usuario SSH, arquitectura y `proxy.app_port` |
+| `config/deploy.staging.yml` y `deploy.production.yml` | Lo de cada destino: IP del servidor, dominio (`proxy.host`), `ssl: true`, volumen y variables |
+| `.kamal/secrets` | Valores secretos (contraseña del registro, `JWT_SECRET_KEY`). No se sube a Git; en el YAML solo va el nombre |
+| kamal-proxy | Contenedor que Kamal pone en el servidor. Escucha en el 80 y el 443, gestiona el certificado y reparte por dominio |
+| `justfile` | Recetas cortas: `just deploy staging` pasa antes todas las comprobaciones de calidad |
+
+<KamalDespliegue />
+
+### Casos y ejemplos
+
+**Respuesta modelo (para contarla con mis palabras).**
+
+1. **Antes de desplegar, se comprueba el código.** En el caso práctico, `just deploy` lanza primero `just preflight`: formato y lint con Ruff, tipos con mypy, tests unitarios, de integración y de extremo a extremo con un mínimo de cobertura del 80 %, Bandit para buscar fallos de seguridad en el código, pip-audit para las dependencias y Gitleaks para secretos olvidados en el historial. Si algo falla, no se despliega. El mismo pipeline corre en GitHub Actions con cada push.
+2. **Kamal lee la configuración.** Con `kamal deploy -d staging` junta `deploy.yml` con `deploy.staging.yml`. El destino `staging` es un servidor de pruebas parecido al real; `production` es el que ven los usuarios.
+3. **Construye la imagen y la sube al registro.** La imagen lleva todo lo necesario para ejecutar la API. Se construye para la arquitectura del servidor (`builder.arch: amd64`).
+4. **Entra por SSH en el servidor.** Con el usuario de `ssh.user` y una clave, sin contraseña. El servidor descarga la imagen del registro.
+5. **Arranca la versión nueva al lado de la vieja.** El contenedor nuevo monta el volumen `/var/lib/tasks-api:/data`, donde vive la base de datos SQLite, para que los datos no se pierdan al cambiar de contenedor.
+6. **Comprueba que está sana.** kamal-proxy pide `GET /up` al contenedor nuevo hasta que responde 200. Mientras tanto, los usuarios siguen en la versión vieja.
+7. **Cambia el tráfico y retira la vieja.** Cuando `/up` responde 200, el proxy manda las peticiones al nuevo y Kamal para el viejo. Así no hay corte. Si `/up` no llega a responder, el tráfico se queda en la vieja.
+8. **HTTPS automático.** Con `proxy.host` y `ssl: true`, kamal-proxy pide y renueva un certificado de Let's Encrypt para ese dominio. Para eso el DNS del dominio tiene que apuntar a la IP del servidor y los puertos 80 y 443 tienen que estar abiertos (en Oracle Cloud, abriéndolos en las reglas de red de la máquina).
+9. **Varias apps en el mismo servidor.** Como el proxy decide por la cabecera Host, en el mismo 80/443 pueden convivir `app1.ejemplo.es` y `app2.ejemplo.es`, cada una en su contenedor. Las apps no publican puertos al exterior: el proxy llega a ellas por la red interna de Docker.
+10. **Si sale mal, se vuelve atrás.** `kamal rollback VERSIÓN` vuelve a arrancar el contenedor de una versión anterior, que sigue en el servidor. Ojo: no toca la base de datos.
+
+**Si la versión trae cambios en la base de datos.** La API empezó sin usuarios y luego se añadió el login con JWT, así que hubo que crear la tabla `users` y una columna de dueño en `tasks` con una base que ya estaba en producción. Para eso se usan migraciones con Alembic: cada cambio del esquema es una revisión numerada (`0001_baseline`, `0002_add_users...`), y la tabla `alembic_version` de la base dice en cuál está. `alembic upgrade head` aplica las pendientes y `alembic downgrade -1` deshace la última. Las tareas antiguas no tenían dueño: se decidió asignarlas a un usuario administrador creado durante la propia migración, con usuario y contraseña tomados de variables de entorno. El protocolo completo:
+
+1. Copia de seguridad de la base de datos.
+2. Probar la migración en staging: `upgrade`, comprobar la API y probar también el `downgrade`.
+3. Elegir una hora con pocos usuarios y, si hace falta, mostrar una página estática de mantenimiento.
+4. Aplicar `alembic upgrade head` contra el volumen de producción. La aplicación del ejemplo comprueba al arrancar que la base está en la última revisión y se niega a arrancar si no.
+5. Desplegar la versión nueva con `kamal deploy -d production` y comprobar `/up` y los endpoints.
+6. Si falla, dos vueltas atrás: la imagen con `kamal rollback` y la base con `alembic downgrade` o restaurando la copia.
+
+**Seguridad en el flujo.** La autenticación (quién eres) ocurre en `POST /auth/token`: el backend compara la contraseña con su hash Argon2 y devuelve un JWT firmado con `sub` (id del usuario), `iat` y `exp`. La autorización (qué puedes hacer) ocurre en cada endpoint protegido: el backend comprueba el token, saca el usuario y solo le deja ver sus tareas. Todo viaja por HTTPS, porque ni la contraseña del login ni el token van cifrados por sí mismos.
+
+### Errores típicos
+
+- **Decir que el host va en el cuerpo de la petición.** Va en la cabecera `Host`, igual que el JWT va en la cabecera `Authorization`.
+- **Decir que Kamal migra y deshace la base de datos solo.** En el caso práctico la migración es un paso explícito y `kamal rollback` solo cambia el contenedor.
+- **Escribir 433.** El puerto de HTTPS es el 443.
+- **Las IP de Docker.** Son privadas: por defecto la red `bridge` usa 172.17.0.0/16, dentro del rango privado 172.16.0.0/12 (los otros rangos privados son 10.0.0.0/8 y 192.168.0.0/16). Dos contenedores pueden escuchar en el mismo puerto porque cada uno tiene su IP.
+
+### Prácticas de clase
+
+**Todo lo visto, en un párrafo por unidad** (para cerrar la respuesta de desarrollo):
+
+- **UT1.** El código vive en Git, con un commit por cambio, ramas y pull requests. Cada práctica lleva un README con instalación, configuración, comprobación y problemas. Un pipeline de CI comprueba cada push.
+- **UT2.** Una aplicación web tiene capas: cliente, presentación (nginx), lógica (Gunicorn o PHP-FPM) y datos. nginx sirve estáticos y pasa lo dinámico con `proxy_pass`. Se puede implantar en local, en hosting o en la nube (IaaS, PaaS, SaaS).
+- **UT3.** Un mismo nginx sirve varios sitios con server blocks por nombre, protege zonas con Basic Auth y `allow`/`deny`, y cifra con HTTPS (autofirmado en pruebas, Let's Encrypt en producción).
+- **UT4.** Las aplicaciones se empaquetan en contenedores, con volúmenes para los datos y Compose para varios servicios (app, nginx, PostgreSQL, pgAdmin). Se despliegan con Kamal, con JWT para la autenticación y Alembic para migrar la base.
+- **UT5.** Para subir ficheros o administrar el servidor: FTP (mejor FTPS o SFTP) y SSH solo con clave, sin contraseña y sin root.
+- **UT6.** El DNS traduce nombres a IP con registros A, CNAME, MX…, y LDAP centraliza los usuarios para iniciar sesión en muchos servicios con una sola cuenta.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué diferencia hay entre kamal setup y kamal deploy?</summary>
+
+`setup` se usa la primera vez: prepara el servidor (instala Docker si hace falta, arranca el proxy) y despliega. `deploy` publica una versión nueva en un servidor ya preparado.
+
+</details>
+<details>
+<summary>¿Por qué existe el endpoint /up?</summary>
+
+Porque es el que consulta kamal-proxy para decidir si la versión nueva está sana. Hasta que no responde 200, no recibe tráfico.
+
+</details>
+<details>
+<summary>¿Por qué el contenedor no se ejecuta como root?</summary>
+
+Para que, si alguien consigue ejecutar código a través de la aplicación, no tenga permisos de administrador dentro del contenedor. El del ejemplo usa un usuario sin privilegios que solo puede escribir en `/data`.
+
+</details>
+<details>
+<summary>¿Dónde van los secretos?</summary>
+
+En `.kamal/secrets` (o `.kamal/secrets.staging` y `.kamal/secrets.production` si hay destinos), que no se suben a Git. En `deploy.yml` solo se nombran bajo `env.secret`.
+
+</details>
+
+### Fuentes
+
+1. Caso práctico de clase: API de tareas con FastAPI, JWT, Alembic y Kamal (repositorio del profesor y su página «Desplegar una API con Docker y Kamal»).
+2. [Kamal: comando deploy](https://kamal-deploy.org/docs/commands/deploy/), [setup](https://kamal-deploy.org/docs/commands/setup/), [proxy](https://kamal-deploy.org/docs/configuration/proxy/) y [variables de entorno y secretos](https://kamal-deploy.org/docs/configuration/environment-variables/)
+3. [Alembic: autogenerate y sus límites](https://alembic.sqlalchemy.org/en/latest/autogenerate.html)

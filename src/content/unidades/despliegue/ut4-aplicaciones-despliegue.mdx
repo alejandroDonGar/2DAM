@@ -1,0 +1,456 @@
+---
+titulo: Contenedores, aplicaciones y despliegue con Kamal
+etiqueta: UT4
+orden: 4
+entrada: Cómo se empaqueta una aplicación en una imagen Docker, cómo se monta con su base de datos en Compose y cómo se pone en producción con Kamal. Con el caso práctico de clase, una API de tareas que añade login con JWT y migra su base de datos con Alembic.
+cuando: noviembre (Kamal y JWT el 6/11, repaso el 13/11, temario del examen el 17/11)
+ejercicios: caso práctico de la API de tareas (FastAPI, JWT, Alembic y Kamal)
+ruta: { texto: 'UT4 en la web del módulo', url: 'https://dpl-f1facc.gitlab.io/ut04/teoria/docker/' }
+---
+import KamalDespliegue from '../../../components/esquemas/KamalDespliegue.astro';
+import ProxyInverso from '../../../components/esquemas/ProxyInverso.astro';
+import Secuencia from '../../../components/esquemas/Secuencia.astro';
+import Puzle from '../../../components/Puzle.astro';
+
+## Docker: imágenes, contenedores y datos
+
+### Qué se ve
+
+Qué es una imagen y un contenedor, el ciclo de vida, puertos, volúmenes, redes y las instrucciones del Dockerfile.
+
+### Conceptos
+
+Una <mark>imagen</mark> es una plantilla de solo lectura hecha de capas (sistema base, dependencias, código). Un <mark>contenedor</mark> es una imagen en ejecución: un proceso aislado que comparte el núcleo del anfitrión. Un contenedor vive mientras vive su proceso principal (`CMD`), por eso los servidores se arrancan en primer plano.
+
+Se usan contenedores para **aislar**: cada aplicación lleva sus dependencias y no choca con las demás, y la misma imagen funciona igual en el portátil, en staging y en producción.
+
+| Concepto | Cómo se usa |
+|---|---|
+| Publicar un puerto | `-p 8080:80`: el 8080 del anfitrión lleva al 80 del contenedor |
+| Variables | `-e CLAVE=valor` o `--env-file .env`; nunca credenciales en el código |
+| Volumen con nombre | `-v datos:/var/lib/postgresql/data`: lo gestiona Docker y sobrevive al contenedor |
+| *Bind mount* | `-v /ruta/del/anfitrion:/ruta`: una carpeta concreta del anfitrión |
+| Red propia | `docker network create red`: los contenedores se encuentran por su nombre |
+
+Cada contenedor tiene una **IP privada** que le da Docker (la red `bridge` por defecto usa 172.17.0.0/16). Por eso dos contenedores pueden escuchar en el mismo puerto: para ellos son máquinas distintas. Desde fuera solo se llega a los puertos publicados.
+
+| Instrucción | Qué hace |
+|---|---|
+| `FROM` | Imagen base (siempre la primera) |
+| `WORKDIR` | Carpeta de trabajo |
+| `COPY` | Copia ficheros del contexto a la imagen |
+| `RUN` | Ejecuta un comando al construir (crea una capa) |
+| `ENV` / `ARG` | Variable permanente / solo durante la construcción |
+| `USER` | Usuario con el que corre el proceso |
+| `EXPOSE` | **Documenta** el puerto; no lo publica |
+| `HEALTHCHECK` | Comando para saber si el contenedor está sano |
+| `CMD` / `ENTRYPOINT` | Proceso que arranca el contenedor (el primero se puede sustituir al lanzar) |
+
+### Casos y ejemplos
+
+El Dockerfile de la API de tareas, comentado:
+
+```dockerfile
+FROM python:3.14-slim
+WORKDIR /app
+COPY requirements.txt .                 # primero las dependencias: aprovecha la caché
+RUN python -m pip install --no-cache-dir -r requirements.txt
+COPY app/ ./app/
+COPY alembic.ini ./
+COPY alembic/ ./alembic/                # las migraciones viajan con la imagen
+RUN useradd --create-home --uid 10001 appuser \
+    && mkdir -p /data && chown -R appuser:appuser /app /data
+USER 10001                              # sin privilegios de root
+EXPOSE 8000
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+El `.dockerignore` deja fuera `.git`, `.venv`, `.env*` y `*.db` para que la imagen sea pequeña y no lleve secretos.
+
+### Errores típicos
+
+- **`port is already allocated`.** Otro contenedor o programa ya publica ese puerto del anfitrión.
+- **Escuchar en 127.0.0.1 dentro del contenedor.** Desde otro contenedor no se alcanza. Va con `0.0.0.0`.
+- **Copiar el código antes que `requirements.txt`.** Cada cambio de código reinstala todas las dependencias.
+- **`ps` o `systemctl` no existen en la imagen.** Se usa `docker top` y se arranca el servicio en primer plano.
+
+### Prácticas de clase
+
+- El contenedor `dpl-lab` (Ubuntu 24.04 con la carpeta del curso montada) de las entregas de nginx y SSH.
+
+### Repaso rápido
+
+<details>
+<summary>¿EXPOSE publica el puerto?</summary>
+
+No. Solo documenta en qué puerto escucha la aplicación. Publicar es `-p` (o un proxy que llega por la red interna, como kamal-proxy).
+
+</details>
+<details>
+<summary>¿Por qué la imagen no se ejecuta como root?</summary>
+
+Para que, si alguien logra ejecutar código a través de la aplicación, no tenga permisos de administrador.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: Docker](https://dpl-f1facc.gitlab.io/ut04/teoria/docker/)
+2. [Referencia del Dockerfile](https://docs.docker.com/reference/dockerfile/)
+
+## Compose con base de datos: PostgreSQL y pgAdmin
+
+### Qué se ve
+
+Cómo se monta una aplicación con varios servicios en Compose, cómo arranca PostgreSQL en un contenedor, qué es `pg_hba.conf` y cómo se guardan y copian los datos.
+
+### Conceptos
+
+**Docker Compose** describe varios servicios en un `compose.yml` y los levanta juntos con `docker compose up -d`. El despliegue típico del curso tiene cuatro: `db` (PostgreSQL), `pgadmin`, la aplicación (Django con Gunicorn) y `nginx`. Solo nginx y pgAdmin se publican al exterior.
+
+| Elemento | Función |
+|---|---|
+| Servicio `db` | Contenedor de PostgreSQL. La app llega a él como `db:5432` por la red interna |
+| `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` | Crean la base, el usuario y su contraseña la primera vez |
+| `init.sql` | Script en `/docker-entrypoint-initdb.d/` que crea tablas y datos la primera vez (si el volumen ya tiene datos, no se ejecuta) |
+| Volumen `db-data` | Guarda los datos fuera del contenedor |
+| `pg_hba.conf` | Reglas de quién se conecta, a qué base, desde dónde y con qué método |
+| pgAdmin | Aplicación web para administrar PostgreSQL desde el navegador |
+| `depends_on` con `service_healthy` | La app espera a que la base esté sana |
+
+Cada línea de <mark>pg_hba.conf</mark> es *tipo, base, usuario, dirección, método*. `local` es el socket del propio contenedor; `host`, una conexión TCP. El método recomendado es `scram-sha-256`; `trust` deja entrar sin contraseña y solo vale en laboratorio. Con la imagen oficial no hace falta tocarlo: ya permite entrar con contraseña desde los demás contenedores.
+
+### Casos y ejemplos
+
+| Acción | ¿Se pierden los datos? |
+|---|---|
+| `docker compose restart db` | No |
+| `docker compose down` | No (el volumen se conserva) |
+| `docker compose down -v` | Sí (borra los volúmenes) |
+
+```bash
+docker compose exec -T db pg_dump -U usuario basedatos > copia.sql     # copia de seguridad
+docker compose exec -T db psql -U usuario -d basedatos < copia.sql     # restaurar
+```
+
+En pgAdmin se registra el servidor con *Host* = `db`, puerto 5432, y el usuario y la contraseña de las variables.
+
+<Puzle archivo="¿Dónde va cada cosa?" ejercicio="ejemplo del tema" piezas={[
+  { t: 'db', hueco: 1 },
+  { t: '/var/lib/postgresql/data', hueco: 2 },
+  { t: '/docker-entrypoint-initdb.d/', hueco: 3 },
+  { t: 'scram-sha-256', hueco: 4 },
+  { t: 'localhost', porque: 'Dentro de un contenedor, localhost es él mismo, no la base de datos.' },
+]}>
+
+```text
+Host que pone la aplicación para conectarse a PostgreSQL      __1__
+Carpeta donde se monta el volumen de datos                    __2__
+Carpeta donde se monta init.sql                               __3__
+Método recomendado en pg_hba.conf                             __4__
+```
+
+</Puzle>
+
+### Errores típicos
+
+- **Conectar a `localhost`.** Dentro de un contenedor es el propio contenedor; hay que usar el nombre del servicio.
+- **Esperar que `init.sql` se ejecute otra vez.** Solo corre con la carpeta de datos vacía.
+- **Publicar el 5432 al exterior.** No hace falta: la app llega por la red interna.
+
+### Prácticas de clase
+
+- Prácticas guiadas de PostgreSQL con pgAdmin y del despliegue completo con Compose.
+
+### Repaso rápido
+
+<details>
+<summary>¿Por qué PostgreSQL en Compose usa un volumen?</summary>
+
+Para que los datos persistan aunque el contenedor se borre o se recree.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: base de datos para el despliegue](https://dpl-f1facc.gitlab.io/ut04/teoria/base-datos/)
+2. [PostgreSQL: el fichero pg_hba.conf](https://www.postgresql.org/docs/current/auth-pg-hba-conf.html)
+
+## Puesta en producción segura
+
+### Qué se ve
+
+Qué cambia al pasar a producción: variables de entorno, usuario sin privilegios, proxy inverso, comprobaciones de salud, entornos y estrategias de publicación.
+
+### Conceptos
+
+- **Variables de entorno, nunca credenciales en el código.** Se leen de un `.env` que no se sube a Git (se sube un `.env.example` sin valores).
+- **Usuario sin privilegios** en el contenedor.
+- **Proxy inverso delante**: nginx o kamal-proxy reciben el tráfico, terminan TLS y reenvían a la app.
+- **Healthcheck**: un endpoint (como `/up`) que responde 200 si la app está viva; lo usan Docker, Compose y Kamal para decidir si un contenedor está sano.
+- **Logs** en la salida estándar, para verlos con `docker logs` o `kamal app logs`.
+- **Entornos**: desarrollo, staging y producción, con la misma imagen y distinta configuración.
+- **Estrategias**: *canary release* (la versión nueva solo para una parte de los usuarios) y *feature toggles* (funciones que se activan sin desplegar). PaaS y *serverless* quitan aún más trabajo de servidor.
+
+Antes de desplegar se comprueba todo: formato y lint (Ruff), tipos (mypy), tests, seguridad (Bandit, pip-audit, Gitleaks) y que la migración funciona y tiene vuelta atrás.
+
+### Casos y ejemplos
+
+En la API de tareas, `just preflight` lanza todas esas comprobaciones, y `just deploy staging` no llama a Kamal si alguna falla.
+
+### Errores típicos
+
+- **Copiar `deploy.staging.yml` a producción sin cambiar el entorno, el servidor y el dominio.** Es fácil dejar un valor de staging en producción.
+- **Subir el `.env`.** Hay que revocar lo que contenga.
+
+### Prácticas de clase
+
+- Prácticas guiadas de despliegue de la UT4 (Django con Compose) y el caso de la API de tareas.
+
+### Repaso rápido
+
+<details>
+<summary>¿Para qué sirve un healthcheck?</summary>
+
+Para que el orquestador sepa si la aplicación responde y solo le mande tráfico cuando está sana.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: despliegue de aplicaciones](https://dpl-f1facc.gitlab.io/ut04/teoria/despliegue/)
+
+## Autenticación con JWT en la API de tareas
+
+### Qué se ve
+
+Qué es un JWT, sus tres partes, cómo funciona el registro y el login de la API de tareas y dónde están la autenticación y la autorización en el flujo.
+
+### Conceptos
+
+Un <mark>JWT</mark> (JSON Web Token, RFC 7519) es un texto con tres partes separadas por puntos, cada una en base64url:
+
+| Parte | Qué lleva |
+|---|---|
+| Cabecera | El algoritmo de firma y el tipo: `alg: HS256`, `typ: JWT` |
+| Payload | Los *claims*: `sub` (el sujeto, normalmente el id del usuario), `iat` (cuándo se emitió), `exp` (cuándo caduca); también pueden ir `iss`, `aud` o datos propios como `admin: true` |
+| Firma | Se calcula con la cabecera, el payload y un secreto del servidor (HS256) o una clave privada (RS256) |
+
+El JWT de la API **no va cifrado**: cualquiera puede leer su payload pegándolo en un depurador de JWT. La firma solo garantiza que nadie lo ha modificado. Por eso nunca lleva contraseñas y siempre viaja por HTTPS.
+
+Las contraseñas tampoco se guardan tal cual: se guarda su **hash con Argon2**. Al hacer login no se «descifra» nada; se vuelve a calcular el hash con la contraseña recibida y se compara.
+
+<Secuencia titulo="Registro, login y uso del token"
+  descripcion="Cinco pasos: registro con contraseña hasheada, login que comprueba el hash, emisión de un JWT firmado, envío del token en la cabecera Authorization y comprobación de firma y caducidad en cada petición."
+  pie="Autenticación en el login; autorización en cada endpoint protegido."
+  pasos={[['Registro', 'hash Argon2'], ['Login', 'compara el hash'], ['Token', 'JWT firmado'], ['Petición', 'Bearer en Authorization'], ['Permisos', 'solo tus tareas']]} />
+
+### Casos y ejemplos
+
+| Método | Ruta | Acceso |
+|---|---|---|
+| `GET` | `/up`, `/health` | Público |
+| `POST` | `/auth/register` | Público: JSON con `username` y `password`; responde 201 sin la contraseña, o 409 si ya existe |
+| `POST` | `/auth/token` | Público: formulario con usuario y contraseña; devuelve `access_token` |
+| `GET` | `/auth/me` | Con token |
+| `GET`, `POST`, `PATCH`, `DELETE` | `/tasks` y `/tasks/{id}` | Con token; cada usuario solo ve las suyas |
+
+```bash
+curl -X POST https://api.ejemplo.es/auth/register \
+  -H 'Content-Type: application/json' -d '{"username":"ana","password":"una-clave-larga"}'
+curl -X POST https://api.ejemplo.es/auth/token -d 'username=ana' -d 'password=una-clave-larga'
+curl https://api.ejemplo.es/tasks -H "Authorization: Bearer TOKEN"
+```
+
+Detalles de seguridad del caso práctico: el secreto `JWT_SECRET_KEY` es obligatorio y largo (al menos 32 caracteres), y si cambia, todos los tokens dejan de valer; los tokens caducan (30 minutos por defecto); una tarea de otro usuario responde 404 para no revelar que existe; sin token o con uno caducado, 401.
+
+### Errores típicos
+
+- **Decir que el JWT cifra los datos.** Los firma. Lo que cifra es HTTPS.
+- **Confundir dónde va cada cosa.** El token va en la cabecera `Authorization`, no en el cuerpo.
+
+### Prácticas de clase
+
+- Registro, login y creación de tareas probados con `curl` y con un cliente como Insomnia, pegando el token en *Authorization: Bearer*.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué va normalmente en el sub de un JWT?</summary>
+
+El identificador del usuario.
+
+</details>
+<details>
+<summary>¿Por qué el login no puede «descifrar» la contraseña guardada?</summary>
+
+Porque se guarda un hash, que no se puede deshacer. Se calcula el hash de la contraseña recibida y se compara.
+
+</details>
+
+### Fuentes
+
+1. [RFC 7519, JSON Web Token](https://datatracker.ietf.org/doc/html/rfc7519)
+2. [FastAPI: OAuth2 con contraseña y JWT](https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/)
+
+## Migraciones con Alembic
+
+### Qué se ve
+
+Por qué hacen falta migraciones cuando la aplicación ya está en producción, cómo funciona Alembic y qué se hizo con las tareas que no tenían dueño.
+
+### Conceptos
+
+Mientras una aplicación no tiene usuarios, cambiar el esquema es borrar y crear. Cuando ya está en producción con datos, no: hay que **migrar**. Una <mark>migración</mark> es un script versionado que lleva la base de un esquema al siguiente (`upgrade`) y sabe deshacerlo (`downgrade`).
+
+**Alembic** es la herramienta de migraciones de SQLAlchemy:
+
+| Comando | Qué hace |
+|---|---|
+| `alembic revision --autogenerate -m "..."` | Genera una revisión comparando los modelos con la base. Hay que revisarla: no detecta, por ejemplo, los renombrados |
+| `alembic upgrade head` | Aplica todas las revisiones pendientes |
+| `alembic downgrade -1` | Deshace la última |
+| `alembic check` | Avisa si hay cambios en los modelos sin migración |
+| `alembic stamp REVISIÓN` | Marca la base como si estuviera en esa revisión, sin tocar tablas |
+
+La tabla `alembic_version` de la base guarda en qué revisión está.
+
+### Casos y ejemplos
+
+La API de tareas empezó sin usuarios. Al añadir el login hubo que crear la tabla `users` y una columna de dueño en `tasks`. Las revisiones quedaron así:
+
+- `0001_baseline`: el esquema original, solo con `tasks`.
+- `0002_add_users_and_task_ownership`: crea `users`, añade el dueño a `tasks` y reparte las tareas viejas.
+
+¿Qué hacer con las tareas que existían antes y no tenían dueño? Opciones que se plantearon: asignarlas a un administrador, preguntar a cada usuario de quién era cada una o borrar y empezar de cero. Se eligió la primera: la propia migración crea un usuario de *bootstrap* con un nombre y una contraseña que toma de variables de entorno (`ALEMBIC_BOOTSTRAP_USERNAME` y `ALEMBIC_BOOTSTRAP_PASSWORD`), hashea la contraseña y le asigna las tareas. Si no hay tareas, no crea a nadie.
+
+Una base que ya existía antes de usar Alembic se marca primero con `alembic stamp 0001_baseline` y después se aplica `alembic upgrade head`. La aplicación no migra sola al arrancar: comprueba la revisión y se niega a arrancar si no está en `head`, indicando el comando que falta.
+
+### Errores típicos
+
+- **Fiarse del autogenerate sin mirarlo.** Un renombrado lo traduce como borrar y crear la columna, y se pierden los datos.
+- **Hacer `stamp 0001_baseline` sobre una base que ya está en `head`.** Retrocede el marcador.
+
+### Prácticas de clase
+
+- Lectura y explicación en clase de la migración de usuarios de la API de tareas.
+
+### Repaso rápido
+
+<details>
+<summary>¿Por qué no se puede volver a crear el esquema desde cero en producción?</summary>
+
+Porque se perderían los datos de los usuarios. Se migra: se cambia el esquema conservando lo que hay.
+
+</details>
+
+### Fuentes
+
+1. [Alembic: tutorial](https://alembic.sqlalchemy.org/en/latest/tutorial.html) y [autogenerate](https://alembic.sqlalchemy.org/en/latest/autogenerate.html)
+
+## Despliegue con Kamal
+
+### Qué se ve
+
+Qué es Kamal, sus ficheros de configuración, cómo despliega sin corte, cómo reparte kamal-proxy entre aplicaciones y cómo se vuelve atrás.
+
+### Conceptos
+
+<mark>Kamal</mark> despliega una imagen Docker en servidores propios entrando por **SSH**. Lee la configuración, construye la imagen, la sube a un registro, entra en cada servidor, descarga la imagen y arranca el contenedor detrás de **kamal-proxy**.
+
+<KamalDespliegue />
+
+| Fichero | Qué lleva |
+|---|---|
+| `config/deploy.yml` | Lo común: `service`, `image`, `registry`, `ssh.user`, `builder.arch`, `proxy.app_port`, `env.clear` y `env.secret` |
+| `config/deploy.staging.yml` | Lo del destino staging: `servers`, `proxy.host`, `ssl: true`, `volumes`, `APP_ENV` |
+| `config/deploy.production.yml` | Lo mismo para producción |
+| `.kamal/secrets` | Valores secretos (contraseña del registro, `JWT_SECRET_KEY`); no se suben a Git |
+| `.kamal/hooks/` | Scripts que se ejecutan en momentos del despliegue (`pre-build`, `pre-deploy`, `post-deploy`…) |
+
+Un **destino** es un entorno: `kamal deploy -d staging` junta `deploy.yml` con `deploy.staging.yml`.
+
+| Comando | Qué hace |
+|---|---|
+| `kamal setup` | La primera vez: instala Docker si falta, arranca el proxy y despliega |
+| `kamal deploy` | Construye, sube, arranca la versión nueva, espera a `/up` y retira la vieja |
+| `kamal rollback VERSIÓN` | Vuelve a arrancar el contenedor de una versión anterior que sigue en el servidor (no toca la base de datos) |
+| `kamal app logs` / `kamal details` | Logs y estado |
+| `kamal config` | Valida la configuración |
+
+**kamal-proxy** es un contenedor que publica los puertos 80 y 443 del servidor. Con `proxy.host` solo manda a cada aplicación las peticiones con ese nombre en la cabecera `Host`, así que varias aplicaciones conviven en el mismo servidor. Con `ssl: true` pide y renueva un certificado de Let's Encrypt (el DNS tiene que apuntar al servidor y los puertos 80 y 443 tienen que estar abiertos). Antes de pasar el tráfico a la versión nueva comprueba que `GET /up` responde 200.
+
+<ProxyInverso />
+
+### Casos y ejemplos
+
+```yaml
+# config/deploy.staging.yml (valores de ejemplo)
+servers:
+  web:
+    - 203.0.113.10
+proxy:
+  host: stg.ejemplo.es
+  app_port: 8000
+  ssl: true
+volumes:
+  - /var/lib/tasks-api:/data
+env:
+  clear:
+    APP_ENV: staging
+    DATABASE_URL: sqlite:////data/tasks.db
+```
+
+`sqlite:////data/tasks.db` lleva cuatro barras: tres del formato de la URL y la de la ruta absoluta `/data`. La carpeta del servidor la tiene que poder escribir el usuario sin privilegios del contenedor.
+
+El flujo de trabajo del caso práctico:
+
+```bash
+just config staging     # valida la configuración
+just setup staging      # solo la primera vez
+just deploy staging     # pasa preflight y despliega
+just status staging
+just logs staging
+just deploy production  # cuando staging funciona
+```
+
+### Errores típicos
+
+| Síntoma | Causa probable |
+|---|---|
+| Kamal no conecta | Usuario SSH incorrecto o clave no autorizada |
+| `denied` al subir la imagen | Falta el token del registro o no tiene permiso |
+| La versión nueva no recibe tráfico | `/up` no responde 200; mirar los logs |
+| No se emite el certificado | El DNS no apunta al servidor o los puertos 80/443 están cerrados |
+| Error de arquitectura | Falta `builder.arch` o no coincide con el servidor |
+| La app no recibe peticiones | Escucha en 127.0.0.1 en vez de 0.0.0.0, o `app_port` no coincide |
+
+### Prácticas de clase
+
+- Despliegue en clase sobre dos máquinas de Oracle Cloud: una para staging y otra para producción, con Ruby instalado con `rbenv` para tener Kamal en el ordenador desde el que se despliega.
+
+### Repaso rápido
+
+<details>
+<summary>¿Cómo evita Kamal el corte al publicar una versión?</summary>
+
+Arranca la nueva junto a la vieja, espera a que `/up` responda 200, pasa el tráfico y entonces para la vieja. Si `/up` falla, el tráfico sigue en la vieja.
+
+</details>
+<details>
+<summary>¿Por qué pueden convivir varias apps en el mismo 443?</summary>
+
+Porque kamal-proxy elige destino por la cabecera `Host`; cada app está en su contenedor y no publica puertos.
+
+</details>
+<details>
+<summary>¿Qué hace kamal rollback con la base de datos?</summary>
+
+Nada. Solo cambia el contenedor. La base se deshace con `alembic downgrade` o restaurando la copia.
+
+</details>
+
+### Fuentes
+
+1. Caso práctico de clase: API de tareas con FastAPI, JWT, Alembic y Kamal (repositorio del profesor).
+2. [Kamal: configuración](https://kamal-deploy.org/docs/configuration/overview/), [proxy](https://kamal-deploy.org/docs/configuration/proxy/), [deploy](https://kamal-deploy.org/docs/commands/deploy/), [rollback](https://kamal-deploy.org/docs/commands/rollback/) y [hooks](https://kamal-deploy.org/docs/hooks/overview/)

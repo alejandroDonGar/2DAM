@@ -1,0 +1,245 @@
+---
+titulo: Git, documentación e integración continua
+etiqueta: UT1
+orden: 1
+entrada: Cómo se guarda la historia de un proyecto con Git, cómo se documenta una práctica para que otro la pueda repetir y cómo se automatiza la comprobación de cada cambio con un pipeline de integración continua.
+cuando: septiembre y octubre (base de todas las entregas)
+ejercicios: un repositorio por práctica, con README paso a paso y un commit por cambio
+ruta: { texto: 'UT1 en la web del módulo', url: 'https://dpl-f1facc.gitlab.io/ut01/teoria/git/' }
+---
+import Secuencia from '../../../components/esquemas/Secuencia.astro';
+import Puzle from '../../../components/Puzle.astro';
+
+## Git y control de versiones
+
+### Qué se ve
+
+Qué es un sistema de control de versiones, por qué Git es distribuido, los tres estados de un fichero, ramas, remotos y el flujo colaborativo de GitHub con issues y pull requests.
+
+### Conceptos
+
+Un <mark>sistema de control de versiones</mark> guarda cada cambio de un proyecto con su autor, su fecha y su motivo, y permite volver a cualquier punto. Es lo contrario de copiar la carpeta con la fecha en el nombre antes de cada cambio importante.
+
+Hay dos modelos. En el **centralizado** (CVS, Subversion) el historial está en un servidor: si cae, nadie puede confirmar cambios y, si se pierde, se pierde todo. En el **distribuido** (Git, Mercurial) cada clon lleva el historial completo, así que se trabaja sin conexión y no hay punto único de fallo.
+
+Git no guarda diferencias, sino <mark>instantáneas</mark>: cada commit es una foto del proyecto. Si un fichero no ha cambiado, la foto apunta al que ya tenía. Un fichero pasa por tres zonas:
+
+| Zona | Qué hay | Cómo se pasa a la siguiente |
+|---|---|---|
+| Directorio de trabajo | Los ficheros tal como los editas | `git add` |
+| Área de preparación (*staging*) | Lo que entrará en el próximo commit | `git commit -m "..."` |
+| Repositorio (`.git`) | El historial de commits | `git push` lo sube al remoto |
+
+Conceptos que salen en el examen:
+
+| Concepto | Qué es |
+|---|---|
+| `git init` | Crea un repositorio nuevo: la carpeta oculta `.git` |
+| commit | Foto del proyecto con autor, fecha y mensaje |
+| branch (rama) | Línea de trabajo independiente; permite probar un cambio sin tocar `main` |
+| merge | Une una rama con otra. Si no hay cambios en medio es *fast-forward*; con `--no-ff` deja un commit de unión |
+| remote | Copia del repositorio en otro sitio. El principal se llama `origin` |
+| `.gitignore` | Lista de lo que no se versiona: `.env`, `.venv`, `*.db`, `site/`, cachés |
+| tag | Etiqueta una versión (`v1.0.0`) |
+| `user.name` y `user.email` | Identifican al autor de cada commit |
+| fork y upstream | Copia propia de un repositorio ajeno; `upstream` apunta al original |
+| pull request | Petición para revisar y fusionar una rama en GitHub o GitLab |
+
+Un remoto se clona por **HTTPS** (pide usuario y token) o por **SSH** (con una clave pública subida a la cuenta). Por SSH no hay que escribir nada en cada `push`.
+
+### Casos y ejemplos
+
+El flujo de cada práctica del módulo:
+
+```bash
+git init
+git config user.name "Nombre del aula virtual"     # solo en este repositorio
+git config user.email "correo@del.aula"
+git add README.md
+git commit -m "Crear el repositorio" -m "Se añadió el README con el índice."
+git remote add origin git@github.com:usuario/practica.git
+git push -u origin main                             # -u: recuerda la rama remota
+```
+
+El flujo de colaboración en GitHub es: abrir un *issue* con lo que falta, crear una rama, hacer commits, abrir un *pull request*, revisarlo y fusionarlo. Las estrategias de ramas más conocidas son *trunk-based* (todo va a `main` muy a menudo), ramas por funcionalidad, **Git Flow** (ramas `develop`, `feature`, `release` y `hotfix`) y **GitHub Flow** (solo `main` y ramas cortas con pull request).
+
+<Puzle archivo="Del cambio al remoto" ejercicio="ejemplo del tema" piezas={[
+  { t: 'git add', hueco: 1 },
+  { t: 'git commit', hueco: 2 },
+  { t: 'git push', hueco: 3 },
+  { t: 'git pull', hueco: 4 },
+  { t: 'git init', porque: 'Solo se usa una vez, al crear el repositorio.' },
+]}>
+
+```text
+Edito index.md y lo paso al área de preparación      __1__
+Guardo la foto con un mensaje                        __2__
+La subo a GitHub                                     __3__
+Traigo lo que han subido los demás                   __4__
+```
+
+</Puzle>
+
+### Errores típicos
+
+- **Commits con un nombre o correo distintos de los del aula virtual.** En las entregas del módulo valen un 0. La identidad se fija por repositorio, sin `--global`.
+- **`git push` sin upstream.** La primera vez hay que usar `git push -u origin main`.
+- **Versionar secretos o la web compilada.** `.env` y `site/` van en `.gitignore`. Un secreto subido por error hay que revocarlo, porque queda en el historial.
+- **Nombres de carpeta con `:` o `?`.** En Linux se pueden subir, pero en Windows el `git pull` falla con *invalid path*.
+
+### Prácticas de clase
+
+- Prácticas guiadas de la web del módulo: primeros pasos con Git, colaboración con fork y pull request, ramas y merges.
+- Todas las entregas del curso se hacen como repositorio propio y se entregan en un ZIP **con la carpeta `.git`**.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué riesgo tiene un sistema de control de versiones centralizado?</summary>
+
+Que el servidor es un punto único de fallo: si cae, nadie trabaja, y si se pierde, se pierde el historial.
+
+</details>
+<details>
+<summary>¿Qué guarda el área de preparación?</summary>
+
+Los cambios que se han pasado con `git add` y que entrarán en el siguiente commit.
+
+</details>
+<details>
+<summary>¿Qué diferencia hay entre clonar por HTTPS y por SSH?</summary>
+
+Por HTTPS se autentica con usuario y token; por SSH, con una clave pública registrada en la cuenta.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: Git y control de versiones](https://dpl-f1facc.gitlab.io/ut01/teoria/git/)
+2. [Pro Git, el libro oficial (en español)](https://git-scm.com/book/es/v2)
+
+## Documentación y README
+
+### Qué se ve
+
+Por qué se documenta, qué estructura tiene el README de una práctica, Markdown y los generadores de webs de documentación como Zensical.
+
+### Conceptos
+
+El <mark>README.md</mark> es lo primero que se ve al abrir un repositorio. En el módulo, sus secciones coinciden con los criterios de la rúbrica y empieza con un índice que enlaza a cada una:
+
+| Sección | Qué lleva |
+|---|---|
+| Título y descripción | Qué es el proyecto, en una o dos líneas |
+| Índice | Enlaces internos a las secciones |
+| Instalación | Pasos y comandos para ponerlo en marcha |
+| Configuración | Ficheros que hay que tocar y variables que hay que definir |
+| Comprobación | Comandos que demuestran que funciona (`curl`, `docker compose ps`, `git log`) con su salida real |
+| Problemas encontrados y solución | Fallos reales y cómo se arreglaron |
+| Enlace al remoto | URL del repositorio en GitHub o GitLab |
+
+Hay documentación para públicos distintos: el **manual de usuario** explica cómo se usa la aplicación paso a paso; la **documentación de la API** sirve a los desarrolladores que la van a integrar; la técnica, a quien mantiene el sistema.
+
+Los <mark>generadores de documentación</mark> convierten ficheros Markdown en una web: Zensical (el que se usa en clase), MkDocs, Jekyll, Hugo… La web se compila (`uv run zensical build`) y el resultado es HTML estático que puede servir nginx o GitHub Pages.
+
+### Casos y ejemplos
+
+En las dos entregas del curso, el README recogía cada paso con el comando ejecutado y su salida real. En la de SSH, además, había una sección de análisis de errores (E1 a E8): `systemctl` inexistente en un contenedor, la pregunta interactiva de `tzdata`, un `PasswordAuthentication yes` descomentado sin cambiar el valor que solo detectó `sshd -T`…
+
+Los diagramas se hacen con Mermaid dentro del propio Markdown, en lugar de capturas.
+
+### Errores típicos
+
+- **Copiar los apuntes en el README.** Documentar es contar lo que hice yo, con mis comandos y mis salidas.
+- **Índice con enlaces rotos.** Los anclajes tienen que funcionar al verlo en GitHub.
+
+### Prácticas de clase
+
+- La web de apuntes del profesor y el portafolio propio están hechos con Zensical y se publican con GitHub Actions o GitLab Pages.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué va en la sección «Comprobación»?</summary>
+
+Los comandos que demuestran que funciona y su salida real, por ejemplo un `curl -I` que devuelve 200.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: documentación y herramientas colaborativas](https://dpl-f1facc.gitlab.io/ut01/teoria/documentacion/)
+
+## Integración y despliegue continuos
+
+### Qué se ve
+
+Qué es CI/CD, las fases de un pipeline, los entornos, los artefactos, GitHub Actions y las herramientas que comprueban la calidad del código antes de desplegar.
+
+### Conceptos
+
+| Práctica | Qué automatiza | ¿Quién decide publicar? |
+|---|---|---|
+| <mark>Integración continua</mark> (CI) | Compilar y probar cada cambio que se sube | Nadie: solo comprueba |
+| Entrega continua | Lo anterior y deja el artefacto listo | Una persona aprueba |
+| Despliegue continuo | Todo, hasta producción | Nadie: es automático |
+
+Un **pipeline** es la secuencia de fases de un cambio: descargar el código, instalar dependencias, comprobar, probar, empaquetar y desplegar. Si una fase falla, las siguientes no se ejecutan. Lo barato va primero para fallar rápido.
+
+Un **artefacto** es el resultado empaquetado y versionado (una imagen Docker, un ZIP). El mismo artefacto probado en staging es el que va a producción, sin recompilar.
+
+Los **entornos** habituales son local, integración (donde corre el CI), **staging** (preproducción, parecida a la real) y **producción**. La regla es que se parezcan lo máximo posible; Docker ayuda porque la misma imagen funciona igual en todos.
+
+En GitHub Actions el pipeline es un YAML en `.github/workflows/`: `on` dice qué lo dispara, `jobs` son los trabajos (cada uno en su máquina) y `steps` los pasos de cada trabajo. Los secretos van en los ajustes del repositorio y se leen como `secrets.NOMBRE`.
+
+**Herramientas de calidad del caso práctico de Python:**
+
+| Herramienta | Qué comprueba |
+|---|---|
+| Ruff | Formato y estilo (*linter*), muy rápido |
+| mypy | Tipos estáticos: llamadas con tipos que no cuadran |
+| pytest + cobertura | Tests unitarios, de integración y de extremo a extremo; mínimo del 80 % |
+| Bandit | Fallos de seguridad típicos en el código Python |
+| pip-audit | Dependencias con vulnerabilidades conocidas |
+| Gitleaks | Secretos olvidados en el historial de Git |
+| just | Lanzador de recetas: `just preflight` lo ejecuta todo antes de desplegar |
+
+<Secuencia titulo="Fases de un pipeline"
+  descripcion="Cinco fases en orden: source, build, test, package y deploy."
+  pie="Si una fase falla, las siguientes no se ejecutan y el cambio queda en rojo."
+  pasos={[['Source', 'checkout'], ['Build', 'dependencias'], ['Test', 'calidad y pruebas'], ['Package', 'imagen Docker'], ['Deploy', 'staging y prod']]} />
+
+### Casos y ejemplos
+
+El workflow del caso práctico se dispara en cada push a `main` y en cada pull request, con permisos de solo lectura y las acciones fijadas por versión. Sus pasos, en orden: instalar desde el fichero de bloqueo, comprobar el bloqueo, formato, lint, tipos, tests unitarios, de integración, cobertura, tests de extremo a extremo contra un servidor real, Bandit, pip-audit, Gitleaks y comprobar que `requirements.txt` coincide con el bloqueo. El despliegue no está en el CI porque necesita las credenciales SSH y del registro; se lanza a mano con `just deploy`.
+
+### Errores típicos
+
+- **Secretos en el YAML.** Quedan en el historial. Van en los secretos del repositorio.
+- **Desplegar desde cualquier rama.** Se publica solo desde `main`, para no generar artefactos de cambios que no van a llegar.
+- **Pages sin activar.** El workflow de una web falla en `configure-pages` si no se ha activado GitHub Pages en el repositorio.
+
+### Prácticas de clase
+
+- Práctica guiada de CI/CD con GitHub Actions y el workflow que publica el portafolio.
+
+### Repaso rápido
+
+<details>
+<summary>¿Qué diferencia hay entre entrega continua y despliegue continuo?</summary>
+
+En la entrega continua una persona aprueba la publicación; en el despliegue continuo se publica sola si todo pasa.
+
+</details>
+<details>
+<summary>¿Para qué sirven Ruff y Bandit?</summary>
+
+Ruff revisa formato y estilo; Bandit busca fallos de seguridad en el código. Los dos corren antes de desplegar.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: CI/CD](https://dpl-f1facc.gitlab.io/ut01/teoria/ci-cd/)
+2. [Documentación de GitHub Actions](https://docs.github.com/es/actions)
+3. [Ruff](https://docs.astral.sh/ruff/) y [Bandit](https://bandit.readthedocs.io/)

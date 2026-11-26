@@ -5,7 +5,7 @@ export const asignaturas = [
     entrada: 'Cómo guarda y recupera datos una aplicación Java. Todo el curso gira alrededor de un mismo CRUD de productos que se rehace cada vez que aprendemos una forma nueva de guardarlo.' },
   { slug: 'servicios-y-procesos', clase: 'psp', nombre: 'Programación de Servicios y Procesos', sobre: 'Hilos, sincronización y sockets en Python' },
   { slug: 'interfaces', clase: 'di', nombre: 'Desarrollo de Interfaces', sobre: 'Flutter: widgets, estado y componentes reutilizables' },
-  { slug: 'despliegue', clase: 'daw', nombre: 'Despliegue de Aplicaciones Web', sobre: 'Servidores, nginx, SSH y Docker' },
+  { slug: 'despliegue', clase: 'daw', nombre: 'Despliegue de Aplicaciones Web', sobre: 'Git, nginx, Docker, Kamal, FTP, SSH, DNS y LDAP' },
   { slug: 'multimedia', clase: 'pmdm', nombre: 'Programación Multimedia y Dispositivos Móviles', sobre: 'React Native, multimedia y motores de videojuegos' },
   { slug: 'sge', clase: 'sge', nombre: 'Sistemas de Gestión Empresarial', sobre: 'ERP y CRM con Odoo' },
   { slug: 'itinerario', clase: 'ipe', nombre: 'Itinerario Personal para la Empleabilidad II', sobre: 'La empresa, el mercado y el plan de empresa' },

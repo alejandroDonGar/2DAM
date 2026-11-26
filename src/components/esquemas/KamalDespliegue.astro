@@ -1,0 +1,42 @@
+---
+import Esquema from '../Esquema.astro';
+// Qué pasa al lanzar «kamal deploy»: imagen al registro, SSH al servidor y cambio de tráfico sin corte
+---
+<Esquema titulo="Qué pasa al lanzar kamal deploy" alto={350}
+  descripcion="Desde el ordenador del desarrollador, Kamal construye la imagen y la sube a un registro de imágenes como ghcr.io. Después entra por SSH en el servidor, que descarga la imagen del registro. Dentro del servidor, kamal-proxy escucha en los puertos 80 y 443. Kamal arranca el contenedor nuevo junto al viejo, espera a que GET /up responda 200, pasa el tráfico al nuevo y para el viejo."
+  pie="Si /up no responde 200 a tiempo, el tráfico se queda en la versión vieja y el despliegue se da por fallido.">
+  <rect x="10" y="30" width="190" height="80" rx="8" class="caja" />
+  <text x="105" y="62" text-anchor="middle">Tu ordenador</text>
+  <text x="105" y="86" text-anchor="middle" class="t-suave">kamal deploy -d staging</text>
+
+  <path d="M202 70 H296" class="trazo con-flecha" />
+  <text x="249" y="58" text-anchor="middle" class="t-suave">1. build + push</text>
+
+  <rect x="300" y="30" width="190" height="80" rx="8" class="caja" />
+  <text x="395" y="62" text-anchor="middle">Registro de imágenes</text>
+  <text x="395" y="86" text-anchor="middle" class="t-suave">ghcr.io, Docker Hub…</text>
+
+  <path d="M105 112 V255 H226" class="trazo con-flecha" />
+  <text x="115" y="190" class="t-suave">2. SSH</text>
+  <path d="M395 112 V160" class="trazo con-flecha" />
+  <text x="405" y="142" class="t-suave">3. docker pull</text>
+
+  <rect x="230" y="165" width="480" height="170" rx="10" class="caja" />
+  <text x="248" y="190" class="t-titulo">Servidor</text>
+
+  <rect x="250" y="215" width="150" height="80" rx="8" class="caja-acento" />
+  <text x="325" y="248" text-anchor="middle" class="t-acento">kamal-proxy</text>
+  <text x="325" y="272" text-anchor="middle" class="t-suave">puertos 80 y 443</text>
+
+  <rect x="470" y="190" width="220" height="56" rx="8" class="caja" />
+  <text x="580" y="214" text-anchor="middle">versión vieja</text>
+  <text x="580" y="234" text-anchor="middle" class="t-suave">se para al final</text>
+
+  <rect x="470" y="262" width="220" height="56" rx="8" class="caja-acento" />
+  <text x="580" y="286" text-anchor="middle" class="t-acento">versión nueva</text>
+  <text x="580" y="306" text-anchor="middle" class="t-suave">4. GET /up → 200</text>
+
+  <path d="M402 245 L466 220" class="trazo" stroke-dasharray="5 4" />
+  <path d="M402 265 L466 288" class="trazo-acento con-flecha" />
+  <text x="434" y="330" text-anchor="middle" class="t-suave">5. tráfico al nuevo</text>
+</Esquema>
