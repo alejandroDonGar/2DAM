@@ -17,9 +17,11 @@ import Puzle from '../../../components/Puzle.astro';
 
 ### Qué se ve
 
-El examen tiene dos partes. La primera es **tipo test**: preguntas de elegir una opción, de relacionar conceptos con su definición y de ordenar los pasos de un proceso. La segunda es de **desarrollo**: explicar con palabras propias cómo se despliega una aplicación con Kamal y, en general, todo lo visto hasta ahora.
+El examen tiene dos partes. La primera es **tipo test, de 70 preguntas**: preguntas de elegir una opción, de relacionar conceptos con su definición y de ordenar los pasos de un proceso. La segunda es de **desarrollo**: explicar con palabras propias cómo se despliega una aplicación con Kamal y, en general, todo lo visto hasta ahora.
 
 Aunque la web del módulo dice que el primer examen trimestral cubre la UT1 y la UT2, las preguntas de ejemplo de clase tocan las seis unidades (FTP, DNS y LDAP incluidos) y el caso práctico de Kamal con JWT y Alembic. Por eso esta página las repasa todas.
+
+Abajo hay **70 preguntas**, como en el examen. Las **38 marcadas con ★** son las que el profesor confirmó que saldrán; aquí están con sus mismas opciones y una explicación propia de cada respuesta. Las otras 32 salen de las preguntas de ejemplo que se dictaron en clase el 24/11 y del temario, con el mismo nivel.
 
 ### Conceptos
 
@@ -233,30 +235,145 @@ Aísla un proceso con sus dependencias y comparte el núcleo del anfitrión     
 
 </Puzle>
 
-**10. Una empresa quiere cambiar de gestor de base de datos sin tocar el resto. ¿Qué capa cambia?**
+**★ 10. Una empresa quiere cambiar el gestor de base de datos de su aplicación web y que el cambio afecte a una sola capa. ¿A cuál afectaría?**
 
-- a) La de presentación
-- b) La de lógica
-- c) La de datos
-- d) El navegador
+- a) Al navegador
+- b) A la capa de presentación
+- c) A la capa de negocio
+- d) A la capa de acceso a datos
 
 <details>
 <summary>Respuesta</summary>
 
-**c)**. Separar en capas sirve justo para esto: se cambia la que guarda los datos y nginx y la lógica siguen igual (como mucho, cambia el driver de conexión).
+**d)**. Separar en capas sirve justo para esto: se cambia la que guarda y busca los datos, y nginx y la lógica siguen igual (como mucho, cambia el driver de conexión).
+
+- a) El navegador no sabe qué base de datos hay detrás.
+- b) La presentación (nginx) solo recibe peticiones y reenvía.
+- c) La lógica pide datos, pero no los guarda; si la capa de datos está bien separada, no cambia.
 
 </details>
 
-**11. Una web tiene HTTPS, pero su formulario está mal programado y es vulnerable. ¿Qué pasa con esos fallos?**
+**★ 11. Un sitio con HTTPS tiene un formulario programado con fallos de seguridad. ¿Qué pasa con esos fallos?**
 
-- a) Desaparecen, porque HTTPS lo protege todo
-- b) Siguen ahí: HTTPS solo protege el canal, no el código de la aplicación
-- c) Se convierten en errores 502
+- a) Desaparecen cuando el certificado lo emite una autoridad conocida
+- b) Siguen existiendo, porque HTTPS solo protege el canal
+- c) HTTPS los corrige al cifrar los datos que viajan
+- d) Solo afectan a los usuarios que entran por HTTP
 
 <details>
 <summary>Respuesta</summary>
 
 **b)**. TLS cifra lo que viaja entre cliente y servidor. Si el código guarda contraseñas en claro o acepta datos sin validar, eso no cambia por tener candado.
+
+- a) La autoridad solo garantiza la identidad del servidor, no la calidad del código.
+- c) Cifrar el viaje no arregla lo que el código hace al recibir los datos.
+- d) Los fallos están en el código, así que afectan a todos, entren como entren.
+
+</details>
+
+**★ 12. Una tienda online muestra los precios, el stock y los pedidos de cada usuario, actualizados desde una base de datos. ¿Qué tipo de aplicación necesita?**
+
+- a) Estática, porque basta con servir archivos HTML ya preparados
+- b) Estática, porque usa imágenes y CSS para su diseño
+- c) Dinámica, porque ejecuta código que genera la respuesta
+- d) Dinámica, porque se ve en un navegador desde cualquier equipo
+
+<details>
+<summary>Respuesta</summary>
+
+**c)**. Cada usuario ve sus pedidos y el stock cambia, así que la página se genera en el momento con código que consulta la base de datos.
+
+- a) Unos HTML preparados de antemano no pueden enseñar el pedido de cada usuario.
+- b) y d) dan razones que valen para cualquier web: usar CSS o verse en un navegador no dice si es estática o dinámica.
+
+</details>
+
+**★ 13. Has modificado un archivo de configuración en el servidor, pero la aplicación sigue comportándose igual. ¿Cuál es una causa frecuente?**
+
+- a) El servicio no se ha recargado ni reiniciado después del cambio
+- b) El servidor necesita un certificado digital nuevo para aplicarlo
+- c) El navegador ha guardado una copia antigua de la configuración
+- d) El puerto cambia automáticamente cada vez que se guarda el archivo
+
+<details>
+<summary>Respuesta</summary>
+
+**a)**. Un servicio lee su configuración al arrancar. Hasta que no se recarga (`nginx -s reload`) o se reinicia, sigue con la vieja. Antes de recargar, se comprueba con `nginx -t`.
+
+- b) Los certificados no tienen nada que ver con aplicar una configuración.
+- c) El navegador nunca recibe la configuración del servidor.
+- d) Los puertos no cambian solos.
+
+</details>
+
+**★ 14. Una web recibe de golpe miles de peticiones y el único servidor que la aloja se satura. ¿Qué limitación del modelo cliente-servidor se ve aquí?**
+
+- a) La necesidad de que cada cliente actúe también como servidor
+- b) El cuello de botella que se forma en el servidor ante una demanda muy alta
+- c) La imposibilidad de atender a más de un cliente a la vez
+- d) La obligación de que todos los clientes usen el mismo sistema operativo
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Todos los clientes piden al mismo servidor: si llegan demasiados a la vez, se satura. Se combate con más servidores y balanceo, o con una CDN.
+
+- a) Que cada cliente sea también servidor es el modelo P2P, no el cliente-servidor.
+- c) Un servidor sí atiende a muchos clientes a la vez; el problema es cuando son demasiados.
+- d) Los clientes pueden usar cualquier sistema: solo tienen que hablar HTTP.
+
+</details>
+
+**★ 15. Un atacante captura los datos mientras viajan entre el navegador del usuario y el servidor de aplicaciones. ¿A qué parte de la arquitectura corresponde este ataque?**
+
+- a) Al equipo cliente
+- b) Al flujo de información
+- c) Al gestor de base de datos
+- d) Al equipo servidor
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. La clave es «mientras viajan»: el ataque ocurre en la red, entre los dos extremos. Se protege cifrando el canal con HTTPS.
+
+- a) y d) serían ataques dentro de uno de los equipos.
+- c) La base de datos ni siquiera interviene en ese tramo.
+
+</details>
+
+**★ 16. ¿Qué protocolo de la capa de aplicación se usa con más frecuencia cuando el navegador pide una página web?**
+
+- a) TCP
+- b) DNS
+- c) HTTP
+- d) FTP
+
+<details>
+<summary>Respuesta</summary>
+
+**c)**. HTTP (o HTTPS, que es HTTP con TLS) es el protocolo con el que el navegador pide páginas.
+
+- a) TCP es de la capa de transporte, no de aplicación: es lo que lleva a HTTP por debajo.
+- b) DNS se usa antes, para averiguar la IP del servidor, pero no pide la página.
+- d) FTP es para transferir ficheros.
+
+</details>
+
+**★ 17. El servidor tiene que aceptar peticiones HTTP y HTTPS. ¿Qué puertos suele tener configurados?**
+
+- a) 22 y 5432
+- b) 25 y 8080
+- c) 80 y 443
+- d) 21 y 443
+
+<details>
+<summary>Respuesta</summary>
+
+**c)**. 80 es HTTP y 443 es HTTPS.
+
+- a) 22 es SSH y 5432 PostgreSQL.
+- b) 25 es SMTP (correo) y 8080 un puerto alternativo típico de servidores de aplicaciones.
+- d) 21 es el control de FTP.
 
 </details>
 
@@ -282,7 +399,7 @@ Cómo elige nginx el sitio que sirve, para qué sirve `location`, qué hace cada
 
 ### Preguntas tipo test
 
-**12. Dos dominios apuntan a la misma IP, puerto 80. ¿Cómo sabe nginx qué sitio servir?**
+**18. Dos dominios apuntan a la misma IP, puerto 80. ¿Cómo sabe nginx qué sitio servir?**
 
 - a) Por la IP de origen del cliente
 - b) Compara la cabecera Host de la petición con el `server_name` de cada server block; si ninguno coincide, usa el `default_server`
@@ -300,7 +417,7 @@ Cómo elige nginx el sitio que sirve, para qué sirve `location`, qué hace cada
 
 </details>
 
-**13. ¿Para qué sirve `location` en nginx?**
+**19. ¿Para qué sirve `location` en nginx?**
 
 - a) Para indicar la ubicación física del servidor
 - b) Para aplicar una configuración distinta según la ruta de la URL pedida (por ejemplo, `/api/` va al backend y `/img/` se sirve del disco)
@@ -317,7 +434,7 @@ Cómo elige nginx el sitio que sirve, para qué sirve `location`, qué hace cada
 
 </details>
 
-**14. Basic Auth envía usuario y contraseña en Base64. ¿Qué implica?**
+**20. Basic Auth envía usuario y contraseña en Base64. ¿Qué implica?**
 
 - a) Que la contraseña va cifrada con la clave del servidor
 - b) Que no va cifrada: Base64 se decodifica sin clave, así que cualquiera que capture la petición la lee. Hay que usarlo siempre con HTTPS
@@ -334,7 +451,7 @@ Cómo elige nginx el sitio que sirve, para qué sirve `location`, qué hace cada
 
 </details>
 
-**15. ¿Qué diferencia hay entre un certificado de Let's Encrypt y uno autofirmado?**
+**21. ¿Qué diferencia hay entre un certificado de Let's Encrypt y uno autofirmado?**
 
 - a) El autofirmado cifra con menos bits
 - b) El de Let's Encrypt no necesita clave privada
@@ -352,7 +469,7 @@ Cómo elige nginx el sitio que sirve, para qué sirve `location`, qué hace cada
 
 </details>
 
-**16. Relaciona cada directiva con su función.**
+**22. Relaciona cada directiva con su función.**
 
 <Puzle archivo="Directivas de nginx" ejercicio="pregunta de relacionar" piezas={[
   { t: 'default_server', hueco: 1 },
@@ -377,16 +494,21 @@ Ruta del certificado del sitio HTTPS                            __7__
 
 </Puzle>
 
-**17. ¿Qué hace una autoridad certificadora (CA)?**
+**★ 23. ¿Qué función cumple una autoridad certificadora?**
 
-- a) Cifra las páginas del servidor
-- b) Firma certificados después de comprobar que quien los pide controla el dominio
-- c) Guarda las contraseñas de los usuarios
+- a) Guardar las contraseñas de los usuarios de un sitio web
+- b) Traducir los nombres de dominio
+- c) Cifrar cada petición
+- d) Firmar certificados
 
 <details>
 <summary>Respuesta</summary>
 
-**b)**. La CA no cifra el tráfico; firma. El navegador trae una lista de CA en las que confía y, si el certificado del sitio está firmado por una de ellas, lo acepta.
+**d)**. La autoridad certificadora (CA) comprueba que quien pide el certificado controla el dominio y lo firma. El navegador trae una lista de CA en las que confía y, si el certificado del sitio está firmado por una de ellas, lo acepta.
+
+- a) Las contraseñas las guarda la propia aplicación, con hash.
+- b) Traducir nombres es el trabajo del DNS.
+- c) Lo que cifra cada petición es TLS, con claves que acuerdan el navegador y el servidor; la CA no interviene en el tráfico.
 
 </details>
 
@@ -417,7 +539,7 @@ Por qué PostgreSQL necesita un volumen, qué papel tiene cada pieza de un Compo
 
 ### Preguntas tipo test
 
-**18. ¿Por qué PostgreSQL en Docker Compose usa un volumen para los datos?**
+**24. ¿Por qué PostgreSQL en Docker Compose usa un volumen para los datos?**
 
 - a) Para que la base de datos vaya más rápida
 - b) Para que los datos sobrevivan cuando el contenedor se borra o se recrea (persistencia)
@@ -435,7 +557,7 @@ Por qué PostgreSQL necesita un volumen, qué papel tiene cada pieza de un Compo
 
 </details>
 
-**19. Relaciona cada elemento del despliegue con su función.**
+**25. Relaciona cada elemento del despliegue con su función.**
 
 <Puzle archivo="Compose con PostgreSQL" ejercicio="pregunta de relacionar" piezas={[
   { t: 'servicio db', hueco: 1 },
@@ -465,7 +587,7 @@ Guarda los datos fuera del contenedor para que no se pierdan           __6__
 
 </details>
 
-**20. Un Dockerfile termina con `CMD uvicorn app.main:app --port 8000`. Kamal tiene `app_port: 8000`, pero las peticiones no llegan. ¿Qué pasa?**
+**26. Un Dockerfile termina con `CMD uvicorn app.main:app --port 8000`. Kamal tiene `app_port: 8000`, pero las peticiones no llegan. ¿Qué pasa?**
 
 - a) La imagen no se ejecuta como root
 - b) La aplicación escucha en localhost (127.0.0.1) dentro del contenedor y el proxy, que llega desde otro contenedor, no la alcanza
@@ -483,7 +605,7 @@ Guarda los datos fuera del contenedor para que no se pierdan           __6__
 
 </details>
 
-**21. Ordena el despliegue de una versión que trae una migración de Alembic.**
+**27. Ordena el despliegue de una versión que trae una migración de Alembic.**
 
 <Puzle archivo="Despliegue con migración y rollback" ejercicio="pregunta de ordenar" piezas={[
   { t: 'Copia de seguridad de la base de datos', hueco: 1 },
@@ -508,20 +630,25 @@ Guarda los datos fuera del contenedor para que no se pierdan           __6__
 
 </Puzle>
 
-**22. ¿Qué diferencia principal hay entre una máquina virtual y un contenedor?**
+**★ 28. ¿Qué diferencia principal hay entre una máquina virtual y un contenedor?**
 
-- a) La máquina virtual lleva su propio sistema operativo completo; el contenedor comparte el núcleo del anfitrión y solo empaqueta la aplicación y sus dependencias
-- b) El contenedor necesita un hipervisor y la máquina virtual no
-- c) Son lo mismo con distinto nombre
+- a) La máquina virtual lleva su propio sistema operativo; el contenedor comparte el núcleo del anfitrión
+- b) El contenedor lleva su propio sistema operativo; la máquina virtual comparte el núcleo
+- c) La máquina virtual solo funciona en la nube y el contenedor solo en local
+- d) No hay diferencia: contenedor es otro nombre de máquina virtual
 
 <details>
 <summary>Respuesta</summary>
 
-**a)**. Por eso un contenedor arranca en segundos y pesa megas, mientras que una máquina virtual tarda más y pesa gigas. A cambio, la máquina virtual aísla más. La b) está al revés: el hipervisor es de la máquina virtual.
+**a)**. La máquina virtual virtualiza el hardware sobre un hipervisor y arranca un sistema operativo entero. El contenedor solo empaqueta la aplicación y sus dependencias y usa el núcleo del anfitrión. Por eso arranca en segundos y pesa mucho menos; a cambio, la máquina virtual aísla más.
+
+- b) Está al revés.
+- c) Las dos funcionan en local y en la nube.
+- d) Son tecnologías distintas.
 
 </details>
 
-**23. Tras un comando, `echo $?` muestra 127. ¿Qué significa?**
+**29. Tras un comando, `echo $?` muestra 127. ¿Qué significa?**
 
 - a) Que el comando terminó bien
 - b) Que el comando no se encontró
@@ -531,6 +658,42 @@ Guarda los datos fuera del contenedor para que no se pierdan           __6__
 <summary>Respuesta</summary>
 
 **b)**. `$?` guarda el código de salida del último comando. 0 es éxito y cualquier otro número es un error. 127 es «comando no encontrado» (mal escrito o fuera del `PATH`) y 126, «encontrado pero no ejecutable». Los scripts de despliegue paran en cuanto un paso devuelve algo distinto de 0 (`set -e`).
+
+</details>
+
+**★ 30. Al arrancar un segundo servicio web, falla porque el puerto 8080 ya lo usa otra aplicación. ¿Qué lo soluciona?**
+
+- a) Arrancar los dos servicios en el 8080 a la vez
+- b) Configurar el segundo servicio en otro puerto libre
+- c) Reiniciar el equipo para que el puerto se libere solo
+- d) Cambiar el protocolo del segundo servicio a UDP
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. En una misma dirección IP, un puerto TCP solo puede tenerlo un programa escuchando. El error típico es *address already in use* (o *port is already allocated* en Docker). Se cambia el puerto del segundo servicio (por ejemplo, `-p 8081:80`).
+
+- a) Es justo lo que no se puede.
+- c) Al reiniciar, la otra aplicación vuelve a arrancar y a ocupar el puerto.
+- d) Un servicio web habla HTTP sobre TCP; cambiarlo a UDP lo deja sin funcionar.
+
+</details>
+
+**★ 31. Tienes una imagen con nginx preparada. ¿Qué obtienes al ejecutarla exponiendo el puerto 80 para servir una web?**
+
+- a) Una máquina virtual con nginx instalado
+- b) Una imagen nueva con la web dentro
+- c) Un contenedor en marcha que sirve la web por ese puerto
+- d) Un servidor DNS que resuelve el nombre de la web
+
+<details>
+<summary>Respuesta</summary>
+
+**c)**. La imagen es la plantilla; al ejecutarla (`docker run -d -p 80:80 nginx`) se obtiene un contenedor, que es la imagen en marcha. Con el puerto publicado, la web se ve en `http://localhost`.
+
+- a) Un contenedor no es una máquina virtual: no lleva su propio sistema operativo.
+- b) Ejecutar no crea imágenes; las imágenes se crean con `docker build`.
+- d) nginx es un servidor web, no un DNS.
 
 </details>
 
@@ -560,7 +723,7 @@ La diferencia entre autenticación y autorización, el orden completo de registr
 
 ### Preguntas tipo test
 
-**24. Ordena el registro, el login y la comprobación del JWT en la API de FastAPI.**
+**32. Ordena el registro, el login y la comprobación del JWT en la API de FastAPI.**
 
 <Puzle archivo="Registro, login y JWT" ejercicio="pregunta de ordenar" piezas={[
   { t: 'El usuario envía POST /auth/register con usuario y contraseña', hueco: 1 },
@@ -599,7 +762,7 @@ La diferencia entre autenticación y autorización, el orden completo de registr
 
 </details>
 
-**25. ¿Qué cifra un JWT?**
+**33. ¿Qué cifra un JWT?**
 
 - a) Todo su contenido, con la clave secreta del servidor
 - b) Nada: la cabecera y el payload van en base64url y cualquiera los lee. La firma solo garantiza que nadie los ha cambiado. Lo que cifra la conexión es HTTPS
@@ -617,17 +780,39 @@ La diferencia entre autenticación y autorización, el orden completo de registr
 
 </details>
 
-**26. Un empleado inicia sesión, recibe un JWT y ya dentro solo ve Ventas porque su rol no incluye Contabilidad. ¿Qué mecanismos intervienen y en qué orden?**
+**★ 34. Un empleado inicia sesión con su usuario y contraseña y recibe un JWT. Ya dentro, solo ve ventas porque su rol no incluye contabilidad. ¿Qué mecanismos intervienen y en qué orden?**
 
 - a) Primero autorización y después autenticación
-- b) Primero autenticación (comprobar quién es) y después autorización (decidir qué puede ver)
-- c) Solo autenticación
-- d) Doble factor
+- b) Primero autenticación y después autorización
+- c) Solo autenticación: el JWT ya decide los módulos
+- d) Solo cifrado: el JWT oculta los módulos que no puede ver
 
 <details>
 <summary>Respuesta</summary>
 
-**b)**. El login con usuario y contraseña es autenticación. Que su rol le deje ver Ventas y no Contabilidad es autorización. Un `admin: true` en el payload serviría para que el backend decida permisos, pero eso es autorización montada encima de una autenticación ya hecha. El doble factor es autenticarse con dos pruebas de tipo distinto (algo que sabes y algo que tienes, como un código del móvil), y aquí no aparece.
+**b)**. El login con usuario y contraseña es autenticación (quién es). Que su rol le deje ver ventas y no contabilidad es autorización (qué puede hacer). Siempre en ese orden: no se pueden dar permisos a alguien sin saber quién es.
+
+- a) Está al revés.
+- c) El JWT solo transporta la identidad (y quizá el rol); quien decide los permisos es el backend al comprobarlo, y eso ya es autorización.
+- d) El JWT no cifra nada: firma. Y ocultar módulos es una decisión de permisos, no de cifrado.
+
+</details>
+
+**35. Una aplicación pide, después de la contraseña, un código de seis cifras que llega al móvil del usuario. ¿Qué es?**
+
+- a) Autorización por roles
+- b) Autenticación de doble factor: dos pruebas de tipo distinto, algo que sabes y algo que tienes
+- c) Cifrado de extremo a extremo
+- d) Un certificado de cliente
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Sigue siendo autenticación (demostrar quién eres), pero con dos factores: la contraseña (algo que sabes) y el móvil (algo que tienes). Si roban la contraseña, no basta para entrar.
+
+- a) No decide permisos; solo identifica.
+- c) No cifra la comunicación.
+- d) Un certificado de cliente sería otra forma de autenticarse, pero aquí no aparece.
 
 </details>
 
@@ -660,7 +845,7 @@ Los modos de FTP y su relación con el NAT, qué protocolo de transferencia es c
 
 ### Preguntas tipo test
 
-**27. Un cliente FTP está detrás de un NAT y no consigue listar el directorio. ¿Qué lo explica?**
+**36. Un cliente FTP está detrás de un NAT y no consigue listar el directorio. ¿Qué lo explica?**
 
 - a) Está usando FTPS implícito por el puerto 990
 - b) Está en modo activo: el servidor intenta abrir la conexión de datos hacia el cliente y el NAT la bloquea. En modo pasivo es el cliente el que abre la conexión, y funciona
@@ -678,7 +863,7 @@ Los modos de FTP y su relación con el NAT, qué protocolo de transferencia es c
 
 </details>
 
-**28. Relaciona cada protocolo o programa con su función.**
+**37. Relaciona cada protocolo o programa con su función.**
 
 <Puzle archivo="Protocolos de transferencia y correo" ejercicio="pregunta de relacionar" piezas={[
   { t: 'HTTPS', hueco: 1 },
@@ -700,7 +885,7 @@ Programa cliente gráfico (no es un protocolo) para FTP y SFTP   __6__
 
 </Puzle>
 
-**29. ¿Qué configuración es más segura para un servidor FTP de despliegue?**
+**38. ¿Qué configuración es más segura para un servidor FTP de despliegue?**
 
 - a) Anónimo activado para que suban sin contraseña
 - b) Anónimo desactivado, usuarios encerrados en su carpeta (chroot), solo los usuarios de una lista, cifrado obligatorio (FTPS) o, mejor, SFTP, y un rango de puertos pasivos acotado
@@ -717,7 +902,7 @@ Programa cliente gráfico (no es un protocolo) para FTP y SFTP   __6__
 
 </details>
 
-**30. ¿Qué hace un servidor DNS cuando recibe una consulta recursiva?**
+**39. ¿Qué hace un servidor DNS cuando recibe una consulta recursiva?**
 
 - a) Entra en bucle hasta saturarse
 - b) Se encarga de buscar la respuesta completa (preguntando a la raíz, al TLD y al servidor autoritativo si no la tiene en caché) y se la devuelve al cliente
@@ -735,7 +920,7 @@ Programa cliente gráfico (no es un protocolo) para FTP y SFTP   __6__
 
 </details>
 
-**31. Relaciona cada registro DNS con su función.**
+**40. Relaciona cada registro DNS con su función.**
 
 <Puzle archivo="Registros DNS" ejercicio="pregunta de relacionar" piezas={[
   { t: 'SOA', hueco: 1 },
@@ -759,7 +944,7 @@ Resolución inversa: IP → nombre                                   __7__
 
 </Puzle>
 
-**32. En LDAP, ¿qué es hacer un *bind*?**
+**41. En LDAP, ¿qué es hacer un *bind*?**
 
 - a) Borrar una entrada del árbol
 - b) Autenticarse ante el directorio (con un DN y su contraseña)
@@ -772,7 +957,7 @@ Resolución inversa: IP → nombre                                   __7__
 
 </details>
 
-**33. Relaciona cada concepto de LDAP con su significado.**
+**42. Relaciona cada concepto de LDAP con su significado.**
 
 <Puzle archivo="Conceptos de LDAP" ejercicio="pregunta de relacionar" piezas={[
   { t: 'LDAP', hueco: 1 },
@@ -796,16 +981,217 @@ LDAP cifrado con TLS, por el puerto 636                             __7__
 
 </Puzle>
 
-**34. ¿Qué obtiene `nslookup` si le das una IP en vez de un nombre?**
+**★ 43. ¿Qué función principal cumple el sistema de nombres de dominio (DNS)?**
 
-- a) Un error
-- b) El nombre asociado a esa IP (resolución inversa, registro PTR)
-- c) El registro MX
+- a) Cifrar las páginas web que se envían
+- b) Asignar direcciones IP a los equipos que se conectan a la red
+- c) Traducir nombres de dominio a direcciones IP
+- d) Repartir la carga entre varios servidores web
 
 <details>
 <summary>Respuesta</summary>
 
-**b)**. Es la consulta inversa. Con `dig` se hace con `dig -x IP`.
+**c)**. Las personas recuerdan nombres y la red funciona con IP: el DNS traduce de uno a otro (y al revés, en la resolución inversa).
+
+- a) Cifrar es cosa de TLS.
+- b) Asignar IP a los equipos es el trabajo de DHCP.
+- d) Repartir carga lo hace un balanceador (aunque el DNS puede hacer un reparto simple con varios registros A).
+
+</details>
+
+**★ 44. ¿Qué obtiene `nslookup` si le das una dirección IP en lugar de un nombre?**
+
+- a) Los puertos que están abiertos en esa dirección IP
+- b) Los nombres de dominio asociados a esa dirección
+- c) El tiempo de respuesta del servidor que usa esa IP
+- d) La ruta que siguen los paquetes hasta llegar al equipo
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Es la consulta inversa: busca el registro PTR de esa IP. Con `dig` se hace con `dig -x IP`.
+
+- a) Los puertos abiertos se ven con herramientas como `nmap` o `ss`.
+- c) El tiempo de respuesta lo da `ping`.
+- d) La ruta la da `traceroute`.
+
+</details>
+
+**★ 45. Una aplicación necesita conectarse a un equipo remoto por su nombre. ¿Qué hace el cliente DNS?**
+
+- a) Pregunta al servidor DNS configurado la IP de ese nombre y se la devuelve a la aplicación
+- b) Guarda en el equipo una copia de todas las zonas de Internet
+- c) Cifra la conexión entre la aplicación y el equipo remoto
+- d) Abre el puerto del equipo remoto para que la aplicación entre
+
+<details>
+<summary>Respuesta</summary>
+
+**a)**. El cliente (el *resolver* del sistema) mira primero `/etc/hosts` y su caché y, si no lo tiene, pregunta al servidor que aparece en `/etc/resolv.conf`. Con la IP, la aplicación ya puede conectar.
+
+- b) Nadie guarda todas las zonas de Internet: el DNS está repartido.
+- c) El DNS no cifra la conexión.
+- d) El DNS no abre puertos de nadie.
+
+</details>
+
+**★ 46. Para comprobar que el servidor DNS de la zona funciona, ¿qué se hace?**
+
+- a) Abrir el archivo `hosts` y revisar las líneas de la zona
+- b) Reiniciar el cliente para que se descargue la zona entera
+- c) Usar `nslookup` contra el servidor para consultar la zona
+- d) Ejecutar `netstat` para ver el contenido de los registros DNS
+
+<details>
+<summary>Respuesta</summary>
+
+**c)**. Se le pregunta directamente al servidor por un nombre de la zona: `nslookup www.ejemplo.local IP_DEL_SERVIDOR` (o `dig @IP www.ejemplo.local`). Si responde con la IP correcta, funciona.
+
+- a) El fichero `hosts` no tiene nada que ver con el servidor DNS: es una lista local.
+- b) Un cliente no descarga zonas; pregunta nombres concretos.
+- d) `netstat` enseña conexiones y puertos, no registros DNS.
+
+</details>
+
+**★ 47. Para comprobar que un DNS recién instalado resuelve nombres, configuras el cliente de la propia máquina para que lo use. ¿Qué dirección de bucle local pones?**
+
+- a) `127.0.0.1`
+- b) `8.8.8.8`
+- c) `192.168.1.1`
+- d) `0.0.0.0`
+
+<details>
+<summary>Respuesta</summary>
+
+**a)**. 127.0.0.1 es la dirección de bucle local (*loopback*): la propia máquina. Se pone `nameserver 127.0.0.1` en `/etc/resolv.conf`.
+
+- b) 8.8.8.8 es el DNS público de Google, no el nuestro.
+- c) 192.168.1.1 suele ser el router de casa.
+- d) 0.0.0.0 significa «todas las interfaces» al escuchar, no es una dirección a la que preguntar.
+
+</details>
+
+**★ 48. Quieres probar en local los sitios `sitio1.test` y `sitio2.test` sin depender de un servidor DNS. ¿Qué haces?**
+
+- a) Añadirlos a `/etc/hosts` apuntando a la IP del servidor
+- b) Registrar los dos dominios en un registrador de Internet
+- c) Abrir el puerto 53 en el cortafuegos del servidor
+- d) Pedir un certificado de Let's Encrypt para cada sitio
+
+<details>
+<summary>Respuesta</summary>
+
+**a)**. `/etc/hosts` se consulta antes que el DNS, así que basta una línea como `127.0.0.1 sitio1.test sitio2.test`. Es lo que se hizo para probar los server blocks por nombre.
+
+- b) Registrar dominios cuesta dinero y depende del DNS público, justo lo que se quiere evitar.
+- c) El 53 es el puerto del DNS; abrirlo no resuelve nada si no hay servidor.
+- d) Let's Encrypt no emite certificados para nombres que no son públicos, y no tiene que ver con resolver.
+
+</details>
+
+**★ 49. Un servidor FTP se ejecuta en un contenedor. ¿Qué hay que tener en cuenta para que funcione bien?**
+
+- a) Instalar un sistema operativo completo dentro del contenedor
+- b) Publicar los puertos, usar un volumen y prever el rango de puertos pasivos
+- c) Usar el modo activo, porque el pasivo no funciona en contenedores
+- d) Nada especial: el contenedor abre por sí mismo los puertos necesarios
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Hay que publicar el 21 y el rango de puertos pasivos (por ejemplo, 10240-10400, que también se fija en `pasv_min_port`/`pasv_max_port`), y guardar los ficheros en un volumen para que no se pierdan al recrear el contenedor.
+
+- a) Un contenedor no lleva un sistema operativo completo.
+- c) Al revés: el pasivo funciona si se publica su rango; el activo da problemas con NAT.
+- d) Docker no publica nada por su cuenta: hay que indicarlo con `-p`.
+
+</details>
+
+**★ 50. ¿Qué diferencia hay entre un permiso y una cuota en un servidor FTP?**
+
+- a) El permiso dice qué puedes hacer y la cuota cuánto espacio puedes usar
+- b) El permiso es para los usuarios anónimos y la cuota para los del sistema
+- c) El permiso limita la velocidad de descarga y la cuota la de subida
+- d) Son lo mismo: la cuota es el nombre que da FTP a los permisos
+
+<details>
+<summary>Respuesta</summary>
+
+**a)**. El permiso (leer, escribir, borrar en una carpeta) controla las acciones; la cuota limita el espacio en disco de cada usuario.
+
+- b) Los dos se aplican a cualquier tipo de usuario.
+- c) Limitar la velocidad es otra cosa (en vsftpd, `local_max_rate`).
+- d) Son conceptos distintos.
+
+</details>
+
+**★ 51. Un usuario autenticado intenta subir un archivo a una carpeta y recibe el error 550 de permiso denegado. ¿Qué hay que revisar?**
+
+- a) El puerto de control en el que escucha el servidor las órdenes
+- b) Los permisos del usuario sobre esa carpeta
+- c) La contraseña con la que el usuario inicia sesión
+- d) Que el servicio FTP esté iniciado y escuchando
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. El usuario ya ha entrado, así que el problema está en la carpeta: sus permisos de Linux (`ls -l`, `chown`, `chmod`) o que el servidor no permita escribir (`write_enable=NO`).
+
+- a), c) y d) ya funcionan: si no, no habría podido iniciar sesión. Una contraseña mal da el error 530, no el 550.
+
+</details>
+
+**★ 52. ¿Qué viaja por la conexión de datos de FTP?**
+
+- a) Las órdenes, como el usuario y la contraseña
+- b) Los ficheros que se suben y se bajan
+- c) Solo los mensajes de error del servidor
+- d) Las consultas DNS del cliente
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. FTP separa dos conexiones: la de datos lleva los ficheros y los listados de directorio; la de control (puerto 21) lleva las órdenes.
+
+- a) Las órdenes y las credenciales van por la conexión de control.
+- c) Los mensajes del servidor, incluidos los errores, también van por la de control.
+- d) El DNS no tiene nada que ver con FTP.
+
+</details>
+
+**★ 53. Un servidor FTP deja entrar sin cuenta personal, pero solo para ver y descargar archivos. ¿Qué tipo de usuario entra así?**
+
+- a) Usuario del sistema
+- b) Usuario anónimo
+- c) Usuario administrador
+- d) Usuario virtual
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. El usuario `anonymous` entra sin credenciales propias. Sirve para repositorios públicos de descarga; en un servidor de despliegue se desactiva (`anonymous_enable=NO`).
+
+- a) Un usuario del sistema tiene su propia cuenta y contraseña.
+- c) El administrador tiene una cuenta con todos los permisos, justo lo contrario.
+- d) Un usuario virtual tiene cuenta propia en el servidor FTP, aunque no exista en el sistema.
+
+</details>
+
+**★ 54. Para establecer la conexión segura, FTPS usa cifrado asimétrico. Si el cliente protege un mensaje dirigido al servidor, ¿qué clave usa cada uno?**
+
+- a) El cliente cifra con su clave privada y el servidor descifra con la pública del cliente
+- b) El cliente cifra con la clave pública del servidor y el servidor descifra con su clave privada
+- c) Los dos usan la misma clave, que viaja en el primer mensaje
+- d) El cliente cifra con la clave privada del servidor y el servidor descifra con su pública
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. En el cifrado asimétrico, lo que se cifra con la clave pública de alguien solo se descifra con su clave privada. La pública del servidor va en su certificado, a la vista de todos; la privada nunca sale del servidor.
+
+- a) Cifrar con la privada propia sirve para **firmar**, no para ocultar: cualquiera con la pública podría leerlo.
+- c) Esa es una clave simétrica, y mandarla sin protección permitiría leer todo. (Después del saludo sí se usa una clave simétrica de sesión, pero se acuerda de forma segura.)
+- d) El cliente nunca tiene la clave privada del servidor.
 
 </details>
 
@@ -834,7 +1220,7 @@ Los conceptos básicos de Git, qué va en cada sección del README de una práct
 
 ### Preguntas tipo test
 
-**35. Relaciona cada concepto de Git con su función.**
+**55. Relaciona cada concepto de Git con su función.**
 
 <Puzle archivo="Conceptos de Git" ejercicio="pregunta de relacionar" piezas={[
   { t: 'commit', hueco: 1 },
@@ -858,7 +1244,7 @@ Petición para revisar y fusionar una rama en GitHub              __7__
 
 </Puzle>
 
-**36. Relaciona cada sección del README con su contenido.**
+**56. Relaciona cada sección del README con su contenido.**
 
 <Puzle archivo="Secciones del README" ejercicio="pregunta de relacionar" piezas={[
   { t: 'Instalación', hueco: 1 },
@@ -878,7 +1264,7 @@ URL del repositorio en GitHub o GitLab                              __5__
 
 </Puzle>
 
-**37. Ordena las fases de un pipeline de integración continua.**
+**57. Ordena las fases de un pipeline de integración continua.**
 
 <Puzle archivo="Orden del pipeline" ejercicio="pregunta de ordenar" piezas={[
   { t: 'Descargar el código del commit (checkout)', hueco: 1 },
@@ -903,16 +1289,232 @@ URL del repositorio en GitHub o GitLab                              __5__
 
 </Puzle>
 
-**38. ¿Qué distingue a un sistema de control de versiones distribuido, como Git?**
+**★ 58. ¿Qué distingue a los sistemas de control de versiones distribuidos?**
 
-- a) Que todo el historial está solo en un servidor central
-- b) Que cada copia local tiene el historial completo, así que se puede trabajar sin conexión y no hay un punto único de fallo
-- c) Que no permite ramas
+- a) Solo se pueden usar con GitHub
+- b) Cada copia local tiene el historial completo, así que se trabaja sin conexión
+- c) No guardan historial, solo la última versión
+- d) Hay un único servidor con todo el historial
 
 <details>
 <summary>Respuesta</summary>
 
-**b)**. En un sistema centralizado (como CVS o Subversion), si el servidor cae nadie puede hacer commits y se puede perder el historial. En Git cada clon es una copia completa.
+**b)**. En Git o Mercurial cada clon es una copia completa del repositorio: se hacen commits sin conexión y, si el servidor se pierde, cualquier copia lo recupera.
+
+- a) Git funciona sin GitHub; GitHub es solo un sitio donde alojar remotos (también hay GitLab, Gitea…).
+- c) Guardar el historial es lo esencial de cualquier sistema de control de versiones.
+- d) Eso describe el modelo centralizado.
+
+</details>
+
+**★ 59. ¿Qué riesgo principal tiene un sistema de control de versiones centralizado?**
+
+- a) Que solo funciona sin conexión
+- b) Que el servidor es un punto único de fallo: si cae o se pierde, nadie trabaja y se puede perder el historial
+- c) Que no permite crear ramas
+- d) Que cada desarrollador tiene una copia completa y ocupa mucho
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. En CVS o Subversion todo depende del servidor: sin él no hay commits, y si se pierde sin copia, se pierde el historial.
+
+- a) Al revés: sin conexión con el servidor no se puede confirmar nada.
+- c) Los centralizados también tienen ramas.
+- d) Eso describe a los distribuidos.
+
+</details>
+
+**★ 60. ¿Qué indicación sobre los sistemas de control de versiones es correcta?**
+
+- a) CVS es local y Mercurial es un sistema centralizado
+- b) RCS es distribuido y Git es un sistema local
+- c) Git y Mercurial son distribuidos y CVS es centralizado
+- d) Git es centralizado y CVS es un sistema distribuido
+
+<details>
+<summary>Respuesta</summary>
+
+**c)**. Los tres modelos, con su ejemplo: **local** (RCS: el historial solo en tu equipo), **centralizado** (CVS, Subversion: un servidor con todo) y **distribuido** (Git, Mercurial: cada copia con todo).
+
+- a), b) y d) cambian los ejemplos de modelo.
+
+</details>
+
+**★ 61. Un equipo copia la carpeta del proyecto con la fecha en el nombre antes de cada cambio importante. ¿Por qué es mejor un sistema de control de versiones?**
+
+- a) Porque ocupa más espacio y así hay más copias de seguridad
+- b) Porque guarda cada cambio con su autor, fecha y motivo, y permite volver atrás y trabajar en paralelo
+- c) Porque impide que dos personas toquen el mismo proyecto
+- d) Porque borra automáticamente las versiones antiguas
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Con copias de carpetas no se sabe quién cambió qué ni por qué, y juntar el trabajo de dos personas es un infierno. Un sistema de control de versiones lo registra todo y permite ramas y fusiones.
+
+- a) Ocupa menos, no más: no duplica lo que no cambia.
+- c) Al revés: está pensado para que trabajen varios a la vez.
+- d) No borra nada: guarda toda la historia.
+
+</details>
+
+**★ 62. ¿Cómo almacena Git los datos de un proyecto?**
+
+- a) En una base de datos PostgreSQL
+- b) Solo guarda la última versión de cada fichero
+- c) Como instantáneas del proyecto en cada commit; si un fichero no cambia, apunta al que ya tenía
+- d) Como una lista de diferencias de cada fichero respecto a la versión anterior
+
+<details>
+<summary>Respuesta</summary>
+
+**c)**. Cada commit es una foto completa del proyecto. Para no repetir, los ficheros que no han cambiado apuntan a la copia que ya existía. Todo vive en la carpeta `.git`.
+
+- a) Git no usa ningún gestor de bases de datos.
+- b) Si solo guardara la última versión, no podría volver atrás.
+- d) Así trabajaban otros sistemas antiguos (por diferencias); Git guarda instantáneas.
+
+</details>
+
+**★ 63. ¿Qué hace `git init`?**
+
+- a) Crea un repositorio nuevo en la carpeta actual: la carpeta oculta `.git`
+- b) Crea el primer commit con todos los ficheros
+- c) Sube los commits al remoto
+- d) Descarga un repositorio de GitHub
+
+<details>
+<summary>Respuesta</summary>
+
+**a)**. Convierte la carpeta en un repositorio creando `.git`, donde Git guardará toda la historia. Todavía no hay ningún commit.
+
+- b) El primer commit hay que hacerlo con `git add` y `git commit`.
+- c) Subir es `git push`.
+- d) Descargar un repositorio es `git clone`.
+
+</details>
+
+**★ 64. ¿Cuál es el orden de trabajo habitual en Git?**
+
+- a) Clonar el repositorio, borrar el historial y luego confirmar
+- b) Preparar los cambios, confirmarlos y después modificar el directorio
+- c) Modificar, preparar con `git add` y confirmar con `git commit`
+- d) Confirmar los cambios, prepararlos y después modificar los archivos
+
+<details>
+<summary>Respuesta</summary>
+
+**c)**. Son los tres estados de un fichero: modificado en el directorio de trabajo, preparado en el área de preparación (`git add`) y confirmado en el repositorio (`git commit`). Después, `git push` lo sube.
+
+- a) Nunca se borra el historial.
+- b) y d) desordenan los pasos: no se puede preparar ni confirmar algo que aún no se ha modificado.
+
+</details>
+
+**★ 65. ¿Qué guarda el área de preparación (staging area) de Git?**
+
+- a) El historial completo de commits del proyecto
+- b) Los cambios preparados con `git add` que entrarán en el próximo commit
+- c) Una copia del repositorio remoto para trabajar sin conexión
+- d) Los ficheros que aparecen en `.gitignore`
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Es la zona intermedia: permite elegir qué cambios entran en el siguiente commit y cuáles se quedan fuera. `git status` enseña qué está preparado.
+
+- a) El historial está en el repositorio (`.git`), no en el área de preparación.
+- c) La copia del remoto la da el propio clon.
+- d) Los ficheros de `.gitignore` son justo los que Git no prepara nunca.
+
+</details>
+
+**★ 66. Al guardar una nueva versión en un sistema de control de versiones, ¿qué suele pedir el sistema?**
+
+- a) Un mensaje que describa el cambio
+- b) La contraseña del repositorio remoto
+- c) El número de versión que tendrá el proyecto
+- d) Una copia de seguridad de la versión anterior
+
+<details>
+<summary>Respuesta</summary>
+
+**a)**. Cada commit lleva un mensaje (`git commit -m "..."`) que explica qué se cambió y por qué. En el módulo, con un título y un cuerpo: `-m "título" -m "cuerpo"`.
+
+- b) La contraseña solo hace falta al hablar con el remoto (`push`), no al confirmar.
+- c) Los números de versión se ponen con etiquetas (`git tag`), cuando se quiere.
+- d) No hace falta: la versión anterior ya está guardada en el historial.
+
+</details>
+
+**★ 67. ¿Para qué se configuran `user.name` y `user.email` en Git?**
+
+- a) Para firmar el certificado HTTPS
+- b) Para identificar al autor de cada commit
+- c) Para recibir un correo con cada push
+- d) Para iniciar sesión en GitHub
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Git escribe ese nombre y ese correo como autor de cada commit. En las entregas del módulo tienen que ser los del aula virtual.
+
+- a) Los certificados HTTPS no tienen nada que ver con Git.
+- c) Git no envía correos.
+- d) Para entrar en GitHub se usa un token o una clave SSH, no estos datos.
+
+</details>
+
+**★ 68. ¿Cómo se puede acceder a un repositorio de Git de forma remota?**
+
+- a) Copiando la carpeta `.git` por correo electrónico
+- b) Por la red, con la URL del remoto, por HTTPS o por SSH
+- c) Solo desde la web de GitHub, sin usar `git`
+- d) Por FTP, subiendo el proyecto a la carpeta del servidor
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. Un remoto se identifica por su URL: `https://github.com/usuario/repo.git` (con usuario y token) o `git@github.com:usuario/repo.git` (con clave SSH). Se trabaja con `clone`, `fetch`, `pull` y `push`.
+
+- a) Mandar la carpeta por correo no es trabajar con un remoto.
+- c) La web de GitHub es solo una forma de ver el repositorio; lo normal es usar `git`.
+- d) FTP no entiende el historial de Git.
+
+</details>
+
+**★ 69. Un equipo decide qué parte de la documentación pasa al manual de usuario para los usuarios finales. ¿Qué es lo recomendable?**
+
+- a) La implementación y el funcionamiento interno
+- b) La interfaz: cómo se usa la aplicación, paso a paso
+- c) El código fuente completo de cada fase del proyecto
+- d) Los comentarios de depuración que escriben los programadores
+
+<details>
+<summary>Respuesta</summary>
+
+**b)**. El usuario final quiere saber usar la aplicación, no cómo está hecha por dentro.
+
+- a), c) y d) son documentación técnica, para quien desarrolla o mantiene el sistema.
+
+</details>
+
+**★ 70. ¿A quién le resulta especialmente útil la documentación de la API?**
+
+- a) A los desarrolladores que van a usar o integrar la API
+- b) Al usuario final de la aplicación
+- c) Al proveedor de la nube
+- d) A nadie: una API se explica sola
+
+<details>
+<summary>Respuesta</summary>
+
+**a)**. Explica los endpoints, qué reciben, qué devuelven y cómo autenticarse. FastAPI la genera sola en `/docs`, como en la API de tareas.
+
+- b) El usuario final usa la aplicación, no la API.
+- c) Al proveedor de la nube no le importa qué hace tu API.
+- d) Sin documentación, quien la integra tiene que adivinar.
 
 </details>
 
