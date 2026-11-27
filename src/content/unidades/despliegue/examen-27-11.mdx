@@ -2,7 +2,7 @@
 titulo: Repaso del examen del 27 de noviembre
 etiqueta: Examen
 orden: 0
-entrada: Las preguntas de ejemplo que se dieron en clase, agrupadas por bloques y resueltas una a una (la correcta, por qué, y por qué fallan las demás), y una respuesta modelo para la parte de desarrollo, que pide explicar con palabras propias el despliegue con Kamal.
+entrada: Las preguntas de ejemplo que se dieron en clase, agrupadas por bloques y resueltas una a una (la correcta, por qué, y por qué fallan las demás), y dos redacciones modelo para la parte de desarrollo, una sobre el despliegue con Kamal y otra con el curso entero contado como un solo despliegue, en orden y con cada tema llevando al siguiente.
 cuando: examen el 27/11/2026 (tipo test + desarrollo)
 ejercicios: preguntas de ejemplo de clase y repaso de las seis unidades
 ruta: { texto: 'Preparación de los exámenes (web del módulo)', url: 'https://dpl-f1facc.gitlab.io/evaluacion/preparacion-examen/' }
@@ -984,14 +984,7 @@ La segunda parte pide explicar con palabras propias cómo se despliega una aplic
 
 ### Prácticas de clase
 
-**Todo lo visto, en un párrafo por unidad** (para cerrar la respuesta de desarrollo):
-
-- **UT1.** El código vive en Git, con un commit por cambio, ramas y pull requests. Cada práctica lleva un README con instalación, configuración, comprobación y problemas. Un pipeline de CI comprueba cada push.
-- **UT2.** Una aplicación web tiene capas: cliente, presentación (nginx), lógica (Gunicorn o PHP-FPM) y datos. nginx sirve estáticos y pasa lo dinámico con `proxy_pass`. Se puede implantar en local, en hosting o en la nube (IaaS, PaaS, SaaS).
-- **UT3.** Un mismo nginx sirve varios sitios con server blocks por nombre, protege zonas con Basic Auth y `allow`/`deny`, y cifra con HTTPS (autofirmado en pruebas, Let's Encrypt en producción).
-- **UT4.** Las aplicaciones se empaquetan en contenedores, con volúmenes para los datos y Compose para varios servicios (app, nginx, PostgreSQL, pgAdmin). Se despliegan con Kamal, con JWT para la autenticación y Alembic para migrar la base.
-- **UT5.** Para subir ficheros o administrar el servidor: FTP (mejor FTPS o SFTP) y SSH solo con clave, sin contraseña y sin root.
-- **UT6.** El DNS traduce nombres a IP con registros A, CNAME, MX…, y LDAP centraliza los usuarios para iniciar sesión en muchos servicios con una sola cuenta.
+- Si la pregunta es sobre todo el curso y no solo sobre Kamal, este despliegue es el último tramo del recorrido de la sección siguiente, «el curso entero como un solo despliegue».
 
 ### Repaso rápido
 
@@ -1025,3 +1018,95 @@ En `.kamal/secrets` (o `.kamal/secrets.staging` y `.kamal/secrets.production` si
 1. Caso práctico de clase: API de tareas con FastAPI, JWT, Alembic y Kamal (repositorio del profesor y su página «Desplegar una API con Docker y Kamal»).
 2. [Kamal: comando deploy](https://kamal-deploy.org/docs/commands/deploy/), [setup](https://kamal-deploy.org/docs/commands/setup/), [proxy](https://kamal-deploy.org/docs/configuration/proxy/) y [variables de entorno y secretos](https://kamal-deploy.org/docs/configuration/environment-variables/)
 3. [Alembic: autogenerate y sus límites](https://alembic.sqlalchemy.org/en/latest/autogenerate.html)
+
+## Pregunta de desarrollo: el curso entero como un solo despliegue
+
+### Qué se ve
+
+Si la pregunta de desarrollo pide explicar todo lo visto en la asignatura, no conviene soltar las unidades una detrás de otra. Se entiende mucho mejor como una sola historia: **el viaje de una aplicación desde mi ordenador hasta que la usa gente de verdad**. Cada tema del curso aparece porque el anterior deja un problema sin resolver. Ese es el hilo que hay que contar, en el orden en que se fue dando en clase.
+
+### Conceptos
+
+<Secuencia titulo="Primer tramo: en mi ordenador"
+  descripcion="Cinco pasos: guardar el proyecto en Git, generar una web estática, servirla con nginx en un contenedor, servir varios sitios con HTTPS y añadir una aplicación con base de datos."
+  pie="Al final del primer tramo todo funciona, pero solo en mi máquina."
+  pasos={[['Git', 'historia y README'], ['Web estática', 'Zensical'], ['nginx', 'en un contenedor'], ['Varios sitios', 'Host y HTTPS'], ['App y datos', 'Gunicorn y BD']]} />
+
+<Secuencia titulo="Segundo tramo: en un servidor de verdad"
+  descripcion="Cinco pasos: alquilar una máquina en la nube y entrar por SSH, apuntar un dominio con DNS, desplegar con Kamal, añadir usuarios con JWT y cambiar la base de datos con migraciones."
+  pie="Y para que cada cambio nuevo no rompa nada, la integración continua comprueba el código antes de volver a desplegar."
+  pasos={[['Nube y SSH', 'IaaS, solo clave'], ['DNS', 'dominio → IP'], ['Kamal', 'sin corte, HTTPS'], ['Usuarios', 'JWT'], ['Migraciones', 'Alembic, staging']]} />
+
+### Casos y ejemplos
+
+**Redacción modelo (para contarla con mis palabras).**
+
+**1. Todo empieza guardando el trabajo: Git.** Antes de desplegar nada, el proyecto tiene que estar en un sistema de control de versiones. Con Git cada cambio queda en un commit con autor, fecha y motivo, se puede volver atrás y se trabaja en ramas sin romper `main`. Cada práctica del curso es un repositorio propio con un README que cuenta la instalación, la configuración, la comprobación con salidas reales y los problemas encontrados, para que otra persona pueda repetirla. El código ya está guardado y documentado, pero de momento solo lo veo yo: **hay que servirlo para que otros lo vean**.
+
+**2. Lo más sencillo que se puede servir: una web estática.** La documentación se escribe en Markdown y Zensical la compila a HTML, CSS y JavaScript. El resultado son ficheros fijos, iguales para todos. Para entregarlos hace falta alguien que escuche peticiones y conteste: **un servidor web**.
+
+**3. El servidor web: nginx, y dentro de un contenedor.** Aquí entra el modelo cliente-servidor: el navegador pide por HTTP (puerto 80) y el servidor responde con un código de estado y el fichero. nginx es el servidor web del curso: un proceso maestro y varios workers, configuración en `/etc/nginx` y un fichero por sitio en `sites-available`. Para no ensuciar mi equipo y poder repetirlo igual en cualquier sitio, nginx corre en un contenedor Docker (`dpl-lab`): una imagen con todo lo necesario, puertos publicados con `-p` y la carpeta del proyecto montada como volumen. Funciona un sitio, pero en la práctica quería servir la documentación **y** un blog desde el mismo servidor.
+
+**4. Varios sitios, protegidos y cifrados.** Con server blocks por nombre, un solo nginx en un solo puerto sirve varios sitios: el navegador manda la cabecera `Host` y nginx la compara con `server_name` (si no coincide ninguno, responde el `default_server`). Con `location` se decide qué hacer con cada ruta. Algunas zonas no deben ser públicas: se protegen con Basic Auth, que manda la contraseña solo codificada en Base64, así que hace falta cifrar el canal con **HTTPS**: un certificado autofirmado para pruebas y uno de Let's Encrypt en producción. Hasta aquí todo es contenido fijo. Una aplicación de verdad (una API de tareas, una tienda) tiene que **ejecutar código y guardar datos**.
+
+**5. La aplicación: capas, servidor de aplicaciones y base de datos.** nginx no ejecuta Python. Detrás se pone un servidor de aplicaciones, Gunicorn, que habla con la aplicación por WSGI y reparte las peticiones entre sus workers. nginx hace de **proxy inverso**: sirve los estáticos y pasa lo dinámico con `proxy_pass`. Si Gunicorn no responde, el cliente ve un 502. La aplicación guarda sus datos en PostgreSQL, en su propio contenedor y con un **volumen** para que no se pierdan. Compose levanta todo junto. Quedan las cuatro capas: cliente, presentación (nginx), lógica (Gunicorn) y datos (PostgreSQL). Pero todo esto sigue en mi ordenador: **hay que llevarlo a una máquina accesible desde Internet**.
+
+**6. Un servidor de verdad: la nube y SSH.** En lugar de comprar hardware (on-premise), se alquila una máquina virtual en la nube: es IaaS, porque el proveedor da la máquina y la red, y yo instalo todo lo demás. En clase se usaron máquinas de Oracle Cloud, con los puertos abiertos en sus reglas de red. Para administrarla a distancia se entra por **SSH** con un par de claves: la pública en el servidor y la privada en mi equipo, sin contraseña y sin acceso de root. Para subir ficheros sueltos existen FTP (inseguro), FTPS y SFTP, que va dentro de SSH. La máquina ya es accesible, pero solo por su IP: **nadie se aprende una IP**.
+
+**7. Un nombre para la máquina: DNS.** Se compra un dominio y en su zona se crea un registro A que apunta a la IP pública del servidor (AAAA para IPv6, CNAME para alias, MX para el correo). Cuando alguien escribe el nombre, un resolutor recursivo pregunta a la raíz, al TLD y al servidor autoritativo y le devuelve la IP. Además, sin un dominio que apunte al servidor, Let's Encrypt no puede comprobar que es mío y no da certificado. Con todo listo, desplegar a mano en el servidor sería lento y arriesgado: copiar, parar, arrancar y cruzar los dedos. **Hace falta automatizarlo**.
+
+**8. Desplegar con un comando: Kamal.** Kamal construye la imagen Docker, la sube a un registro, entra por SSH en el servidor, la descarga y arranca la versión nueva junto a la vieja. kamal-proxy, que escucha en el 80 y el 443, espera a que `/up` responda 200, cambia el tráfico y retira la vieja: sin corte. Con `proxy.host` y `ssl: true` pide solo el certificado de Let's Encrypt, y como reparte por la cabecera `Host`, varias aplicaciones conviven en el mismo servidor. Hay dos destinos, staging para probar y production para los usuarios, y `kamal rollback` vuelve a la versión anterior si algo sale mal. La aplicación ya está en Internet, pero cualquiera puede ver y tocar todas las tareas: **hay que saber quién es cada uno**.
+
+**9. Usuarios: autenticación y autorización con JWT.** Al registrarse, la contraseña se guarda como hash Argon2, nunca en claro. Al iniciar sesión, el backend compara el hash y devuelve un JWT firmado con el id del usuario y una caducidad. El cliente lo manda en la cabecera `Authorization: Bearer` en cada petición: eso es la **autenticación** (quién eres). Después el backend decide qué puede hacer ese usuario, por ejemplo ver solo sus tareas: eso es la **autorización**. El JWT no cifra nada, solo firma, así que todo tiene que ir por HTTPS. En una empresa con muchos servicios, los usuarios se centralizan en un directorio LDAP, para entrar en todos con la misma cuenta. Añadir usuarios obliga a cambiar la base de datos, y esa base ya está en producción con datos reales: **no se puede borrar y empezar de nuevo**.
+
+**10. Cambiar la base sin perder datos: migraciones.** Con Alembic, cada cambio del esquema es una revisión numerada que sabe aplicarse (`upgrade`) y deshacerse (`downgrade`). En la API de tareas, la revisión de usuarios creó la tabla `users`, añadió el dueño a cada tarea y asignó las tareas antiguas a un administrador. El protocolo: copia de seguridad, probar primero en staging, migrar producción a una hora de poco uso, desplegar y, si falla, volver atrás por las dos vías (la imagen con `kamal rollback` y la base con `alembic downgrade` o la copia). Con tantos pasos, un fallo pequeño puede tirar la aplicación: **cada cambio debería comprobarse antes de desplegar**.
+
+**11. Cerrar el círculo: integración continua.** Cada push a Git lanza un pipeline en GitHub Actions: instalar dependencias, formato y estilo con Ruff, tipos con mypy, tests con cobertura mínima, seguridad con Bandit, pip-audit y Gitleaks. Lo barato va primero y, si algo falla, no se despliega. En el caso práctico, `just deploy` ejecuta todas esas comprobaciones antes de llamar a Kamal. Y así se vuelve al principio: un cambio nuevo en Git, comprobado, desplegado en staging, después en producción, sin corte y con vuelta atrás.
+
+**Cómo contarlo en el examen.** Una frase de entrada con la idea («desplegar es llevar una aplicación de mi ordenador a los usuarios de forma segura, repetible y sin cortes»), el recorrido con cada paso enlazado al siguiente por el problema que deja abierto, y un cierre que vuelva a Git y a la integración continua. Si da tiempo, añadir un esquema con las cuatro capas o con el despliegue de Kamal.
+
+### Errores típicos
+
+- **Hacer una lista de unidades sin conexión.** Lo que se valora es entender por qué hace falta cada pieza. Cada párrafo debería terminar con el problema que resuelve el siguiente.
+- **Olvidar el DNS en la historia.** Sin dominio no hay nombre que recordar ni certificado de Let's Encrypt.
+- **Decir que JWT o Basic Auth cifran.** El único que cifra es TLS (HTTPS).
+- **Poner la nube antes que el servidor web.** Primero se entiende y se monta en local; luego se lleva a un servidor de verdad.
+
+### Prácticas de clase
+
+Cada tramo del recorrido corresponde a algo que se hizo en clase:
+
+| Paso | Lo que se hizo |
+|---|---|
+| Git y README | Un repositorio por práctica, un commit por cambio y README con salidas reales |
+| Web estática y nginx | «NGINX para todos»: Zensical y un blog de Jekyll servidos por nginx en un contenedor, con dos sitios por nombre (18/10) |
+| SSH | «Acceso remoto mediante SSH solo con clave», con dos contenedores (26/10) |
+| Nube y Kamal | Máquinas de Oracle Cloud y despliegue de la API de tareas |
+| JWT y migraciones | Registro, login y tareas por usuario; migración de usuarios con Alembic |
+| Calidad | Ruff, mypy, Bandit y tests en el `justfile` y en GitHub Actions |
+
+### Repaso rápido
+
+<details>
+<summary>¿Por qué hace falta un servidor de aplicaciones además de nginx?</summary>
+
+Porque nginx sirve ficheros y reenvía peticiones, pero no ejecuta el código de la aplicación. Gunicorn sí.
+
+</details>
+<details>
+<summary>¿Qué problema resuelve cada paso del segundo tramo?</summary>
+
+La nube y SSH: tener una máquina accesible y administrarla. DNS: llegar por nombre (y poder tener certificado). Kamal: desplegar sin corte y con vuelta atrás. JWT: saber quién es cada usuario y qué puede hacer. Migraciones: cambiar la base sin perder datos.
+
+</details>
+<details>
+<summary>¿Cómo se cierra el círculo?</summary>
+
+Con la integración continua: cada cambio en Git se comprueba automáticamente antes de volver a desplegar.
+
+</details>
+
+### Fuentes
+
+1. [Web del módulo: temario de la UT1 a la UT6](https://dpl-f1facc.gitlab.io/) y las unidades de esta asignatura: [UT1](../ut1-git-documentacion-ci/), [UT2](../ut2-arquitecturas-servidores/), [UT3](../ut3-administracion-nginx/), [UT4](../ut4-aplicaciones-despliegue/), [UT5](../ut5-ftp-ssh/) y [UT6](../ut6-dns-ldap/).
+2. Notas de clase del 6, 10, 13, 17 y 24 de noviembre de 2026.
