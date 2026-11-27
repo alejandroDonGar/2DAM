@@ -1,0 +1,1544 @@
+[
+ {
+  "n": 1,
+  "conf": false,
+  "enunciado": "Una aplicación con nginx, Gunicorn y PostgreSQL se organiza por capas. ¿Qué asignación es la correcta?",
+  "tipo": "test",
+  "opciones": [
+   "Cliente → lógica → presentación → datos",
+   "Cliente → nginx → PostgreSQL → lógica",
+   "Cliente → presentación (nginx) → lógica (Gunicorn) → datos (PostgreSQL)",
+   "Cliente → datos → lógica → presentación"
+  ],
+  "correcta": 2,
+  "explicacion": "<p><strong>c)</strong>. La petición entra por nginx, que es la puerta (presentación). Si es dinámica, la pasa a Gunicorn, que ejecuta el código (lógica). El código consulta PostgreSQL (datos). La respuesta vuelve por el mismo camino.</p><ul><li>a) pone la lógica antes que nginx, pero el cliente nunca habla directamente con Gunicorn.</li><li>b) pone la base de datos antes que la lógica: PostgreSQL no sabe recibir peticiones HTTP, solo consultas SQL que le manda la aplicación.</li><li>d) está al revés.</li></ul>"
+ },
+ {
+  "n": 2,
+  "conf": false,
+  "enunciado": "¿Qué aporta HTTPS a HTTP?",
+  "tipo": "test",
+  "opciones": [
+   "Comprime las páginas para que pesen menos",
+   "Cifra la comunicación y permite comprobar la identidad del servidor con un certificado",
+   "Sustituye TCP por UDP",
+   "Hace que la página cargue sin servidor"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. HTTPS es HTTP dentro de una conexión TLS. TLS cifra lo que viaja (nadie en medio puede leerlo) y el certificado demuestra que el servidor es quien dice ser.</p><ul><li>a) La compresión es otra cosa (gzip, brotli) y existe también sin TLS.</li><li>c) HTTPS sigue yendo sobre TCP. El que usa UDP es HTTP/3, a través de QUIC.</li><li>d) No tiene sentido: siempre hace falta un servidor.</li></ul>"
+ },
+ {
+  "n": 3,
+  "conf": false,
+  "enunciado": "¿Qué diferencia hay entre un servidor web como nginx y un servidor de aplicaciones como Gunicorn?",
+  "tipo": "test",
+  "opciones": [
+   "Ninguna, son nombres distintos para lo mismo",
+   "nginx sirve ficheros estáticos y hace de proxy; Gunicorn ejecuta el código de la aplicación Python",
+   "nginx ejecuta Python y Gunicorn sirve imágenes",
+   "Gunicorn es la base de datos de nginx"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. nginx entrega HTML, CSS, imágenes y reenvía lo dinámico. No sabe ejecutar Python. Gunicorn carga la aplicación (Flask, Django) y genera la respuesta ejecutando su código. Trabajan juntos: ninguno sustituye al otro.</p><ul><li>a) y c) son falsas por lo anterior.</li><li>d) Gunicorn no guarda datos; eso es PostgreSQL.</li></ul>"
+ },
+ {
+  "n": 4,
+  "conf": false,
+  "enunciado": "¿Qué es WSGI?",
+  "tipo": "test",
+  "opciones": [
+   "Un contrato entre el servidor y la aplicación Python que define cómo se le entrega cada petición y cómo devuelve la respuesta",
+   "El sistema de PostgreSQL que aplica cambios al esquema",
+   "El módulo de nginx que sirve estáticos",
+   "El formato de plantillas HTML que usa Django"
+  ],
+  "correcta": 0,
+  "explicacion": "<p><strong>a)</strong>. WSGI (Web Server Gateway Interface, PEP 3333) es la norma de Python que dice qué objeto expone la aplicación y cómo la llama el servidor. Gracias a ella, cualquier aplicación compatible funciona con cualquier servidor compatible. En Flask el objeto es <code>app</code> (se arranca con <code>gunicorn app:app</code>) y en Django <code>config.wsgi:application</code>.</p><ul><li>b) Eso serían las migraciones (Alembic en Python).</li><li>c) nginx sirve estáticos con su núcleo, sin WSGI.</li><li>d) Las plantillas de Django son su propio lenguaje de plantillas, no WSGI.</li></ul>"
+ },
+ {
+  "n": 5,
+  "conf": false,
+  "enunciado": "Gunicorn arranca con <code>--workers 2</code>. ¿Qué significa?",
+  "tipo": "test",
+  "opciones": [
+   "Se crean dos servidores nginx que se reparten el tráfico con DNS",
+   "Un proceso maestro lanza dos procesos que ejecutan la aplicación y atienden peticiones a la vez en el mismo puerto",
+   "Se ejecutan dos copias de la aplicación en puertos distintos con configuraciones distintas",
+   "Gunicorn reintenta dos veces cada petición fallida"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. El maestro lee la configuración, abre el punto de escucha y crea los workers. Los dos comparten el mismo puerto (por ejemplo, el 8000), así que pueden servir dos peticiones a la vez. Si uno muere, el maestro lo repone.</p><ul><li>a) Los workers no tienen nada que ver con nginx ni con DNS.</li><li>c) No hay dos puertos ni dos configuraciones: es la misma aplicación repetida.</li><li>d) Los reintentos no son función de <code>--workers</code>.</li></ul>"
+ },
+ {
+  "n": 6,
+  "conf": false,
+  "enunciado": "nginx recibe una petición dinámica y devuelve 502 Bad Gateway. ¿Cuál es la causa más habitual?",
+  "tipo": "test",
+  "opciones": [
+   "Gunicorn no está arrancado o <code>proxy_pass</code> apunta a una dirección o puerto equivocados",
+   "El certificado ha caducado",
+   "El cliente no ha enviado la cabecera Host",
+   "El fichero HTML no existe"
+  ],
+  "correcta": 0,
+  "explicacion": "<p><strong>a)</strong>. 502 quiere decir que nginx, actuando de pasarela, no ha recibido una respuesta válida del servidor de detrás. Lo primero que hay que mirar es si Gunicorn está en marcha (<code>ps aux | grep gunicorn</code>) y si responde en la dirección de <code>proxy_pass</code> (<code>curl -I http://127.0.0.1:8000/</code>).</p><ul><li>b) Un certificado caducado da un aviso de seguridad en el navegador, no un 502.</li><li>c) Sin cabecera Host, nginx usa el sitio por defecto; no da 502.</li><li>d) Un fichero inexistente es 404. Y si Gunicorn tarda demasiado en contestar, el código es 504 (Gateway Timeout), no 502.</li></ul>"
+ },
+ {
+  "n": 7,
+  "conf": false,
+  "enunciado": "¿Qué diferencia hay entre una web estática y una aplicación web?",
+  "tipo": "test",
+  "opciones": [
+   "La estática usa CSS y la aplicación no",
+   "La estática entrega ficheros ya hechos, iguales para todos; la aplicación ejecuta código que genera la respuesta en cada petición (por ejemplo, consultando una base de datos)",
+   "La estática solo se ve en el ordenador y la aplicación también en el móvil",
+   "No hay diferencia si se sirve con nginx"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Una web hecha con Zensical o Jekyll se compila una vez y nginx entrega el HTML tal cual. Una tienda que muestra los pedidos de cada usuario necesita ejecutar código en cada petición.</p><ul><li>a) y c) describen cosas que valen para las dos.</li><li>d) nginx puede servir las dos, pero la aplicación necesita además un servidor de aplicaciones.</li></ul>"
+ },
+ {
+  "n": 8,
+  "conf": false,
+  "enunciado": "¿En qué capa trabaja el protocolo HTTP?",
+  "tipo": "test",
+  "opciones": [
+   "En la capa de aplicación, sobre TCP",
+   "En la capa de red, como IP",
+   "En la capa de enlace, con las direcciones MAC",
+   "En la capa de transporte, en lugar de TCP"
+  ],
+  "correcta": 0,
+  "explicacion": "<p><strong>a)</strong>. HTTP es un protocolo de aplicación (capa 7 de OSI). Usa TCP como transporte (puerto 80, o 443 con TLS). HTTP/3 cambia TCP por QUIC sobre UDP, pero sigue siendo de aplicación.</p><ul><li>b), c) y d) confunden HTTP con los protocolos de las capas de debajo.</li></ul>"
+ },
+ {
+  "n": 9,
+  "conf": false,
+  "enunciado": "Relaciona cada modelo con su definición.",
+  "tipo": "puzle",
+  "piezas": [
+   {
+    "t": "On-premise",
+    "h": 1
+   },
+   {
+    "t": "Cloud",
+    "h": 2
+   },
+   {
+    "t": "IaaS",
+    "h": 3
+   },
+   {
+    "t": "Máquina virtual",
+    "h": 4
+   },
+   {
+    "t": "Contenedor",
+    "h": 5
+   },
+   {
+    "t": "SaaS",
+    "h": null
+   }
+  ],
+  "lineas": [
+   {
+    "texto": "Hardware propio en las instalaciones de la empresa, que lo compra y mantiene",
+    "h": 1
+   },
+   {
+    "texto": "Recursos de un proveedor por Internet, bajo demanda y pagando por uso",
+    "h": 2
+   },
+   {
+    "texto": "El proveedor da máquina virtual, red y disco; tú instalas el sistema y todo",
+    "h": 3
+   },
+   {
+    "texto": "Virtualiza el hardware y lleva su propio sistema operativo completo",
+    "h": 4
+   },
+   {
+    "texto": "Aísla un proceso con sus dependencias y comparte el núcleo del anfitrión",
+    "h": 5
+   }
+  ]
+ },
+ {
+  "n": 10,
+  "conf": true,
+  "enunciado": "Una empresa quiere cambiar el gestor de base de datos de su aplicación web y que el cambio afecte a una sola capa. ¿A cuál afectaría?",
+  "tipo": "test",
+  "opciones": [
+   "Al navegador",
+   "A la capa de presentación",
+   "A la capa de negocio",
+   "A la capa de acceso a datos"
+  ],
+  "correcta": 3,
+  "explicacion": "<p><strong>d)</strong>. Separar en capas sirve justo para esto: se cambia la que guarda y busca los datos, y nginx y la lógica siguen igual (como mucho, cambia el driver de conexión).</p><ul><li>a) El navegador no sabe qué base de datos hay detrás.</li><li>b) La presentación (nginx) solo recibe peticiones y reenvía.</li><li>c) La lógica pide datos, pero no los guarda; si la capa de datos está bien separada, no cambia.</li></ul>"
+ },
+ {
+  "n": 11,
+  "conf": true,
+  "enunciado": "Un sitio con HTTPS tiene un formulario programado con fallos de seguridad. ¿Qué pasa con esos fallos?",
+  "tipo": "test",
+  "opciones": [
+   "Desaparecen cuando el certificado lo emite una autoridad conocida",
+   "Siguen existiendo, porque HTTPS solo protege el canal",
+   "HTTPS los corrige al cifrar los datos que viajan",
+   "Solo afectan a los usuarios que entran por HTTP"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. TLS cifra lo que viaja entre cliente y servidor. Si el código guarda contraseñas en claro o acepta datos sin validar, eso no cambia por tener candado.</p><ul><li>a) La autoridad solo garantiza la identidad del servidor, no la calidad del código.</li><li>c) Cifrar el viaje no arregla lo que el código hace al recibir los datos.</li><li>d) Los fallos están en el código, así que afectan a todos, entren como entren.</li></ul>"
+ },
+ {
+  "n": 12,
+  "conf": true,
+  "enunciado": "Una tienda online muestra los precios, el stock y los pedidos de cada usuario, actualizados desde una base de datos. ¿Qué tipo de aplicación necesita?",
+  "tipo": "test",
+  "opciones": [
+   "Estática, porque basta con servir archivos HTML ya preparados",
+   "Estática, porque usa imágenes y CSS para su diseño",
+   "Dinámica, porque ejecuta código que genera la respuesta",
+   "Dinámica, porque se ve en un navegador desde cualquier equipo"
+  ],
+  "correcta": 2,
+  "explicacion": "<p><strong>c)</strong>. Cada usuario ve sus pedidos y el stock cambia, así que la página se genera en el momento con código que consulta la base de datos.</p><ul><li>a) Unos HTML preparados de antemano no pueden enseñar el pedido de cada usuario.</li><li>b) y d) dan razones que valen para cualquier web: usar CSS o verse en un navegador no dice si es estática o dinámica.</li></ul>"
+ },
+ {
+  "n": 13,
+  "conf": true,
+  "enunciado": "Has modificado un archivo de configuración en el servidor, pero la aplicación sigue comportándose igual. ¿Cuál es una causa frecuente?",
+  "tipo": "test",
+  "opciones": [
+   "El servicio no se ha recargado ni reiniciado después del cambio",
+   "El servidor necesita un certificado digital nuevo para aplicarlo",
+   "El navegador ha guardado una copia antigua de la configuración",
+   "El puerto cambia automáticamente cada vez que se guarda el archivo"
+  ],
+  "correcta": 0,
+  "explicacion": "<p><strong>a)</strong>. Un servicio lee su configuración al arrancar. Hasta que no se recarga (<code>nginx -s reload</code>) o se reinicia, sigue con la vieja. Antes de recargar, se comprueba con <code>nginx -t</code>.</p><ul><li>b) Los certificados no tienen nada que ver con aplicar una configuración.</li><li>c) El navegador nunca recibe la configuración del servidor.</li><li>d) Los puertos no cambian solos.</li></ul>"
+ },
+ {
+  "n": 14,
+  "conf": true,
+  "enunciado": "Una web recibe de golpe miles de peticiones y el único servidor que la aloja se satura. ¿Qué limitación del modelo cliente-servidor se ve aquí?",
+  "tipo": "test",
+  "opciones": [
+   "La necesidad de que cada cliente actúe también como servidor",
+   "El cuello de botella que se forma en el servidor ante una demanda muy alta",
+   "La imposibilidad de atender a más de un cliente a la vez",
+   "La obligación de que todos los clientes usen el mismo sistema operativo"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Todos los clientes piden al mismo servidor: si llegan demasiados a la vez, se satura. Se combate con más servidores y balanceo, o con una CDN.</p><ul><li>a) Que cada cliente sea también servidor es el modelo P2P, no el cliente-servidor.</li><li>c) Un servidor sí atiende a muchos clientes a la vez; el problema es cuando son demasiados.</li><li>d) Los clientes pueden usar cualquier sistema: solo tienen que hablar HTTP.</li></ul>"
+ },
+ {
+  "n": 15,
+  "conf": true,
+  "enunciado": "Un atacante captura los datos mientras viajan entre el navegador del usuario y el servidor de aplicaciones. ¿A qué parte de la arquitectura corresponde este ataque?",
+  "tipo": "test",
+  "opciones": [
+   "Al equipo cliente",
+   "Al flujo de información",
+   "Al gestor de base de datos",
+   "Al equipo servidor"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. La clave es «mientras viajan»: el ataque ocurre en la red, entre los dos extremos. Se protege cifrando el canal con HTTPS.</p><ul><li>a) y d) serían ataques dentro de uno de los equipos.</li><li>c) La base de datos ni siquiera interviene en ese tramo.</li></ul>"
+ },
+ {
+  "n": 16,
+  "conf": true,
+  "enunciado": "¿Qué protocolo de la capa de aplicación se usa con más frecuencia cuando el navegador pide una página web?",
+  "tipo": "test",
+  "opciones": [
+   "TCP",
+   "DNS",
+   "HTTP",
+   "FTP"
+  ],
+  "correcta": 2,
+  "explicacion": "<p><strong>c)</strong>. HTTP (o HTTPS, que es HTTP con TLS) es el protocolo con el que el navegador pide páginas.</p><ul><li>a) TCP es de la capa de transporte, no de aplicación: es lo que lleva a HTTP por debajo.</li><li>b) DNS se usa antes, para averiguar la IP del servidor, pero no pide la página.</li><li>d) FTP es para transferir ficheros.</li></ul>"
+ },
+ {
+  "n": 17,
+  "conf": true,
+  "enunciado": "El servidor tiene que aceptar peticiones HTTP y HTTPS. ¿Qué puertos suele tener configurados?",
+  "tipo": "test",
+  "opciones": [
+   "22 y 5432",
+   "25 y 8080",
+   "80 y 443",
+   "21 y 443"
+  ],
+  "correcta": 2,
+  "explicacion": "<p><strong>c)</strong>. 80 es HTTP y 443 es HTTPS.</p><ul><li>a) 22 es SSH y 5432 PostgreSQL.</li><li>b) 25 es SMTP (correo) y 8080 un puerto alternativo típico de servidores de aplicaciones.</li><li>d) 21 es el control de FTP.</li></ul>"
+ },
+ {
+  "n": 18,
+  "conf": false,
+  "enunciado": "Dos dominios apuntan a la misma IP, puerto 80. ¿Cómo sabe nginx qué sitio servir?",
+  "tipo": "test",
+  "opciones": [
+   "Por la IP de origen del cliente",
+   "Compara la cabecera Host de la petición con el <code>server_name</code> de cada server block; si ninguno coincide, usa el <code>default_server</code>",
+   "Sirve siempre el primer fichero de <code>sites-enabled</code>, sin mirar nada más",
+   "Pregunta al DNS cuál toca"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Es el alojamiento virtual por nombre. El navegador manda <code>Host: www.ejemplo.local</code> en cada petición (la cabecera Host existe desde HTTP/1.1 justo para esto) y nginx busca el <code>server_name</code> que coincide: primero el nombre exacto, luego comodines y expresiones regulares, y al final el <code>default_server</code>.</p><ul><li>a) La IP del cliente no decide el sitio.</li><li>c) El primero solo se usa si nadie lleva <code>default_server</code> y ningún nombre coincide.</li><li>d) El DNS ya hizo su trabajo antes: llevar al cliente hasta la IP. nginx no le pregunta nada.</li></ul>"
+ },
+ {
+  "n": 19,
+  "conf": false,
+  "enunciado": "¿Para qué sirve <code>location</code> en nginx?",
+  "tipo": "test",
+  "opciones": [
+   "Para indicar la ubicación física del servidor",
+   "Para aplicar una configuración distinta según la ruta de la URL pedida (por ejemplo, <code>/api/</code> va al backend y <code>/img/</code> se sirve del disco)",
+   "Para elegir el país del certificado",
+   "Para definir el puerto de escucha"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Dentro de un server block, cada <code>location</code> atrapa unas URL. Hay coincidencia exacta (<code>location = /</code>), por prefijo (<code>location /img/</code>), prefijo prioritario (<code>^~</code>) y expresiones regulares (<code>~</code> y <code>~*</code>). Gana la exacta; si no, el prefijo más largo, salvo que una regex coincida antes.</p><ul><li>a) y c) no tienen nada que ver con nginx.</li><li>d) El puerto se pone con <code>listen</code>.</li></ul>"
+ },
+ {
+  "n": 20,
+  "conf": false,
+  "enunciado": "Basic Auth envía usuario y contraseña en Base64. ¿Qué implica?",
+  "tipo": "test",
+  "opciones": [
+   "Que la contraseña va cifrada con la clave del servidor",
+   "Que no va cifrada: Base64 se decodifica sin clave, así que cualquiera que capture la petición la lee. Hay que usarlo siempre con HTTPS",
+   "Que el servidor guarda la contraseña en texto plano",
+   "Que el navegador la cifra con su certificado"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Base64 es una forma de escribir bytes con letras, no un cifrado. La cabecera <code>Authorization: Basic ...</code> se puede decodificar con <code>echo ... | base64 -d</code>. Por eso las prácticas de la UT3 combinan Basic Auth con HTTPS.</p><ul><li>a) y d) suponen un cifrado que no existe.</li><li>c) El fichero <code>htpasswd</code> guarda las contraseñas con hash, no en claro; además, la pregunta trata de cómo viajan, no de cómo se guardan.</li></ul>"
+ },
+ {
+  "n": 21,
+  "conf": false,
+  "enunciado": "¿Qué diferencia hay entre un certificado de Let's Encrypt y uno autofirmado?",
+  "tipo": "test",
+  "opciones": [
+   "El autofirmado cifra con menos bits",
+   "El de Let's Encrypt no necesita clave privada",
+   "El de Let's Encrypt lo firma una autoridad en la que confían los navegadores; el autofirmado lo firma uno mismo y el navegador avisa de que no es de confianza",
+   "El autofirmado es más seguro porque nadie más lo conoce"
+  ],
+  "correcta": 2,
+  "explicacion": "<p><strong>c)</strong>. El cifrado es igual de fuerte en los dos. La diferencia es la confianza: Let's Encrypt es una autoridad de certificación gratuita y automatizada (protocolo ACME) que comprueba que controlas el dominio. Por eso exige un dominio público al que pueda llegar. El autofirmado sirve para pruebas en local (<code>openssl req -x509 ...</code>) y con curl se prueba usando <code>-k</code>.</p><ul><li>a) La longitud de clave la elige quien genera el certificado, no depende de quién firma.</li><li>b) Los dos necesitan clave privada; sin ella no hay TLS.</li><li>d) Que nadie lo conozca es justo el problema: nadie puede comprobarlo.</li></ul>"
+ },
+ {
+  "n": 22,
+  "conf": false,
+  "enunciado": "Relaciona cada directiva con su función.",
+  "tipo": "puzle",
+  "piezas": [
+   {
+    "t": "default_server",
+    "h": 1
+   },
+   {
+    "t": "server_name",
+    "h": 2
+   },
+   {
+    "t": "load_module",
+    "h": 3
+   },
+   {
+    "t": "image_filter",
+    "h": 4
+   },
+   {
+    "t": "proxy_pass",
+    "h": 5
+   },
+   {
+    "t": "auth_basic_user_file",
+    "h": 6
+   },
+   {
+    "t": "ssl_certificate",
+    "h": 7
+   },
+   {
+    "t": "a2enmod",
+    "h": null
+   }
+  ],
+  "lineas": [
+   {
+    "texto": "Marca el sitio que responde cuando ningún nombre coincide",
+    "h": 1
+   },
+   {
+    "texto": "Nombres de dominio que atiende un server block",
+    "h": 2
+   },
+   {
+    "texto": "Carga un módulo dinámico (.so) al arrancar",
+    "h": 3
+   },
+   {
+    "texto": "Redimensiona o recorta imágenes al vuelo (módulo dinámico)",
+    "h": 4
+   },
+   {
+    "texto": "Reenvía la petición a un servidor de aplicaciones",
+    "h": 5
+   },
+   {
+    "texto": "Fichero htpasswd con los usuarios de Basic Auth",
+    "h": 6
+   },
+   {
+    "texto": "Ruta del certificado del sitio HTTPS",
+    "h": 7
+   }
+  ]
+ },
+ {
+  "n": 23,
+  "conf": true,
+  "enunciado": "¿Qué función cumple una autoridad certificadora?",
+  "tipo": "test",
+  "opciones": [
+   "Guardar las contraseñas de los usuarios de un sitio web",
+   "Traducir los nombres de dominio",
+   "Cifrar cada petición",
+   "Firmar certificados"
+  ],
+  "correcta": 3,
+  "explicacion": "<p><strong>d)</strong>. La autoridad certificadora (CA) comprueba que quien pide el certificado controla el dominio y lo firma. El navegador trae una lista de CA en las que confía y, si el certificado del sitio está firmado por una de ellas, lo acepta.</p><ul><li>a) Las contraseñas las guarda la propia aplicación, con hash.</li><li>b) Traducir nombres es el trabajo del DNS.</li><li>c) Lo que cifra cada petición es TLS, con claves que acuerdan el navegador y el servidor; la CA no interviene en el tráfico.</li></ul>"
+ },
+ {
+  "n": 24,
+  "conf": false,
+  "enunciado": "¿Por qué PostgreSQL en Docker Compose usa un volumen para los datos?",
+  "tipo": "test",
+  "opciones": [
+   "Para que la base de datos vaya más rápida",
+   "Para que los datos sobrevivan cuando el contenedor se borra o se recrea (persistencia)",
+   "Para poder abrir el puerto 5432",
+   "Porque la imagen de PostgreSQL no arranca sin él"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Lo que se escribe dentro de un contenedor desaparece con él. El volumen (por ejemplo, <code>db-data</code> montado en <code>/var/lib/postgresql/data</code>) vive fuera. <code>docker compose down</code> lo conserva; <code>docker compose down -v</code> lo borra.</p><ul><li>a) La velocidad no es el motivo.</li><li>c) Los puertos se publican con <code>ports</code>, no con volúmenes.</li><li>d) Arranca sin él, pero pierde los datos al recrearse.</li></ul>"
+ },
+ {
+  "n": 25,
+  "conf": false,
+  "enunciado": "Relaciona cada elemento del despliegue con su función.",
+  "tipo": "puzle",
+  "piezas": [
+   {
+    "t": "servicio db",
+    "h": 1
+   },
+   {
+    "t": "pgAdmin",
+    "h": 2
+   },
+   {
+    "t": "init.sql",
+    "h": 3
+   },
+   {
+    "t": "POSTGRES_USER y POSTGRES_PASSWORD",
+    "h": 4
+   },
+   {
+    "t": "pg_hba.conf",
+    "h": 5
+   },
+   {
+    "t": "volumen db-data",
+    "h": 6
+   },
+   {
+    "t": "proxy_pass",
+    "h": null
+   }
+  ],
+  "lineas": [
+   {
+    "texto": "Contenedor con PostgreSQL, al que la app llega como db:5432",
+    "h": 1
+   },
+   {
+    "texto": "Aplicación web para administrar PostgreSQL desde el navegador",
+    "h": 2
+   },
+   {
+    "texto": "Script que crea tablas y datos la primera vez que arranca la base",
+    "h": 3
+   },
+   {
+    "texto": "Variables que crean el usuario y su contraseña al inicializar",
+    "h": 4
+   },
+   {
+    "texto": "Reglas de quién puede conectarse, desde dónde y con qué método",
+    "h": 5
+   },
+   {
+    "texto": "Guarda los datos fuera del contenedor para que no se pierdan",
+    "h": 6
+   }
+  ]
+ },
+ {
+  "n": 26,
+  "conf": false,
+  "enunciado": "Un Dockerfile termina con <code>CMD uvicorn app.main:app --port 8000</code>. Kamal tiene <code>app_port: 8000</code>, pero las peticiones no llegan. ¿Qué pasa?",
+  "tipo": "test",
+  "opciones": [
+   "La imagen no se ejecuta como root",
+   "La aplicación escucha en localhost (127.0.0.1) dentro del contenedor y el proxy, que llega desde otro contenedor, no la alcanza",
+   "Hay que publicar el puerto 8000 con <code>-p</code> en el servidor",
+   "Falta la línea <code>EXPOSE 8000</code>"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Si no se indica <code>--host</code>, uvicorn escucha en 127.0.0.1, que dentro de un contenedor es «solo yo». kamal-proxy está en otro contenedor de la misma red, así que necesita que la app escuche en todas las interfaces: <code>--host 0.0.0.0</code>. Es lo que hace el Dockerfile del caso práctico.</p><ul><li>a) No ser root es una buena práctica de seguridad y no impide recibir peticiones.</li><li>c) Con Kamal no se publica el puerto de la app: el único que publica puertos (80 y 443) es kamal-proxy, que llega a la app por la red interna.</li><li>d) <code>EXPOSE</code> solo documenta el puerto; no abre ni publica nada.</li></ul>"
+ },
+ {
+  "n": 27,
+  "conf": false,
+  "enunciado": "Ordena el despliegue de una versión que trae una migración de Alembic.",
+  "tipo": "puzle",
+  "piezas": [
+   {
+    "t": "Copia de seguridad de la base de datos",
+    "h": 1
+   },
+   {
+    "t": "Desplegar en staging y aplicar alembic upgrade head",
+    "h": 2
+   },
+   {
+    "t": "Probar en staging (tests, /up, endpoints)",
+    "h": 3
+   },
+   {
+    "t": "Avisar o poner página de mantenimiento a una hora de poco uso",
+    "h": 4
+   },
+   {
+    "t": "Copia de producción y alembic upgrade head en producción",
+    "h": 5
+   },
+   {
+    "t": "kamal deploy -d production y comprobar /up",
+    "h": 6
+   },
+   {
+    "t": "Si falla: kamal rollback y alembic downgrade (o restaurar la copia)",
+    "h": 7
+   },
+   {
+    "t": "Migrar primero producción y luego staging",
+    "h": null
+   }
+  ],
+  "lineas": [
+   {
+    "texto": "1.",
+    "h": 1
+   },
+   {
+    "texto": "2.",
+    "h": 2
+   },
+   {
+    "texto": "3.",
+    "h": 3
+   },
+   {
+    "texto": "4.",
+    "h": 4
+   },
+   {
+    "texto": "5.",
+    "h": 5
+   },
+   {
+    "texto": "6.",
+    "h": 6
+   },
+   {
+    "texto": "7.",
+    "h": 7
+   }
+  ]
+ },
+ {
+  "n": 28,
+  "conf": true,
+  "enunciado": "¿Qué diferencia principal hay entre una máquina virtual y un contenedor?",
+  "tipo": "test",
+  "opciones": [
+   "La máquina virtual lleva su propio sistema operativo; el contenedor comparte el núcleo del anfitrión",
+   "El contenedor lleva su propio sistema operativo; la máquina virtual comparte el núcleo",
+   "La máquina virtual solo funciona en la nube y el contenedor solo en local",
+   "No hay diferencia: contenedor es otro nombre de máquina virtual"
+  ],
+  "correcta": 0,
+  "explicacion": "<p><strong>a)</strong>. La máquina virtual virtualiza el hardware sobre un hipervisor y arranca un sistema operativo entero. El contenedor solo empaqueta la aplicación y sus dependencias y usa el núcleo del anfitrión. Por eso arranca en segundos y pesa mucho menos; a cambio, la máquina virtual aísla más.</p><ul><li>b) Está al revés.</li><li>c) Las dos funcionan en local y en la nube.</li><li>d) Son tecnologías distintas.</li></ul>"
+ },
+ {
+  "n": 29,
+  "conf": false,
+  "enunciado": "Tras un comando, <code>echo $?</code> muestra 127. ¿Qué significa?",
+  "tipo": "test",
+  "opciones": [
+   "Que el comando terminó bien",
+   "Que el comando no se encontró",
+   "Que no hay permisos de ejecución"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. <code>$?</code> guarda el código de salida del último comando. 0 es éxito y cualquier otro número es un error. 127 es «comando no encontrado» (mal escrito o fuera del <code>PATH</code>) y 126, «encontrado pero no ejecutable». Los scripts de despliegue paran en cuanto un paso devuelve algo distinto de 0 (<code>set -e</code>).</p>"
+ },
+ {
+  "n": 30,
+  "conf": true,
+  "enunciado": "Al arrancar un segundo servicio web, falla porque el puerto 8080 ya lo usa otra aplicación. ¿Qué lo soluciona?",
+  "tipo": "test",
+  "opciones": [
+   "Arrancar los dos servicios en el 8080 a la vez",
+   "Configurar el segundo servicio en otro puerto libre",
+   "Reiniciar el equipo para que el puerto se libere solo",
+   "Cambiar el protocolo del segundo servicio a UDP"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. En una misma dirección IP, un puerto TCP solo puede tenerlo un programa escuchando. El error típico es <em>address already in use</em> (o <em>port is already allocated</em> en Docker). Se cambia el puerto del segundo servicio (por ejemplo, <code>-p 8081:80</code>).</p><ul><li>a) Es justo lo que no se puede.</li><li>c) Al reiniciar, la otra aplicación vuelve a arrancar y a ocupar el puerto.</li><li>d) Un servicio web habla HTTP sobre TCP; cambiarlo a UDP lo deja sin funcionar.</li></ul>"
+ },
+ {
+  "n": 31,
+  "conf": true,
+  "enunciado": "Tienes una imagen con nginx preparada. ¿Qué obtienes al ejecutarla exponiendo el puerto 80 para servir una web?",
+  "tipo": "test",
+  "opciones": [
+   "Una máquina virtual con nginx instalado",
+   "Una imagen nueva con la web dentro",
+   "Un contenedor en marcha que sirve la web por ese puerto",
+   "Un servidor DNS que resuelve el nombre de la web"
+  ],
+  "correcta": 2,
+  "explicacion": "<p><strong>c)</strong>. La imagen es la plantilla; al ejecutarla (<code>docker run -d -p 80:80 nginx</code>) se obtiene un contenedor, que es la imagen en marcha. Con el puerto publicado, la web se ve en <code>http://localhost</code>.</p><ul><li>a) Un contenedor no es una máquina virtual: no lleva su propio sistema operativo.</li><li>b) Ejecutar no crea imágenes; las imágenes se crean con <code>docker build</code>.</li><li>d) nginx es un servidor web, no un DNS.</li></ul>"
+ },
+ {
+  "n": 32,
+  "conf": false,
+  "enunciado": "Ordena el registro, el login y la comprobación del JWT en la API de FastAPI.",
+  "tipo": "puzle",
+  "piezas": [
+   {
+    "t": "El usuario envía POST /auth/register con usuario y contraseña",
+    "h": 1
+   },
+   {
+    "t": "El backend comprueba que ese usuario no existe ya",
+    "h": 2
+   },
+   {
+    "t": "El backend hashea la contraseña (Argon2) y guarda el hash",
+    "h": 3
+   },
+   {
+    "t": "El backend responde 201 con id y nombre, sin la contraseña",
+    "h": 4
+   },
+   {
+    "t": "El usuario envía POST /auth/token con usuario y contraseña en un formulario",
+    "h": 5
+   },
+   {
+    "t": "El backend compara la contraseña con el hash guardado",
+    "h": 6
+   },
+   {
+    "t": "El backend firma un JWT y lo devuelve como access_token",
+    "h": 7
+   },
+   {
+    "t": "El cliente envía el token en la cabecera Authorization: Bearer",
+    "h": 8
+   },
+   {
+    "t": "El backend comprueba firma y caducidad y saca el usuario de sub",
+    "h": 9
+   },
+   {
+    "t": "El backend descifra la contraseña guardada para compararla",
+    "h": null
+   }
+  ],
+  "lineas": [
+   {
+    "texto": "1.",
+    "h": 1
+   },
+   {
+    "texto": "2.",
+    "h": 2
+   },
+   {
+    "texto": "3.",
+    "h": 3
+   },
+   {
+    "texto": "4.",
+    "h": 4
+   },
+   {
+    "texto": "5.",
+    "h": 5
+   },
+   {
+    "texto": "6.",
+    "h": 6
+   },
+   {
+    "texto": "7.",
+    "h": 7
+   },
+   {
+    "texto": "8.",
+    "h": 8
+   },
+   {
+    "texto": "9.",
+    "h": 9
+   }
+  ]
+ },
+ {
+  "n": 33,
+  "conf": false,
+  "enunciado": "¿Qué cifra un JWT?",
+  "tipo": "test",
+  "opciones": [
+   "Todo su contenido, con la clave secreta del servidor",
+   "Nada: la cabecera y el payload van en base64url y cualquiera los lee. La firma solo garantiza que nadie los ha cambiado. Lo que cifra la conexión es HTTPS",
+   "Solo la contraseña del usuario, que va dentro del token",
+   "La dirección IP del cliente"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Un JWT firmado tiene tres partes separadas por puntos: cabecera (<code>alg</code>, <code>typ</code>), payload (los <em>claims</em>, como <code>sub</code>, <code>iat</code>, <code>exp</code>) y firma. Si se pega uno en un depurador de JWT se ve el payload sin necesidad de clave. Por eso en el payload solo va un identificador, normalmente el id del usuario en <code>sub</code>, y nunca la contraseña. La firma HS256 se calcula con un secreto del servidor: si alguien cambia el payload, la firma deja de cuadrar y el token se rechaza.</p><ul><li>a) Existe una variante cifrada (JWE), pero la que se usa en clase solo firma.</li><li>c) La contraseña nunca va en el token.</li><li>d) La IP no forma parte del token.</li></ul>"
+ },
+ {
+  "n": 34,
+  "conf": true,
+  "enunciado": "Un empleado inicia sesión con su usuario y contraseña y recibe un JWT. Ya dentro, solo ve ventas porque su rol no incluye contabilidad. ¿Qué mecanismos intervienen y en qué orden?",
+  "tipo": "test",
+  "opciones": [
+   "Primero autorización y después autenticación",
+   "Primero autenticación y después autorización",
+   "Solo autenticación: el JWT ya decide los módulos",
+   "Solo cifrado: el JWT oculta los módulos que no puede ver"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. El login con usuario y contraseña es autenticación (quién es). Que su rol le deje ver ventas y no contabilidad es autorización (qué puede hacer). Siempre en ese orden: no se pueden dar permisos a alguien sin saber quién es.</p><ul><li>a) Está al revés.</li><li>c) El JWT solo transporta la identidad (y quizá el rol); quien decide los permisos es el backend al comprobarlo, y eso ya es autorización.</li><li>d) El JWT no cifra nada: firma. Y ocultar módulos es una decisión de permisos, no de cifrado.</li></ul>"
+ },
+ {
+  "n": 35,
+  "conf": false,
+  "enunciado": "Una aplicación pide, después de la contraseña, un código de seis cifras que llega al móvil del usuario. ¿Qué es?",
+  "tipo": "test",
+  "opciones": [
+   "Autorización por roles",
+   "Autenticación de doble factor: dos pruebas de tipo distinto, algo que sabes y algo que tienes",
+   "Cifrado de extremo a extremo",
+   "Un certificado de cliente"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Sigue siendo autenticación (demostrar quién eres), pero con dos factores: la contraseña (algo que sabes) y el móvil (algo que tienes). Si roban la contraseña, no basta para entrar.</p><ul><li>a) No decide permisos; solo identifica.</li><li>c) No cifra la comunicación.</li><li>d) Un certificado de cliente sería otra forma de autenticarse, pero aquí no aparece.</li></ul>"
+ },
+ {
+  "n": 36,
+  "conf": false,
+  "enunciado": "Un cliente FTP está detrás de un NAT y no consigue listar el directorio. ¿Qué lo explica?",
+  "tipo": "test",
+  "opciones": [
+   "Está usando FTPS implícito por el puerto 990",
+   "Está en modo activo: el servidor intenta abrir la conexión de datos hacia el cliente y el NAT la bloquea. En modo pasivo es el cliente el que abre la conexión, y funciona",
+   "El usuario anónimo no requiere credenciales",
+   "El servidor no tiene DNS"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. FTP usa dos conexiones: la de control (21), que siempre abre el cliente, y la de datos, por donde viajan los listados y los ficheros. En modo <strong>activo</strong> la de datos la abre el servidor hacia el cliente, y un NAT o un cortafuegos la corta. Por eso entrar funciona pero <code>ls</code> se queda colgado. En modo <strong>pasivo</strong> el servidor dice un puerto alto (respuesta <code>227 Entering Passive Mode</code>) y el cliente se conecta a él. FileZilla usa pasivo por defecto.</p><ul><li>a) El puerto 990 es FTPS implícito y no tiene que ver con el NAT.</li><li>c) Ser anónimo afecta a las credenciales, no a la conexión de datos.</li><li>d) Ya se ha conectado, así que el DNS no es el problema.</li></ul>"
+ },
+ {
+  "n": 37,
+  "conf": false,
+  "enunciado": "Relaciona cada protocolo o programa con su función.",
+  "tipo": "puzle",
+  "piezas": [
+   {
+    "t": "HTTPS",
+    "h": 1
+   },
+   {
+    "t": "FTP",
+    "h": 2
+   },
+   {
+    "t": "SFTP",
+    "h": 3
+   },
+   {
+    "t": "scp",
+    "h": 4
+   },
+   {
+    "t": "SMTP",
+    "h": 5
+   },
+   {
+    "t": "FileZilla",
+    "h": 6
+   }
+  ],
+  "lineas": [
+   {
+    "texto": "Navegación web cifrada con TLS",
+    "h": 1
+   },
+   {
+    "texto": "Transferencia de ficheros entre equipos, sin cifrar",
+    "h": 2
+   },
+   {
+    "texto": "Transferencia interactiva de ficheros dentro de SSH",
+    "h": 3
+   },
+   {
+    "texto": "Copia de ficheros de una sola orden por SSH",
+    "h": 4
+   },
+   {
+    "texto": "Envío de correo electrónico entre servidores",
+    "h": 5
+   },
+   {
+    "texto": "Programa cliente gráfico (no es un protocolo) para FTP y SFTP",
+    "h": 6
+   }
+  ]
+ },
+ {
+  "n": 38,
+  "conf": false,
+  "enunciado": "¿Qué configuración es más segura para un servidor FTP de despliegue?",
+  "tipo": "test",
+  "opciones": [
+   "Anónimo activado para que suban sin contraseña",
+   "Anónimo desactivado, usuarios encerrados en su carpeta (chroot), solo los usuarios de una lista, cifrado obligatorio (FTPS) o, mejor, SFTP, y un rango de puertos pasivos acotado",
+   "FTP en claro por el 21, que es el estándar",
+   "Modo activo para que el servidor controle las conexiones"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Es el mínimo privilegio aplicado a FTP: <code>anonymous_enable=NO</code>, <code>chroot_local_user=YES</code>, <code>userlist_enable=YES</code> con <code>userlist_deny=NO</code>, <code>ssl_enable=YES</code> y <code>pasv_min_port</code>/<code>pasv_max_port</code>. Si ya hay SSH en el servidor, SFTP es lo más recomendado porque no abre otro servicio.</p><ul><li>a) y c) mandan credenciales o datos sin protección.</li><li>d) El modo activo da problemas con NAT y no añade seguridad.</li></ul>"
+ },
+ {
+  "n": 39,
+  "conf": false,
+  "enunciado": "¿Qué hace un servidor DNS cuando recibe una consulta recursiva?",
+  "tipo": "test",
+  "opciones": [
+   "Entra en bucle hasta saturarse",
+   "Se encarga de buscar la respuesta completa (preguntando a la raíz, al TLD y al servidor autoritativo si no la tiene en caché) y se la devuelve al cliente",
+   "Devuelve solo una pista para que el cliente pregunte a otro",
+   "No usa nunca caché"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. En una consulta recursiva el cliente dice «dame la respuesta final». El resolutor la busca por su cuenta: pregunta a un servidor raíz, que lo manda al del TLD (<code>.es</code>), que lo manda al autoritativo del dominio. Guarda el resultado en caché durante el TTL y lo devuelve.</p><ul><li>a) No hay ningún bucle.</li><li>c) Eso es una consulta iterativa: el servidor devuelve una referencia y quien pregunta sigue buscando.</li><li>d) Al revés: el resolutor recursivo es justo el que más usa la caché.</li></ul>"
+ },
+ {
+  "n": 40,
+  "conf": false,
+  "enunciado": "Relaciona cada registro DNS con su función.",
+  "tipo": "puzle",
+  "piezas": [
+   {
+    "t": "SOA",
+    "h": 1
+   },
+   {
+    "t": "NS",
+    "h": 2
+   },
+   {
+    "t": "A",
+    "h": 3
+   },
+   {
+    "t": "AAAA",
+    "h": 4
+   },
+   {
+    "t": "CNAME",
+    "h": 5
+   },
+   {
+    "t": "MX",
+    "h": 6
+   },
+   {
+    "t": "PTR",
+    "h": 7
+   }
+  ],
+  "lineas": [
+   {
+    "texto": "Datos de la zona: servidor principal, contacto, número de serie",
+    "h": 1
+   },
+   {
+    "texto": "Servidores autoritativos de la zona",
+    "h": 2
+   },
+   {
+    "texto": "Nombre → dirección IPv4",
+    "h": 3
+   },
+   {
+    "texto": "Nombre → dirección IPv6",
+    "h": 4
+   },
+   {
+    "texto": "Alias de otro nombre",
+    "h": 5
+   },
+   {
+    "texto": "Servidor de correo del dominio, con prioridad",
+    "h": 6
+   },
+   {
+    "texto": "Resolución inversa: IP → nombre",
+    "h": 7
+   }
+  ]
+ },
+ {
+  "n": 41,
+  "conf": false,
+  "enunciado": "En LDAP, ¿qué es hacer un <em>bind</em>?",
+  "tipo": "test",
+  "opciones": [
+   "Borrar una entrada del árbol",
+   "Autenticarse ante el directorio (con un DN y su contraseña)",
+   "Copiar el directorio a otro servidor"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. LDAP permite iniciar sesión con la misma cuenta en muchas máquinas y servicios porque todos preguntan al mismo directorio. Para comprobar una contraseña, la aplicación hace un bind con el DN del usuario: si el directorio lo acepta, las credenciales son buenas.</p>"
+ },
+ {
+  "n": 42,
+  "conf": false,
+  "enunciado": "Relaciona cada concepto de LDAP con su significado.",
+  "tipo": "puzle",
+  "piezas": [
+   {
+    "t": "LDAP",
+    "h": 1
+   },
+   {
+    "t": "DN",
+    "h": 2
+   },
+   {
+    "t": "bind",
+    "h": 3
+   },
+   {
+    "t": "Grupo",
+    "h": 4
+   },
+   {
+    "t": "Usuario",
+    "h": 5
+   },
+   {
+    "t": "userPassword",
+    "h": 6
+   },
+   {
+    "t": "LDAPS",
+    "h": 7
+   }
+  ],
+  "lineas": [
+   {
+    "texto": "Protocolo para consultar y modificar un servicio de directorio",
+    "h": 1
+   },
+   {
+    "texto": "Ruta única de una entrada: uid=ana,ou=usuarios,dc=empresa,dc=local",
+    "h": 2
+   },
+   {
+    "texto": "Operación de autenticarse ante el directorio",
+    "h": 3
+   },
+   {
+    "texto": "Entrada que reúne a varios usuarios para darles los mismos permisos",
+    "h": 4
+   },
+   {
+    "texto": "Entrada de una persona, con atributos como uid, cn y mail",
+    "h": 5
+   },
+   {
+    "texto": "Atributo con la contraseña, guardada con hash",
+    "h": 6
+   },
+   {
+    "texto": "LDAP cifrado con TLS, por el puerto 636",
+    "h": 7
+   }
+  ]
+ },
+ {
+  "n": 43,
+  "conf": true,
+  "enunciado": "¿Qué función principal cumple el sistema de nombres de dominio (DNS)?",
+  "tipo": "test",
+  "opciones": [
+   "Cifrar las páginas web que se envían",
+   "Asignar direcciones IP a los equipos que se conectan a la red",
+   "Traducir nombres de dominio a direcciones IP",
+   "Repartir la carga entre varios servidores web"
+  ],
+  "correcta": 2,
+  "explicacion": "<p><strong>c)</strong>. Las personas recuerdan nombres y la red funciona con IP: el DNS traduce de uno a otro (y al revés, en la resolución inversa).</p><ul><li>a) Cifrar es cosa de TLS.</li><li>b) Asignar IP a los equipos es el trabajo de DHCP.</li><li>d) Repartir carga lo hace un balanceador (aunque el DNS puede hacer un reparto simple con varios registros A).</li></ul>"
+ },
+ {
+  "n": 44,
+  "conf": true,
+  "enunciado": "¿Qué obtiene <code>nslookup</code> si le das una dirección IP en lugar de un nombre?",
+  "tipo": "test",
+  "opciones": [
+   "Los puertos que están abiertos en esa dirección IP",
+   "Los nombres de dominio asociados a esa dirección",
+   "El tiempo de respuesta del servidor que usa esa IP",
+   "La ruta que siguen los paquetes hasta llegar al equipo"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Es la consulta inversa: busca el registro PTR de esa IP. Con <code>dig</code> se hace con <code>dig -x IP</code>.</p><ul><li>a) Los puertos abiertos se ven con herramientas como <code>nmap</code> o <code>ss</code>.</li><li>c) El tiempo de respuesta lo da <code>ping</code>.</li><li>d) La ruta la da <code>traceroute</code>.</li></ul>"
+ },
+ {
+  "n": 45,
+  "conf": true,
+  "enunciado": "Una aplicación necesita conectarse a un equipo remoto por su nombre. ¿Qué hace el cliente DNS?",
+  "tipo": "test",
+  "opciones": [
+   "Pregunta al servidor DNS configurado la IP de ese nombre y se la devuelve a la aplicación",
+   "Guarda en el equipo una copia de todas las zonas de Internet",
+   "Cifra la conexión entre la aplicación y el equipo remoto",
+   "Abre el puerto del equipo remoto para que la aplicación entre"
+  ],
+  "correcta": 0,
+  "explicacion": "<p><strong>a)</strong>. El cliente (el <em>resolver</em> del sistema) mira primero <code>/etc/hosts</code> y su caché y, si no lo tiene, pregunta al servidor que aparece en <code>/etc/resolv.conf</code>. Con la IP, la aplicación ya puede conectar.</p><ul><li>b) Nadie guarda todas las zonas de Internet: el DNS está repartido.</li><li>c) El DNS no cifra la conexión.</li><li>d) El DNS no abre puertos de nadie.</li></ul>"
+ },
+ {
+  "n": 46,
+  "conf": true,
+  "enunciado": "Para comprobar que el servidor DNS de la zona funciona, ¿qué se hace?",
+  "tipo": "test",
+  "opciones": [
+   "Abrir el archivo <code>hosts</code> y revisar las líneas de la zona",
+   "Reiniciar el cliente para que se descargue la zona entera",
+   "Usar <code>nslookup</code> contra el servidor para consultar la zona",
+   "Ejecutar <code>netstat</code> para ver el contenido de los registros DNS"
+  ],
+  "correcta": 2,
+  "explicacion": "<p><strong>c)</strong>. Se le pregunta directamente al servidor por un nombre de la zona: <code>nslookup www.ejemplo.local IP_DEL_SERVIDOR</code> (o <code>dig @IP www.ejemplo.local</code>). Si responde con la IP correcta, funciona.</p><ul><li>a) El fichero <code>hosts</code> no tiene nada que ver con el servidor DNS: es una lista local.</li><li>b) Un cliente no descarga zonas; pregunta nombres concretos.</li><li>d) <code>netstat</code> enseña conexiones y puertos, no registros DNS.</li></ul>"
+ },
+ {
+  "n": 47,
+  "conf": true,
+  "enunciado": "Para comprobar que un DNS recién instalado resuelve nombres, configuras el cliente de la propia máquina para que lo use. ¿Qué dirección de bucle local pones?",
+  "tipo": "test",
+  "opciones": [
+   "<code>127.0.0.1</code>",
+   "<code>8.8.8.8</code>",
+   "<code>192.168.1.1</code>",
+   "<code>0.0.0.0</code>"
+  ],
+  "correcta": 0,
+  "explicacion": "<p><strong>a)</strong>. 127.0.0.1 es la dirección de bucle local (<em>loopback</em>): la propia máquina. Se pone <code>nameserver 127.0.0.1</code> en <code>/etc/resolv.conf</code>.</p><ul><li>b) 8.8.8.8 es el DNS público de Google, no el nuestro.</li><li>c) 192.168.1.1 suele ser el router de casa.</li><li>d) 0.0.0.0 significa «todas las interfaces» al escuchar, no es una dirección a la que preguntar.</li></ul>"
+ },
+ {
+  "n": 48,
+  "conf": true,
+  "enunciado": "Quieres probar en local los sitios <code>sitio1.test</code> y <code>sitio2.test</code> sin depender de un servidor DNS. ¿Qué haces?",
+  "tipo": "test",
+  "opciones": [
+   "Añadirlos a <code>/etc/hosts</code> apuntando a la IP del servidor",
+   "Registrar los dos dominios en un registrador de Internet",
+   "Abrir el puerto 53 en el cortafuegos del servidor",
+   "Pedir un certificado de Let's Encrypt para cada sitio"
+  ],
+  "correcta": 0,
+  "explicacion": "<p><strong>a)</strong>. <code>/etc/hosts</code> se consulta antes que el DNS, así que basta una línea como <code>127.0.0.1 sitio1.test sitio2.test</code>. Es lo que se hizo para probar los server blocks por nombre.</p><ul><li>b) Registrar dominios cuesta dinero y depende del DNS público, justo lo que se quiere evitar.</li><li>c) El 53 es el puerto del DNS; abrirlo no resuelve nada si no hay servidor.</li><li>d) Let's Encrypt no emite certificados para nombres que no son públicos, y no tiene que ver con resolver.</li></ul>"
+ },
+ {
+  "n": 49,
+  "conf": true,
+  "enunciado": "Un servidor FTP se ejecuta en un contenedor. ¿Qué hay que tener en cuenta para que funcione bien?",
+  "tipo": "test",
+  "opciones": [
+   "Instalar un sistema operativo completo dentro del contenedor",
+   "Publicar los puertos, usar un volumen y prever el rango de puertos pasivos",
+   "Usar el modo activo, porque el pasivo no funciona en contenedores",
+   "Nada especial: el contenedor abre por sí mismo los puertos necesarios"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Hay que publicar el 21 y el rango de puertos pasivos (por ejemplo, 10240-10400, que también se fija en <code>pasv_min_port</code>/<code>pasv_max_port</code>), y guardar los ficheros en un volumen para que no se pierdan al recrear el contenedor.</p><ul><li>a) Un contenedor no lleva un sistema operativo completo.</li><li>c) Al revés: el pasivo funciona si se publica su rango; el activo da problemas con NAT.</li><li>d) Docker no publica nada por su cuenta: hay que indicarlo con <code>-p</code>.</li></ul>"
+ },
+ {
+  "n": 50,
+  "conf": true,
+  "enunciado": "¿Qué diferencia hay entre un permiso y una cuota en un servidor FTP?",
+  "tipo": "test",
+  "opciones": [
+   "El permiso dice qué puedes hacer y la cuota cuánto espacio puedes usar",
+   "El permiso es para los usuarios anónimos y la cuota para los del sistema",
+   "El permiso limita la velocidad de descarga y la cuota la de subida",
+   "Son lo mismo: la cuota es el nombre que da FTP a los permisos"
+  ],
+  "correcta": 0,
+  "explicacion": "<p><strong>a)</strong>. El permiso (leer, escribir, borrar en una carpeta) controla las acciones; la cuota limita el espacio en disco de cada usuario.</p><ul><li>b) Los dos se aplican a cualquier tipo de usuario.</li><li>c) Limitar la velocidad es otra cosa (en vsftpd, <code>local_max_rate</code>).</li><li>d) Son conceptos distintos.</li></ul>"
+ },
+ {
+  "n": 51,
+  "conf": true,
+  "enunciado": "Un usuario autenticado intenta subir un archivo a una carpeta y recibe el error 550 de permiso denegado. ¿Qué hay que revisar?",
+  "tipo": "test",
+  "opciones": [
+   "El puerto de control en el que escucha el servidor las órdenes",
+   "Los permisos del usuario sobre esa carpeta",
+   "La contraseña con la que el usuario inicia sesión",
+   "Que el servicio FTP esté iniciado y escuchando"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. El usuario ya ha entrado, así que el problema está en la carpeta: sus permisos de Linux (<code>ls -l</code>, <code>chown</code>, <code>chmod</code>) o que el servidor no permita escribir (<code>write_enable=NO</code>).</p><ul><li>a), c) y d) ya funcionan: si no, no habría podido iniciar sesión. Una contraseña mal da el error 530, no el 550.</li></ul>"
+ },
+ {
+  "n": 52,
+  "conf": true,
+  "enunciado": "¿Qué viaja por la conexión de datos de FTP?",
+  "tipo": "test",
+  "opciones": [
+   "Las órdenes, como el usuario y la contraseña",
+   "Los ficheros que se suben y se bajan",
+   "Solo los mensajes de error del servidor",
+   "Las consultas DNS del cliente"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. FTP separa dos conexiones: la de datos lleva los ficheros y los listados de directorio; la de control (puerto 21) lleva las órdenes.</p><ul><li>a) Las órdenes y las credenciales van por la conexión de control.</li><li>c) Los mensajes del servidor, incluidos los errores, también van por la de control.</li><li>d) El DNS no tiene nada que ver con FTP.</li></ul>"
+ },
+ {
+  "n": 53,
+  "conf": true,
+  "enunciado": "Un servidor FTP deja entrar sin cuenta personal, pero solo para ver y descargar archivos. ¿Qué tipo de usuario entra así?",
+  "tipo": "test",
+  "opciones": [
+   "Usuario del sistema",
+   "Usuario anónimo",
+   "Usuario administrador",
+   "Usuario virtual"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. El usuario <code>anonymous</code> entra sin credenciales propias. Sirve para repositorios públicos de descarga; en un servidor de despliegue se desactiva (<code>anonymous_enable=NO</code>).</p><ul><li>a) Un usuario del sistema tiene su propia cuenta y contraseña.</li><li>c) El administrador tiene una cuenta con todos los permisos, justo lo contrario.</li><li>d) Un usuario virtual tiene cuenta propia en el servidor FTP, aunque no exista en el sistema.</li></ul>"
+ },
+ {
+  "n": 54,
+  "conf": true,
+  "enunciado": "Para establecer la conexión segura, FTPS usa cifrado asimétrico. Si el cliente protege un mensaje dirigido al servidor, ¿qué clave usa cada uno?",
+  "tipo": "test",
+  "opciones": [
+   "El cliente cifra con su clave privada y el servidor descifra con la pública del cliente",
+   "El cliente cifra con la clave pública del servidor y el servidor descifra con su clave privada",
+   "Los dos usan la misma clave, que viaja en el primer mensaje",
+   "El cliente cifra con la clave privada del servidor y el servidor descifra con su pública"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. En el cifrado asimétrico, lo que se cifra con la clave pública de alguien solo se descifra con su clave privada. La pública del servidor va en su certificado, a la vista de todos; la privada nunca sale del servidor.</p><ul><li>a) Cifrar con la privada propia sirve para <strong>firmar</strong>, no para ocultar: cualquiera con la pública podría leerlo.</li><li>c) Esa es una clave simétrica, y mandarla sin protección permitiría leer todo. (Después del saludo sí se usa una clave simétrica de sesión, pero se acuerda de forma segura.)</li><li>d) El cliente nunca tiene la clave privada del servidor.</li></ul>"
+ },
+ {
+  "n": 55,
+  "conf": false,
+  "enunciado": "Relaciona cada concepto de Git con su función.",
+  "tipo": "puzle",
+  "piezas": [
+   {
+    "t": "commit",
+    "h": 1
+   },
+   {
+    "t": "branch",
+    "h": 2
+   },
+   {
+    "t": "remote",
+    "h": 3
+   },
+   {
+    "t": ".gitignore",
+    "h": 4
+   },
+   {
+    "t": "git add",
+    "h": 5
+   },
+   {
+    "t": "merge",
+    "h": 6
+   },
+   {
+    "t": "pull request",
+    "h": 7
+   }
+  ],
+  "lineas": [
+   {
+    "texto": "Foto del proyecto con autor, fecha y mensaje",
+    "h": 1
+   },
+   {
+    "texto": "Línea de trabajo independiente para un cambio",
+    "h": 2
+   },
+   {
+    "texto": "Copia del repositorio en otro sitio (origin en GitHub)",
+    "h": 3
+   },
+   {
+    "texto": "Lista de ficheros que Git no debe versionar (.env, .venv, *.db)",
+    "h": 4
+   },
+   {
+    "texto": "Pasa cambios al área de preparación para el próximo commit",
+    "h": 5
+   },
+   {
+    "texto": "Une el historial de una rama con otra",
+    "h": 6
+   },
+   {
+    "texto": "Petición para revisar y fusionar una rama en GitHub",
+    "h": 7
+   }
+  ]
+ },
+ {
+  "n": 56,
+  "conf": false,
+  "enunciado": "Relaciona cada sección del README con su contenido.",
+  "tipo": "puzle",
+  "piezas": [
+   {
+    "t": "Instalación",
+    "h": 1
+   },
+   {
+    "t": "Configuración",
+    "h": 2
+   },
+   {
+    "t": "Comprobación",
+    "h": 3
+   },
+   {
+    "t": "Problemas encontrados y solución",
+    "h": 4
+   },
+   {
+    "t": "Enlace al remoto",
+    "h": 5
+   }
+  ],
+  "lineas": [
+   {
+    "texto": "Pasos y comandos para poner el proyecto en marcha",
+    "h": 1
+   },
+   {
+    "texto": "Ficheros que hay que tocar y variables que hay que definir",
+    "h": 2
+   },
+   {
+    "texto": "Comandos que demuestran que funciona, con su salida real",
+    "h": 3
+   },
+   {
+    "texto": "Fallos reales que aparecieron y cómo se resolvieron",
+    "h": 4
+   },
+   {
+    "texto": "URL del repositorio en GitHub o GitLab",
+    "h": 5
+   }
+  ]
+ },
+ {
+  "n": 57,
+  "conf": false,
+  "enunciado": "Ordena las fases de un pipeline de integración continua.",
+  "tipo": "puzle",
+  "piezas": [
+   {
+    "t": "Descargar el código del commit (checkout)",
+    "h": 1
+   },
+   {
+    "t": "Instalar las dependencias bloqueadas",
+    "h": 2
+   },
+   {
+    "t": "Formato y lint (Ruff)",
+    "h": 3
+   },
+   {
+    "t": "Comprobar tipos (mypy)",
+    "h": 4
+   },
+   {
+    "t": "Tests unitarios y de integración",
+    "h": 5
+   },
+   {
+    "t": "Análisis de seguridad (Bandit, pip-audit, Gitleaks)",
+    "h": 6
+   },
+   {
+    "t": "Construir la imagen y desplegar",
+    "h": 7
+   },
+   {
+    "t": "Desplegar en producción antes de pasar los tests",
+    "h": null
+   }
+  ],
+  "lineas": [
+   {
+    "texto": "1.",
+    "h": 1
+   },
+   {
+    "texto": "2.",
+    "h": 2
+   },
+   {
+    "texto": "3.",
+    "h": 3
+   },
+   {
+    "texto": "4.",
+    "h": 4
+   },
+   {
+    "texto": "5.",
+    "h": 5
+   },
+   {
+    "texto": "6.",
+    "h": 6
+   },
+   {
+    "texto": "7.",
+    "h": 7
+   }
+  ]
+ },
+ {
+  "n": 58,
+  "conf": true,
+  "enunciado": "¿Qué distingue a los sistemas de control de versiones distribuidos?",
+  "tipo": "test",
+  "opciones": [
+   "Solo se pueden usar con GitHub",
+   "Cada copia local tiene el historial completo, así que se trabaja sin conexión",
+   "No guardan historial, solo la última versión",
+   "Hay un único servidor con todo el historial"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. En Git o Mercurial cada clon es una copia completa del repositorio: se hacen commits sin conexión y, si el servidor se pierde, cualquier copia lo recupera.</p><ul><li>a) Git funciona sin GitHub; GitHub es solo un sitio donde alojar remotos (también hay GitLab, Gitea…).</li><li>c) Guardar el historial es lo esencial de cualquier sistema de control de versiones.</li><li>d) Eso describe el modelo centralizado.</li></ul>"
+ },
+ {
+  "n": 59,
+  "conf": true,
+  "enunciado": "¿Qué riesgo principal tiene un sistema de control de versiones centralizado?",
+  "tipo": "test",
+  "opciones": [
+   "Que solo funciona sin conexión",
+   "Que el servidor es un punto único de fallo: si cae o se pierde, nadie trabaja y se puede perder el historial",
+   "Que no permite crear ramas",
+   "Que cada desarrollador tiene una copia completa y ocupa mucho"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. En CVS o Subversion todo depende del servidor: sin él no hay commits, y si se pierde sin copia, se pierde el historial.</p><ul><li>a) Al revés: sin conexión con el servidor no se puede confirmar nada.</li><li>c) Los centralizados también tienen ramas.</li><li>d) Eso describe a los distribuidos.</li></ul>"
+ },
+ {
+  "n": 60,
+  "conf": true,
+  "enunciado": "¿Qué indicación sobre los sistemas de control de versiones es correcta?",
+  "tipo": "test",
+  "opciones": [
+   "CVS es local y Mercurial es un sistema centralizado",
+   "RCS es distribuido y Git es un sistema local",
+   "Git y Mercurial son distribuidos y CVS es centralizado",
+   "Git es centralizado y CVS es un sistema distribuido"
+  ],
+  "correcta": 2,
+  "explicacion": "<p><strong>c)</strong>. Los tres modelos, con su ejemplo: <strong>local</strong> (RCS: el historial solo en tu equipo), <strong>centralizado</strong> (CVS, Subversion: un servidor con todo) y <strong>distribuido</strong> (Git, Mercurial: cada copia con todo).</p><ul><li>a), b) y d) cambian los ejemplos de modelo.</li></ul>"
+ },
+ {
+  "n": 61,
+  "conf": true,
+  "enunciado": "Un equipo copia la carpeta del proyecto con la fecha en el nombre antes de cada cambio importante. ¿Por qué es mejor un sistema de control de versiones?",
+  "tipo": "test",
+  "opciones": [
+   "Porque ocupa más espacio y así hay más copias de seguridad",
+   "Porque guarda cada cambio con su autor, fecha y motivo, y permite volver atrás y trabajar en paralelo",
+   "Porque impide que dos personas toquen el mismo proyecto",
+   "Porque borra automáticamente las versiones antiguas"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Con copias de carpetas no se sabe quién cambió qué ni por qué, y juntar el trabajo de dos personas es un infierno. Un sistema de control de versiones lo registra todo y permite ramas y fusiones.</p><ul><li>a) Ocupa menos, no más: no duplica lo que no cambia.</li><li>c) Al revés: está pensado para que trabajen varios a la vez.</li><li>d) No borra nada: guarda toda la historia.</li></ul>"
+ },
+ {
+  "n": 62,
+  "conf": true,
+  "enunciado": "¿Cómo almacena Git los datos de un proyecto?",
+  "tipo": "test",
+  "opciones": [
+   "En una base de datos PostgreSQL",
+   "Solo guarda la última versión de cada fichero",
+   "Como instantáneas del proyecto en cada commit; si un fichero no cambia, apunta al que ya tenía",
+   "Como una lista de diferencias de cada fichero respecto a la versión anterior"
+  ],
+  "correcta": 2,
+  "explicacion": "<p><strong>c)</strong>. Cada commit es una foto completa del proyecto. Para no repetir, los ficheros que no han cambiado apuntan a la copia que ya existía. Todo vive en la carpeta <code>.git</code>.</p><ul><li>a) Git no usa ningún gestor de bases de datos.</li><li>b) Si solo guardara la última versión, no podría volver atrás.</li><li>d) Así trabajaban otros sistemas antiguos (por diferencias); Git guarda instantáneas.</li></ul>"
+ },
+ {
+  "n": 63,
+  "conf": true,
+  "enunciado": "¿Qué hace <code>git init</code>?",
+  "tipo": "test",
+  "opciones": [
+   "Crea un repositorio nuevo en la carpeta actual: la carpeta oculta <code>.git</code>",
+   "Crea el primer commit con todos los ficheros",
+   "Sube los commits al remoto",
+   "Descarga un repositorio de GitHub"
+  ],
+  "correcta": 0,
+  "explicacion": "<p><strong>a)</strong>. Convierte la carpeta en un repositorio creando <code>.git</code>, donde Git guardará toda la historia. Todavía no hay ningún commit.</p><ul><li>b) El primer commit hay que hacerlo con <code>git add</code> y <code>git commit</code>.</li><li>c) Subir es <code>git push</code>.</li><li>d) Descargar un repositorio es <code>git clone</code>.</li></ul>"
+ },
+ {
+  "n": 64,
+  "conf": true,
+  "enunciado": "¿Cuál es el orden de trabajo habitual en Git?",
+  "tipo": "test",
+  "opciones": [
+   "Clonar el repositorio, borrar el historial y luego confirmar",
+   "Preparar los cambios, confirmarlos y después modificar el directorio",
+   "Modificar, preparar con <code>git add</code> y confirmar con <code>git commit</code>",
+   "Confirmar los cambios, prepararlos y después modificar los archivos"
+  ],
+  "correcta": 2,
+  "explicacion": "<p><strong>c)</strong>. Son los tres estados de un fichero: modificado en el directorio de trabajo, preparado en el área de preparación (<code>git add</code>) y confirmado en el repositorio (<code>git commit</code>). Después, <code>git push</code> lo sube.</p><ul><li>a) Nunca se borra el historial.</li><li>b) y d) desordenan los pasos: no se puede preparar ni confirmar algo que aún no se ha modificado.</li></ul>"
+ },
+ {
+  "n": 65,
+  "conf": true,
+  "enunciado": "¿Qué guarda el área de preparación (staging area) de Git?",
+  "tipo": "test",
+  "opciones": [
+   "El historial completo de commits del proyecto",
+   "Los cambios preparados con <code>git add</code> que entrarán en el próximo commit",
+   "Una copia del repositorio remoto para trabajar sin conexión",
+   "Los ficheros que aparecen en <code>.gitignore</code>"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Es la zona intermedia: permite elegir qué cambios entran en el siguiente commit y cuáles se quedan fuera. <code>git status</code> enseña qué está preparado.</p><ul><li>a) El historial está en el repositorio (<code>.git</code>), no en el área de preparación.</li><li>c) La copia del remoto la da el propio clon.</li><li>d) Los ficheros de <code>.gitignore</code> son justo los que Git no prepara nunca.</li></ul>"
+ },
+ {
+  "n": 66,
+  "conf": true,
+  "enunciado": "Al guardar una nueva versión en un sistema de control de versiones, ¿qué suele pedir el sistema?",
+  "tipo": "test",
+  "opciones": [
+   "Un mensaje que describa el cambio",
+   "La contraseña del repositorio remoto",
+   "El número de versión que tendrá el proyecto",
+   "Una copia de seguridad de la versión anterior"
+  ],
+  "correcta": 0,
+  "explicacion": "<p><strong>a)</strong>. Cada commit lleva un mensaje (<code>git commit -m \"...\"</code>) que explica qué se cambió y por qué. En el módulo, con un título y un cuerpo: <code>-m \"título\" -m \"cuerpo\"</code>.</p><ul><li>b) La contraseña solo hace falta al hablar con el remoto (<code>push</code>), no al confirmar.</li><li>c) Los números de versión se ponen con etiquetas (<code>git tag</code>), cuando se quiere.</li><li>d) No hace falta: la versión anterior ya está guardada en el historial.</li></ul>"
+ },
+ {
+  "n": 67,
+  "conf": true,
+  "enunciado": "¿Para qué se configuran <code>user.name</code> y <code>user.email</code> en Git?",
+  "tipo": "test",
+  "opciones": [
+   "Para firmar el certificado HTTPS",
+   "Para identificar al autor de cada commit",
+   "Para recibir un correo con cada push",
+   "Para iniciar sesión en GitHub"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Git escribe ese nombre y ese correo como autor de cada commit. En las entregas del módulo tienen que ser los del aula virtual.</p><ul><li>a) Los certificados HTTPS no tienen nada que ver con Git.</li><li>c) Git no envía correos.</li><li>d) Para entrar en GitHub se usa un token o una clave SSH, no estos datos.</li></ul>"
+ },
+ {
+  "n": 68,
+  "conf": true,
+  "enunciado": "¿Cómo se puede acceder a un repositorio de Git de forma remota?",
+  "tipo": "test",
+  "opciones": [
+   "Copiando la carpeta <code>.git</code> por correo electrónico",
+   "Por la red, con la URL del remoto, por HTTPS o por SSH",
+   "Solo desde la web de GitHub, sin usar <code>git</code>",
+   "Por FTP, subiendo el proyecto a la carpeta del servidor"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. Un remoto se identifica por su URL: <code>https://github.com/usuario/repo.git</code> (con usuario y token) o <code>git@github.com:usuario/repo.git</code> (con clave SSH). Se trabaja con <code>clone</code>, <code>fetch</code>, <code>pull</code> y <code>push</code>.</p><ul><li>a) Mandar la carpeta por correo no es trabajar con un remoto.</li><li>c) La web de GitHub es solo una forma de ver el repositorio; lo normal es usar <code>git</code>.</li><li>d) FTP no entiende el historial de Git.</li></ul>"
+ },
+ {
+  "n": 69,
+  "conf": true,
+  "enunciado": "Un equipo decide qué parte de la documentación pasa al manual de usuario para los usuarios finales. ¿Qué es lo recomendable?",
+  "tipo": "test",
+  "opciones": [
+   "La implementación y el funcionamiento interno",
+   "La interfaz: cómo se usa la aplicación, paso a paso",
+   "El código fuente completo de cada fase del proyecto",
+   "Los comentarios de depuración que escriben los programadores"
+  ],
+  "correcta": 1,
+  "explicacion": "<p><strong>b)</strong>. El usuario final quiere saber usar la aplicación, no cómo está hecha por dentro.</p><ul><li>a), c) y d) son documentación técnica, para quien desarrolla o mantiene el sistema.</li></ul>"
+ },
+ {
+  "n": 70,
+  "conf": true,
+  "enunciado": "¿A quién le resulta especialmente útil la documentación de la API?",
+  "tipo": "test",
+  "opciones": [
+   "A los desarrolladores que van a usar o integrar la API",
+   "Al usuario final de la aplicación",
+   "Al proveedor de la nube",
+   "A nadie: una API se explica sola"
+  ],
+  "correcta": 0,
+  "explicacion": "<p><strong>a)</strong>. Explica los endpoints, qué reciben, qué devuelven y cómo autenticarse. FastAPI la genera sola en <code>/docs</code>, como en la API de tareas.</p><ul><li>b) El usuario final usa la aplicación, no la API.</li><li>c) Al proveedor de la nube no le importa qué hace tu API.</li><li>d) Sin documentación, quien la integra tiene que adivinar.</li></ul>"
+ }
+]

@@ -1,0 +1,9 @@
+---
+// Simulacro de examen tipo test: las preguntas en orden aleatorio y la nota con penalización.
+// La lógica está en public/apuntes.js (bloque «Simulacro»), igual que la de los puzles.
+interface Props { preguntas: unknown[]; titulo?: string }
+const { preguntas, titulo = 'Simulacro de examen' } = Astro.props;
+---
+<section class="simulacro" data-simulacro={JSON.stringify(preguntas)} aria-label={titulo}>
+  <noscript><p>El simulacro necesita JavaScript. Las mismas preguntas están más abajo, con su respuesta.</p></noscript>
+</section>

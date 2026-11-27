@@ -12,6 +12,8 @@ import ProxyInverso from '../../../components/esquemas/ProxyInverso.astro';
 import KamalDespliegue from '../../../components/esquemas/KamalDespliegue.astro';
 import Secuencia from '../../../components/esquemas/Secuencia.astro';
 import Puzle from '../../../components/Puzle.astro';
+import Simulacro from '../../../components/Simulacro.astro';
+import preguntas from '../../../data/simulacro-despliegue.json';
 
 ## Cómo es el examen
 
@@ -61,6 +63,14 @@ Las que se repitieron en clase: el orden de las capas (cliente → presentación
 
 1. Preguntas de ejemplo dictadas en clase el 24/11/2026 (notas propias).
 2. [Web del módulo: temario de la UT1 a la UT6](https://dpl-f1facc.gitlab.io/)
+
+## Simulacro de examen
+
+### Qué se ve
+
+Las 70 preguntas de los bloques de abajo, en orden aleatorio y una a una, con la nota calculada como en el examen: cada acierto suma 1, cada fallo resta 0,5 (dos fallos quitan un acierto) y en blanco no suma ni resta. Al contestar se ve si es correcta y la explicación. Al final se pueden repasar solo los fallos y los blancos.
+
+<Simulacro preguntas={preguntas} />
 
 ## Bloque 1: arquitectura y servidores
 

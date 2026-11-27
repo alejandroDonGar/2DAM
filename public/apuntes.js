@@ -314,3 +314,173 @@ document.querySelectorAll('figure[data-puzle]').forEach(fig => {
   }
   pintar();
 });
+
+// ---------- Simulacro de examen tipo test ----------
+// Preguntas en orden aleatorio. Acierto +1, fallo -0,5 (dos fallos quitan un acierto), en blanco 0.
+// Las de relacionar u ordenar cuentan como una sola pregunta: bien solo si todas las líneas lo están.
+document.querySelectorAll('[data-simulacro]').forEach(caja => {
+  const banco = JSON.parse(caja.dataset.simulacro);
+  const LETRAS = 'abcd';
+  let ronda = [], i = 0, res = [];
+
+  const barajar = a => {
+    a = [...a];
+    for (let k = a.length - 1; k > 0; k--) {
+      const j = Math.floor(Math.random() * (k + 1));
+      [a[k], a[j]] = [a[j], a[k]];
+    }
+    return a;
+  };
+  const cuenta = () => ({
+    bien: res.filter(r => r === 'bien').length,
+    mal: res.filter(r => r === 'mal').length,
+    blanco: res.filter(r => r === 'blanco').length,
+  });
+  const nota = (c, total) => total ? Math.max(0, c.bien - c.mal / 2) / total * 10 : 0;
+  const fmt = x => x.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const boton = (accion, texto, principal) =>
+    `<button type="button" data-a="${accion}"${principal ? ' class="sm-principal"' : ''}>${texto}</button>`;
+  const alInicio = () => { if (caja.getBoundingClientRect().top < 0) caja.scrollIntoView({ block: 'start' }); };
+
+  function portada() {
+    const conf = banco.filter(p => p.conf).length;
+    caja.innerHTML = `
+      <h3 class="sm-titulo">Simulacro de examen</h3>
+      <p>Las ${banco.length} preguntas de esta página en orden aleatorio, una a una. Al contestar ves si has acertado y por qué. Las marcadas con ★ son las ${conf} confirmadas.</p>
+      <ul class="sm-reglas">
+        <li><strong>Acierto:</strong> +1</li>
+        <li><strong>Fallo:</strong> −0,5 (cada dos fallos quitan un acierto)</li>
+        <li><strong>En blanco:</strong> 0</li>
+      </ul>
+      <p class="sm-suave">Las de relacionar u ordenar cuentan como una pregunta: solo es acierto si todas las líneas están bien. La nota es sobre 10.</p>
+      <div class="sm-controles">${boton('todas', `Empezar (${banco.length})`, true)}${boton('conf', `Solo las ★ (${conf})`)}</div>`;
+  }
+
+  function empezar(preguntas) {
+    ronda = barajar(preguntas);
+    i = 0;
+    res = [];
+    pregunta();
+  }
+
+  function marcador() {
+    const c = cuenta();
+    return `<div class="sm-marcador">
+      <span>Pregunta <strong>${i + 1}</strong> de ${ronda.length}</span>
+      <span title="Aciertos">✓ ${c.bien}</span><span title="Fallos">✗ ${c.mal}</span><span title="En blanco">— ${c.blanco}</span>
+      <span>Nota hasta aquí: <strong>${fmt(nota(c, res.length))}</strong></span>
+    </div>
+    <progress class="sm-progreso" max="${ronda.length}" value="${res.length}"></progress>`;
+  }
+
+  function pregunta() {
+    const p = ronda[i];
+    let cuerpo;
+    if (p.tipo === 'test') {
+      cuerpo = `<div class="sm-opciones">${p.opciones.map((o, k) =>
+        `<button type="button" class="sm-opcion" data-o="${k}"><span class="sm-letra">${LETRAS[k]})</span> <span>${o}</span></button>`).join('')}</div>
+        <div class="sm-controles">${boton('blanco', 'Dejar en blanco')}${boton('terminar', 'Terminar ahora')}</div>`;
+    } else {
+      const piezas = barajar(p.piezas.map((pz, k) => ({ ...pz, k })));
+      cuerpo = `<div class="sm-lineas">${p.lineas.map((l, k) => `
+        <label class="sm-linea"><span>${l.texto || `Paso ${k + 1}`}</span>
+          <select data-h="${l.h}"><option value="">— elige —</option>${piezas.map(pz => `<option value="${pz.k}"></option>`).join('')}</select>
+        </label>`).join('')}</div>
+        <div class="sm-controles">${boton('responder', 'Responder', true)}${boton('blanco', 'Dejar en blanco')}${boton('terminar', 'Terminar ahora')}</div>`;
+    }
+    caja.innerHTML = `${marcador()}
+      <h3 class="sm-enunciado" tabindex="-1">${p.conf ? '<span class="sm-conf" title="Confirmada">★</span> ' : ''}${p.enunciado}</h3>
+      ${cuerpo}
+      <div class="sm-respuesta" aria-live="polite"></div>`;
+    // El texto de las piezas se pone con textContent: puede llevar < o >.
+    if (p.tipo === 'puzle') caja.querySelectorAll('select option[value]:not([value=""])').forEach(o => {
+      o.textContent = p.piezas[o.value].t;
+    });
+    caja.querySelector('.sm-enunciado').focus({ preventScroll: true });
+  }
+
+  function cerrar(resultado, html) {
+    res.push(resultado);
+    caja.querySelectorAll('.sm-opcion, select').forEach(e => { e.disabled = true; });
+    const ultima = i === ronda.length - 1;
+    caja.querySelector('.sm-controles').innerHTML =
+      boton('siguiente', ultima ? 'Ver la nota' : 'Siguiente', true) + (ultima ? '' : boton('terminar', 'Terminar ahora'));
+    const titulo = { bien: 'Correcta. +1', mal: 'Incorrecta. −0,5', blanco: 'En blanco. 0' }[resultado];
+    caja.querySelector('.sm-respuesta').innerHTML = `<p class="sm-veredicto sm-${resultado}">${titulo}</p>${html}`;
+    caja.querySelector('.sm-marcador').outerHTML = marcador().split('<progress')[0];
+    caja.querySelector('.sm-progreso').value = res.length;
+    caja.querySelector('[data-a="siguiente"]').focus({ preventScroll: true });
+  }
+
+  function responderTest(k) {
+    const p = ronda[i];
+    caja.querySelectorAll('.sm-opcion').forEach((b, n) => {
+      if (n === p.correcta) b.classList.add('bien');
+      else if (n === k) b.classList.add('mal');
+    });
+    cerrar(k === p.correcta ? 'bien' : 'mal', p.explicacion);
+  }
+
+  function solucionPuzle(p) {
+    return `<ul class="sm-solucion">${p.lineas.map((l, k) =>
+      `<li>${l.texto || `Paso ${k + 1}`} → <code></code></li>`).join('')}</ul>`;
+  }
+
+  function responderPuzle(enBlanco) {
+    const p = ronda[i];
+    const selects = [...caja.querySelectorAll('.sm-linea select')];
+    const vacios = selects.filter(s => !s.value).length;
+    if (!enBlanco && vacios === selects.length) return responderPuzle(true);
+    let resultado = 'blanco';
+    if (!enBlanco) {
+      let todas = true;
+      selects.forEach(s => {
+        const ok = s.value !== '' && p.piezas[s.value].h === +s.dataset.h;
+        s.classList.add(ok ? 'bien' : 'mal');
+        if (!ok) todas = false;
+      });
+      resultado = todas ? 'bien' : 'mal';
+    }
+    cerrar(resultado, `<p>La solución:</p>${solucionPuzle(p)}`);
+    caja.querySelectorAll('.sm-solucion code').forEach((c, k) => {
+      c.textContent = p.piezas.find(pz => pz.h === p.lineas[k].h).t;
+    });
+  }
+
+  function final() {
+    const total = ronda.length;
+    while (res.length < total) res.push('blanco');
+    const c = cuenta();
+    const fallos = ronda.filter((_, k) => res[k] !== 'bien');
+    caja.innerHTML = `
+      <h3 class="sm-titulo">Resultado</h3>
+      <p class="sm-nota">${fmt(nota(c, total))} <span>/ 10</span></p>
+      <p>✓ ${c.bien} aciertos · ✗ ${c.mal} fallos · — ${c.blanco} en blanco, de ${total} preguntas.</p>
+      <p class="sm-suave">Cálculo: (${c.bien} − ${c.mal} ÷ 2) ÷ ${total} × 10${c.bien - c.mal / 2 < 0 ? ', y como sale negativo, se queda en 0' : ''}.</p>
+      <div class="sm-controles">${boton('todas', 'Repetir con otro orden', true)}${fallos.length ? boton('fallos', `Repasar los fallos y blancos (${fallos.length})`) : ''}${boton('portada', 'Volver al inicio')}</div>`;
+    caja._fallos = fallos;
+    alInicio();
+  }
+
+  caja.addEventListener('click', e => {
+    const opcion = e.target.closest('.sm-opcion');
+    if (opcion && !opcion.disabled) return responderTest(+opcion.dataset.o);
+    const a = e.target.closest('[data-a]')?.dataset.a;
+    if (!a) return;
+    if (a === 'todas') { empezar(banco); alInicio(); }
+    else if (a === 'conf') { empezar(banco.filter(p => p.conf)); alInicio(); }
+    else if (a === 'fallos') { empezar(caja._fallos); alInicio(); }
+    else if (a === 'portada') portada();
+    else if (a === 'responder') responderPuzle(false);
+    else if (a === 'blanco') {
+      const p = ronda[i];
+      if (p.tipo === 'puzle') return responderPuzle(true);
+      caja.querySelectorAll('.sm-opcion')[p.correcta].classList.add('bien');
+      cerrar('blanco', p.explicacion);
+    }
+    else if (a === 'siguiente') { if (++i < ronda.length) { pregunta(); alInicio(); } else final(); }
+    else if (a === 'terminar') final();
+  });
+
+  portada();
+});

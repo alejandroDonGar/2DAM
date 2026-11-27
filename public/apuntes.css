@@ -328,3 +328,39 @@ figure.codigo pre.astro-code { margin: 0; border: 0; border-radius: 0; }
 .pz-porque li { margin: 4px 0; }
 .pz-porque code { color: var(--texto); }
 .pz-hueco:focus-visible, .pz-pieza:focus-visible, .pz-controles button:focus-visible { outline: 2px solid var(--resaltador); outline-offset: 2px; }
+
+/* ---------- Simulacro de examen ---------- */
+.simulacro { margin: 24px 0 32px; padding: 20px 22px; border: 1px solid var(--linea); border-radius: 10px; background: var(--capa); font-family: var(--sans); font-size: .95rem; }
+.simulacro p { margin: 0 0 10px; }
+.sm-titulo { margin: 0 0 10px; font-size: 1.15rem; }
+.sm-suave { color: var(--suave); font-size: .88rem; }
+.sm-reglas { margin: 0 0 10px; padding-left: 1.2em; }
+.sm-marcador { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--suave); font-size: .88rem; font-variant-numeric: tabular-nums; }
+.sm-marcador strong { color: var(--texto); }
+.sm-progreso { width: 100%; height: 6px; margin: 8px 0 16px; accent-color: var(--resaltador); }
+.sm-enunciado { margin: 0 0 14px; font-family: var(--serif); font-size: 1.08rem; line-height: 1.45; outline: none; }
+.sm-conf { color: var(--resaltador); }
+.sm-opciones { display: grid; gap: 8px; }
+.sm-opcion { display: flex; gap: 8px; align-items: baseline; width: 100%; text-align: left; font: inherit; line-height: 1.45; padding: 9px 12px; border: 1px solid var(--linea); border-radius: 8px; background: var(--fondo); color: var(--texto); cursor: pointer; }
+.sm-opcion:hover:not(:disabled) { border-color: var(--suave); }
+.sm-opcion:disabled { cursor: default; opacity: .75; }
+.sm-letra { font-weight: 650; color: var(--suave); }
+.sm-opcion.bien, .sm-linea select.bien { opacity: 1; border-color: var(--resaltador); box-shadow: inset 3px 0 var(--resaltador); }
+.sm-opcion.bien::after { content: "✓"; margin-left: auto; color: var(--resaltador); font-weight: 700; }
+.sm-opcion.mal, .sm-linea select.mal { opacity: 1; border-style: dashed; border-color: var(--suave); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.sm-opcion.mal::after { content: "✗"; margin-left: auto; font-weight: 700; }
+.sm-lineas { display: grid; gap: 10px; }
+.sm-linea { display: grid; gap: 4px; }
+.sm-linea select { font: .9rem var(--sans); max-width: 100%; padding: 6px 8px; border: 1px solid var(--linea); border-radius: 6px; background: var(--fondo); color: var(--texto); }
+.sm-controles { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.sm-controles button { font: inherit; font-size: .9rem; padding: 5px 14px; border-radius: 99px; border: 1px solid var(--linea); background: none; color: var(--texto); cursor: pointer; }
+.sm-controles button:hover { border-color: var(--suave); }
+.sm-controles .sm-principal { background: var(--resaltador); border-color: var(--resaltador); color: var(--tinta-sobre-resaltador); font-weight: 600; }
+.sm-respuesta:not(:empty) { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--linea); }
+.sm-respuesta ul { padding-left: 1.2em; }
+.sm-respuesta li { margin: 4px 0; }
+.sm-veredicto { font-weight: 700; }
+.sm-veredicto.sm-bien { color: var(--resaltador); }
+.sm-nota { font-size: 2.6rem; font-weight: 700; line-height: 1.1; margin: 4px 0 8px !important; font-variant-numeric: tabular-nums; }
+.sm-nota span { font-size: 1rem; color: var(--suave); font-weight: 400; }
+.sm-opcion:focus-visible, .sm-controles button:focus-visible, .sm-linea select:focus-visible { outline: 2px solid var(--resaltador); outline-offset: 2px; }
